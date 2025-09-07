@@ -7,8 +7,9 @@ import { UsersModule } from './modules/users/users.module';
 import { RentPostsModule } from './modules/rent-posts/rent-posts.module';
 import { RoommatePostsModule } from './modules/roommate-posts/roommate-posts.module';
 import { FavouritesModule } from './modules/favourites/favourites.module';
-
+import {S3Module} from './s3/s3.module';
 @Module({
+
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -27,8 +28,10 @@ import { FavouritesModule } from './modules/favourites/favourites.module';
     RentPostsModule,
     RoommatePostsModule,
     FavouritesModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],
+  
 })
 export class AppModule {}
