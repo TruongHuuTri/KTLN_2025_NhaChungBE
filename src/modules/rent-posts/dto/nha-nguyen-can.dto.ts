@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional, IsIn, ValidateNested, IsNumberString, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional, IsBoolean, IsIn, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateAddressDto {
+export class NhaNguyenCanAddressDto {
   @IsNotEmpty({ message: 'Đường không được để trống' })
   @IsString({ message: 'Đường phải là chuỗi' })
   street: string;
@@ -27,63 +27,7 @@ export class CreateAddressDto {
   showHouseNumber?: boolean;
 }
 
-export class CreateBasicInfoDto {
-  @IsNotEmpty({ message: 'Diện tích không được để trống' })
-  @IsNumber({}, { message: 'Diện tích phải là số' })
-  area: number;
-
-  @IsNotEmpty({ message: 'Giá thuê không được để trống' })
-  @IsNumber({}, { message: 'Giá thuê phải là số' })
-  price: number;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Số tiền cọc phải là số' })
-  deposit?: number;
-
-  @IsOptional()
-  @IsString({ message: 'Tình trạng nội thất phải là chuỗi' })
-  furniture?: string;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Số phòng ngủ phải là số' })
-  bedrooms?: number;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Số phòng vệ sinh phải là số' })
-  bathrooms?: number;
-
-  @IsOptional()
-  @IsString({ message: 'Hướng phải là chuỗi' })
-  direction?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Tình trạng sổ phải là chuỗi' })
-  legalStatus?: string;
-}
-
-export class CreateChungCuInfoDto {
-  @IsOptional()
-  @IsString({ message: 'Tên tòa nhà phải là chuỗi' })
-  buildingName?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Block/Tháp phải là chuỗi' })
-  blockOrTower?: string;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Tầng số phải là số' })
-  floorNumber?: number;
-
-  @IsOptional()
-  @IsString({ message: 'Mã căn phải là chuỗi' })
-  unitCode?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Loại hình phải là chuỗi' })
-  propertyType?: string;
-}
-
-export class CreateNhaNguyenCanInfoDto {
+export class NhaNguyenCanPropertyInfoDto {
   @IsOptional()
   @IsString({ message: 'Tên khu/lô phải là chuỗi' })
   khuLo?: string;
@@ -94,6 +38,7 @@ export class CreateNhaNguyenCanInfoDto {
 
   @IsOptional()
   @IsString({ message: 'Loại hình phải là chuỗi' })
+  @IsIn(['nha-pho', 'biet-thu', 'nha-hem', 'nha-cap4'], { message: 'Loại hình không hợp lệ' })
   propertyType?: string;
 
   @IsOptional()
@@ -122,9 +67,9 @@ export class CreateNhaNguyenCanInfoDto {
   features?: string[];
 }
 
-export class CreateRentPostDto {
+export class CreateNhaNguyenCanDto {
   @IsNotEmpty({ message: 'User ID không được để trống' })
-  @IsNumberString({}, { message: 'User ID phải là số' })
+  @IsString({ message: 'User ID phải là chuỗi' })
   userId: string;
 
   @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
@@ -147,27 +92,58 @@ export class CreateRentPostDto {
 
   @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   @ValidateNested()
-  @Type(() => CreateAddressDto)
-  address: CreateAddressDto;
-
-  @IsNotEmpty({ message: 'Loại nhà không được để trống' })
-  @IsIn(['phong-tro', 'chung-cu', 'nha-nguyen-can'], { message: 'Loại nhà không hợp lệ' })
-  category: string;
-
-  @IsNotEmpty({ message: 'Thông tin cơ bản không được để trống' })
-  @ValidateNested()
-  @Type(() => CreateBasicInfoDto)
-  basicInfo: CreateBasicInfoDto;
+  @Type(() => NhaNguyenCanAddressDto)
+  address: NhaNguyenCanAddressDto;
 
   @IsOptional()
   @ValidateNested()
-  @Type(() => CreateChungCuInfoDto)
-  chungCuInfo?: CreateChungCuInfoDto;
+  @Type(() => NhaNguyenCanPropertyInfoDto)
+  propertyInfo?: NhaNguyenCanPropertyInfoDto;
+
+  @IsNotEmpty({ message: 'Diện tích đất không được để trống' })
+  @IsNumber({}, { message: 'Diện tích đất phải là số' })
+  landArea: number;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => CreateNhaNguyenCanInfoDto)
-  nhaNguyenCanInfo?: CreateNhaNguyenCanInfoDto;
+  @IsNumber({}, { message: 'Diện tích sử dụng phải là số' })
+  usableArea?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Chiều ngang phải là số' })
+  width?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Chiều dài phải là số' })
+  length?: number;
+
+  @IsNotEmpty({ message: 'Giá thuê không được để trống' })
+  @IsNumber({}, { message: 'Giá thuê phải là số' })
+  price: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Số tiền cọc phải là số' })
+  deposit?: number;
+
+  @IsOptional()
+  @IsString({ message: 'Tình trạng nội thất phải là chuỗi' })
+  furniture?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Số phòng ngủ phải là số' })
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Số phòng vệ sinh phải là số' })
+  bathrooms?: number;
+
+  @IsOptional()
+  @IsString({ message: 'Hướng phải là chuỗi' })
+  direction?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Tình trạng sổ phải là chuỗi' })
+  @IsIn(['co-so-hong', 'cho-so'], { message: 'Tình trạng sổ không hợp lệ' })
+  legalStatus?: string;
 
   @IsOptional()
   @IsIn(['active', 'inactive'], { message: 'Trạng thái không hợp lệ' })

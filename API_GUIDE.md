@@ -194,6 +194,8 @@ DELETE /api/users/:id
 
 ## 🏠 Rent Posts API
 
+> **Lưu ý**: API đã được cập nhật để hỗ trợ 3 loại hình bất động sản: Phòng trọ, Chung cư, Nhà nguyên căn với cấu trúc dữ liệu linh hoạt.
+
 ### 📋 Get All Rent Posts
 ```http
 GET /api/rent-posts
@@ -201,92 +203,323 @@ GET /api/rent-posts
 
 **Query Parameters:**
 - `userId` (optional): Filter by user ID
+- `category` (optional): Filter by category (`phong-tro`, `chung-cu`, `nha-nguyen-can`)
 - `page` (optional): Page number for pagination
 - `limit` (optional): Items per page
 
-**Example:**
+**Examples:**
 ```http
-GET /api/rent-posts?userId=1&page=1&limit=10
+# Lấy tất cả bài đăng
+GET /api/rent-posts
+
+# Lấy bài đăng theo user
+GET /api/rent-posts?userId=1
+
+# Lấy bài đăng theo loại
+GET /api/rent-posts?category=phong-tro
+
+# Lấy bài đăng phòng trọ của user
+GET /api/rent-posts?userId=1&category=phong-tro
 ```
 
 **Response:**
 ```json
 [
   {
-    "postId": 1,
+    "rentPostId": 1,
     "userId": 1,
-    "title": "Phòng trọ đẹp Quận 1",
-    "description": "Phòng sạch sẽ, thoáng mát, gần trung tâm",
-    "images": ["https://example.com/image1.jpg"],
+    "title": "Phòng trọ đẹp gần trường đại học",
+    "description": "Phòng trọ rộng rãi, thoáng mát, có đầy đủ tiện nghi cơ bản",
+    "images": ["phong-tro-1.jpg", "phong-tro-2.jpg"],
+    "videos": ["phong-tro-video.mp4"],
     "address": {
-      "street": "123 Nguyễn Huệ",
-      "ward": "Bến Nghé",
-      "district": "Quận 1",
-      "city": "TP.HCM"
+      "street": "Đường Nguyễn Văn Cừ",
+      "ward": "Phường 4",
+      "district": "Quận 5",
+      "city": "TP.HCM",
+      "houseNumber": "123/45",
+      "showHouseNumber": true
     },
-    "price": 3000000,
-    "area": 25,
-    "category": "phòng trọ",
-    "furniture": ["giường", "tủ lạnh"],
-    "utilities": ["điện", "nước", "internet"],
-    "status": "available",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "category": "phong-tro",
+    "basicInfo": {
+      "area": 25,
+      "price": 3000000,
+      "deposit": 3000000,
+      "furniture": "co-ban",
+      "bedrooms": 0,
+      "bathrooms": 0,
+      "direction": "",
+      "legalStatus": ""
+    },
+    "status": "active",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
   }
 ]
 ```
 
-### ➕ Create Rent Post
+### ➕ Create Rent Posts
+
+#### Create Phòng Trọ Post
 ```http
-POST /api/rent-posts
+POST /api/rent-posts/phong-tro
+Authorization: Bearer <token>
 ```
 
 **Request Body:**
 ```json
 {
-  "userId": 1,
-  "title": "Phòng trọ đẹp Quận 1",
-  "description": "Phòng sạch sẽ, thoáng mát, gần trung tâm",
-  "images": ["https://example.com/image1.jpg"],
+  "userId": "1",
+  "title": "Phòng trọ đẹp gần trường đại học",
+  "description": "Phòng trọ rộng rãi, thoáng mát, có đầy đủ tiện nghi cơ bản",
+  "images": ["phong-tro-1.jpg", "phong-tro-2.jpg"],
+  "videos": ["phong-tro-video.mp4"],
   "address": {
-    "street": "123 Nguyễn Huệ",
-    "ward": "Bến Nghé",
-    "district": "Quận 1",
-    "city": "TP.HCM"
+    "street": "Đường Nguyễn Văn Cừ",
+    "ward": "Phường 4",
+    "district": "Quận 5",
+    "city": "TP.HCM",
+    "houseNumber": "123/45",
+    "showHouseNumber": true
   },
-  "price": 3000000,
   "area": 25,
-  "category": "phòng trọ",
-  "furniture": ["giường", "tủ lạnh"],
-  "utilities": ["điện", "nước", "internet"]
+  "price": 3000000,
+  "deposit": 3000000,
+  "furniture": "co-ban",
+  "status": "active"
 }
 ```
 
-**Validation Rules:**
-- `userId`: Required, number
-- `title`: Required, string, max 200 chars
-- `description`: Required, string, max 1000 chars
-- `price`: Required, number, min 0
-- `area`: Required, number, min 0
-- `category`: Required, enum: ["nhà nguyên căn", "phòng trọ", "chung cư"]
-- `address`: Required object with street, ward, district, city
+#### Create Chung Cư Post
+```http
+POST /api/rent-posts/chung-cu
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "userId": "1",
+  "title": "Căn hộ chung cư cao cấp view sông",
+  "description": "Căn hộ 2PN/2WC, view sông đẹp, nội thất đầy đủ, an ninh 24/7",
+  "images": ["chung-cu-1.jpg", "chung-cu-2.jpg"],
+  "videos": ["chung-cu-video.mp4"],
+  "address": {
+    "street": "Đường Võ Văn Kiệt",
+    "ward": "Phường 1",
+    "district": "Quận 1",
+    "city": "TP.HCM",
+    "houseNumber": "456",
+    "showHouseNumber": true
+  },
+  "buildingInfo": {
+    "buildingName": "Chung cư Diamond Plaza",
+    "blockOrTower": "Tower A",
+    "floorNumber": 15,
+    "unitCode": "A15-03"
+  },
+  "area": 60,
+  "price": 8000000,
+  "deposit": 8000000,
+  "furniture": "full",
+  "bedrooms": 2,
+  "bathrooms": 2,
+  "direction": "nam",
+  "propertyType": "chung-cu",
+  "legalStatus": "co-so-hong",
+  "status": "active"
+}
+```
+
+#### Create Nhà Nguyên Căn Post
+```http
+POST /api/rent-posts/nha-nguyen-can
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "userId": "1",
+  "title": "Nhà phố 3 tầng đẹp, hẻm xe hơi",
+  "description": "Nhà phố mới xây, thiết kế hiện đại, 4PN/3WC, có sân thượng",
+  "images": ["nha-pho-1.jpg", "nha-pho-2.jpg"],
+  "videos": ["nha-pho-video.mp4"],
+  "address": {
+    "street": "Đường Lê Văn Việt",
+    "ward": "Phường Hiệp Phú",
+    "district": "Quận 9",
+    "city": "TP.HCM",
+    "houseNumber": "789",
+    "showHouseNumber": true
+  },
+  "propertyInfo": {
+    "khuLo": "Khu A",
+    "unitCode": "A-001",
+    "propertyType": "nha-pho",
+    "totalFloors": 3,
+    "features": ["Hẻm xe hơi", "Nhà nở hậu"]
+  },
+  "landArea": 100,
+  "usableArea": 200,
+  "width": 5,
+  "length": 20,
+  "price": 15000000,
+  "deposit": 15000000,
+  "furniture": "full",
+  "bedrooms": 4,
+  "bathrooms": 3,
+  "direction": "dong",
+  "legalStatus": "co-so-hong",
+  "status": "active"
+}
+```
 
 ### 👁️ Get Rent Post by ID
 ```http
 GET /api/rent-posts/:id
 ```
 
+**Response:**
+```json
+{
+  "rentPostId": 1,
+  "userId": 1,
+  "title": "Phòng trọ đẹp gần trường đại học",
+  "description": "Phòng trọ rộng rãi, thoáng mát, có đầy đủ tiện nghi cơ bản",
+  "images": ["phong-tro-1.jpg", "phong-tro-2.jpg"],
+  "videos": ["phong-tro-video.mp4"],
+  "address": {
+    "street": "Đường Nguyễn Văn Cừ",
+    "ward": "Phường 4",
+    "district": "Quận 5",
+    "city": "TP.HCM",
+    "houseNumber": "123/45",
+    "showHouseNumber": true
+  },
+  "category": "phong-tro",
+  "basicInfo": {
+    "area": 25,
+    "price": 3000000,
+    "deposit": 3000000,
+    "furniture": "co-ban",
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "direction": "",
+    "legalStatus": ""
+  },
+  "status": "active",
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
 ### ✏️ Update Rent Post
 ```http
 PUT /api/rent-posts/:id
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "title": "Tiêu đề đã cập nhật",
+  "basicInfo": {
+    "area": 30,
+    "price": 4000000,
+    "furniture": "full"
+  }
+}
 ```
 
 ### 🗑️ Delete Rent Post
 ```http
 DELETE /api/rent-posts/:id
+Authorization: Bearer <token>
 ```
 
----
+**Response:**
+```json
+{
+  "message": "Xóa bài đăng thuê phòng thành công"
+}
+```
+
+### 📊 Data Structure
+
+> **⚠️ Lưu ý quan trọng**: Tất cả thông tin về giá thuê, diện tích, nội thất, v.v. đều nằm trong object `basicInfo`, không phải ở root level. Khi update, phải update trong `basicInfo`.
+
+#### RentPost (Cấu trúc chính)
+```typescript
+{
+  rentPostId: number;           // ID bài đăng
+  userId: number;               // ID người dùng
+  title: string;                // Tiêu đề
+  description: string;          // Mô tả
+  images: string[];             // Danh sách hình ảnh
+  videos: string[];             // Danh sách video
+  address: Address;             // Địa chỉ
+  category: string;             // Loại: 'phong-tro', 'chung-cu', 'nha-nguyen-can'
+  basicInfo: BasicInfo;         // Thông tin cơ bản (BẮT BUỘC)
+  chungCuInfo?: ChungCuInfo;    // Thông tin chung cư (tùy chọn)
+  nhaNguyenCanInfo?: NhaNguyenCanInfo; // Thông tin nhà nguyên căn (tùy chọn)
+  status: string;               // Trạng thái: 'active', 'inactive'
+  createdAt: Date;              // Ngày tạo
+  updatedAt: Date;              // Ngày cập nhật
+}
+```
+
+#### BasicInfo (Thông tin cơ bản - BẮT BUỘC)
+```typescript
+{
+  area: number;                 // Diện tích (m²) - BẮT BUỘC
+  price: number;                // Giá thuê (đ/tháng) - BẮT BUỘC
+  deposit?: number;             // Số tiền cọc (đ)
+  furniture?: string;           // Tình trạng nội thất: 'full', 'co-ban', 'trong'
+  bedrooms?: number;            // Số phòng ngủ
+  bathrooms?: number;           // Số phòng vệ sinh
+  direction?: string;           // Hướng: 'dong', 'tay', 'nam', 'bac', etc.
+  legalStatus?: string;         // Tình trạng sổ: 'co-so-hong', 'cho-so'
+}
+```
+
+#### Address (Địa chỉ)
+```typescript
+{
+  street: string;               // Đường - BẮT BUỘC
+  ward: string;                 // Phường - BẮT BUỘC
+  district: string;             // Quận/Huyện - BẮT BUỘC
+  city: string;                 // Thành phố - BẮT BUỘC
+  houseNumber?: string;         // Số nhà
+  showHouseNumber?: boolean;    // Hiển thị số nhà
+}
+```
+
+#### ChungCuInfo (Thông tin chung cư)
+```typescript
+{
+  buildingName?: string;        // Tên tòa nhà/dự án
+  blockOrTower?: string;        // Block/Tháp
+  floorNumber?: number;         // Tầng số
+  unitCode?: string;            // Mã căn
+  propertyType?: string;        // Loại hình: 'chung-cu', 'can-ho-dv', 'officetel', 'studio'
+}
+```
+
+#### NhaNguyenCanInfo (Thông tin nhà nguyên căn)
+```typescript
+{
+  khuLo?: string;               // Tên khu/lô
+  unitCode?: string;            // Mã căn
+  propertyType?: string;        // Loại hình: 'nha-pho', 'biet-thu', 'nha-hem', 'nha-cap4'
+  totalFloors?: number;         // Tổng số tầng
+  landArea?: number;            // Diện tích đất (m²)
+  usableArea?: number;          // Diện tích sử dụng (m²)
+  width?: number;               // Chiều ngang (m)
+  length?: number;              // Chiều dài (m)
+  features?: string[];          // Đặc điểm nhà/đất
+}
+```
 
 ## 🤝 Roommate Posts API
 
@@ -484,10 +717,53 @@ class ApiService {
     return this.request(`/rent-posts${queryString ? `?${queryString}` : ''}`);
   }
 
+  async getRentPostsByCategory(category, userId = null) {
+    const queryString = userId ? `?userId=${userId}` : '';
+    return this.request(`/rent-posts/${category}${queryString}`);
+  }
+
   async createRentPost(data) {
     return this.request('/rent-posts', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async createPhongTro(data) {
+    return this.request('/rent-posts/phong-tro', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createChungCu(data) {
+    return this.request('/rent-posts/chung-cu', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createNhaNguyenCan(data) {
+    return this.request('/rent-posts/nha-nguyen-can', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getRentPostById(id) {
+    return this.request(`/rent-posts/${id}`);
+  }
+
+  async updateRentPost(id, data) {
+    return this.request(`/rent-posts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRentPost(id) {
+    return this.request(`/rent-posts/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -510,11 +786,78 @@ const api = new ApiService();
 // Login
 const { user } = await api.login('user@example.com', 'password123');
 
-// Get rent posts
-const rentPosts = await api.getRentPosts({ page: 1, limit: 10 });
+// Get all rent posts
+const allRentPosts = await api.getRentPosts({ page: 1, limit: 10 });
+
+// Get posts by category
+const phongTroPosts = await api.getRentPostsByCategory('phong-tro');
+const chungCuPosts = await api.getRentPostsByCategory('chung-cu');
+const nhaNguyenCanPosts = await api.getRentPostsByCategory('nha-nguyen-can');
+
+// Get user's posts by category
+const userPhongTroPosts = await api.getRentPostsByCategory('phong-tro', user.userId);
+
+// Create different types of posts
+const phongTroData = {
+  userId: user.userId.toString(),
+  title: "Phòng trọ đẹp gần trường đại học",
+  description: "Phòng trọ rộng rãi, thoáng mát",
+  address: {
+    street: "Đường ABC",
+    ward: "Phường XYZ",
+    district: "Quận 1",
+    city: "TP.HCM"
+  },
+  area: 25,
+  price: 3000000,
+  furniture: "co-ban"
+};
+
+const chungCuData = {
+  userId: user.userId.toString(),
+  title: "Căn hộ chung cư cao cấp",
+  description: "Căn hộ 2PN/2WC, view đẹp",
+  address: {
+    street: "Đường DEF",
+    ward: "Phường GHI",
+    district: "Quận 2",
+    city: "TP.HCM"
+  },
+  buildingInfo: {
+    buildingName: "Chung cư ABC",
+    blockOrTower: "Block A",
+    floorNumber: 15,
+    unitCode: "A15-03"
+  },
+  area: 60,
+  price: 8000000,
+  bedrooms: 2,
+  bathrooms: 2,
+  furniture: "full",
+  propertyType: "chung-cu"
+};
+
+// Create posts
+const phongTroPost = await api.createPhongTro(phongTroData);
+const chungCuPost = await api.createChungCu(chungCuData);
+
+// Get specific post
+const post = await api.getRentPostById(phongTroPost.rentPostId);
+
+// Update post
+await api.updateRentPost(phongTroPost.rentPostId, {
+  title: "Phòng trọ đã cập nhật",
+  basicInfo: {
+    price: 3500000,
+    area: 30
+  }
+});
+
+// Delete post
+await api.deleteRentPost(phongTroPost.rentPostId);
 
 // Add to favourites
-await api.addFavourite(1, 'rent', 1);
+await api.addFavourite(user.userId, 'rent', phongTroPost.rentPostId);
 ```
 
 ### Vue.js Example
@@ -642,25 +985,140 @@ export interface User {
 }
 
 export interface RentPost {
-  postId: number;
+  rentPostId: number;
   userId: number;
   title: string;
   description: string;
   images: string[];
+  videos: string[];
   address: {
     street: string;
     ward: string;
     district: string;
     city: string;
+    houseNumber?: string;
+    showHouseNumber?: boolean;
   };
-  price: number;
-  area: number;
-  category: 'nhà nguyên căn' | 'phòng trọ' | 'chung cư';
-  furniture: string[];
-  utilities: string[];
-  status: 'available' | 'rented' | 'unavailable';
+  category: 'phong-tro' | 'chung-cu' | 'nha-nguyen-can';
+  basicInfo: {
+    area: number;
+    price: number;
+    deposit?: number;
+    furniture?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    direction?: string;
+    legalStatus?: string;
+  };
+  chungCuInfo?: {
+    buildingName?: string;
+    blockOrTower?: string;
+    floorNumber?: number;
+    unitCode?: string;
+    propertyType?: string;
+  };
+  nhaNguyenCanInfo?: {
+    khuLo?: string;
+    unitCode?: string;
+    propertyType?: string;
+    totalFloors?: number;
+    landArea?: number;
+    usableArea?: number;
+    width?: number;
+    length?: number;
+    features?: string[];
+  };
+  status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreatePhongTroDto {
+  userId: string;
+  title: string;
+  description: string;
+  images?: string[];
+  videos?: string[];
+  address: {
+    street: string;
+    ward: string;
+    district: string;
+    city: string;
+    houseNumber?: string;
+    showHouseNumber?: boolean;
+  };
+  area: number;
+  price: number;
+  deposit?: number;
+  furniture?: string;
+  status?: string;
+}
+
+export interface CreateChungCuDto {
+  userId: string;
+  title: string;
+  description: string;
+  images?: string[];
+  videos?: string[];
+  address: {
+    street: string;
+    ward: string;
+    district: string;
+    city: string;
+    houseNumber?: string;
+    showHouseNumber?: boolean;
+  };
+  buildingInfo?: {
+    buildingName?: string;
+    blockOrTower?: string;
+    floorNumber?: number;
+    unitCode?: string;
+  };
+  area: number;
+  price: number;
+  deposit?: number;
+  furniture?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  direction?: string;
+  propertyType?: string;
+  legalStatus?: string;
+  status?: string;
+}
+
+export interface CreateNhaNguyenCanDto {
+  userId: string;
+  title: string;
+  description: string;
+  images?: string[];
+  videos?: string[];
+  address: {
+    street: string;
+    ward: string;
+    district: string;
+    city: string;
+    houseNumber?: string;
+    showHouseNumber?: boolean;
+  };
+  propertyInfo?: {
+    khuLo?: string;
+    unitCode?: string;
+    propertyType?: string;
+    totalFloors?: number;
+    features?: string[];
+  };
+  landArea: number;
+  usableArea?: number;
+  width?: number;
+  length?: number;
+  price: number;
+  deposit?: number;
+  furniture?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  direction?: string;
+  legalStatus?: string;
+  status?: string;
 }
 
 export interface ApiResponse<T> {
