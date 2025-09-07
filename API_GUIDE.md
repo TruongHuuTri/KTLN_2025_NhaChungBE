@@ -469,6 +469,74 @@ Authorization: Bearer <token>
 }
 ```
 
+### 🖼️ Upload file S3 (Presigned URL)
+
+> Quy trình: BE cấp presigned URL → FE/Postman PUT file lên S3 → dùng `publicUrl` lưu vào bài đăng.
+
+1) Xin URL upload (POST)
+```http
+POST /api/files/presign
+```
+
+Body (JSON):
+```json
+{
+  "userId": "1",
+  "fileName": "hinh-anh.jpg",
+  "contentType": "image/jpeg",
+  "folder": "images" // hoặc "videos"
+}
+```
+
+Response (200):
+```json
+{
+  "key": "uploads/1/images/1717920000000-uuid.jpg",
+  "uploadUrl": "https://s3.amazonaws.com/...signed-url...",
+  "publicUrl": "https://<your-cdn-or-s3-domain>/uploads/1/images/1717920000000-uuid.jpg"
+}
+```
+
+2) Tải file lên S3 (PUT)
+```bash
+curl -X PUT "<uploadUrl>" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @/path/to/hinh-anh.jpg
+```
+
+Kết quả mong đợi: HTTP 200 OK.
+
+3) Dùng `publicUrl` trong bài đăng
+- Với ảnh: thêm vào mảng `images`
+- Với video: thêm vào mảng `videos`
+
+Ví dụ tạo bài đăng phòng trọ sau khi upload xong ảnh:
+```json
+{
+  "userId": "1",
+  "title": "Phòng trọ gần trường",
+  "description": "Phòng thoáng mát",
+  "images": [
+    "https://<domain>/uploads/1/images/1717920000000-uuid.jpg"
+  ],
+  "videos": [],
+  "address": {
+    "street": "Đường ABC",
+    "ward": "Phường XYZ",
+    "district": "Quận 1",
+    "city": "TP.HCM"
+  },
+  "area": 25,
+  "price": 3000000,
+  "furniture": "co-ban"
+}
+```
+
+Lưu ý:
+- `folder` nhận `images` hoặc `videos` để phân loại.
+- Phải truyền đúng `Content-Type` khi PUT.
+- Mở `publicUrl` trên trình duyệt thấy ảnh/vid hiển thị là ✅ thành công.
+
 #### BasicInfo (Thông tin cơ bản - BẮT BUỘC)
 ```typescript
 {
