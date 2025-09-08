@@ -45,7 +45,6 @@ export class VerificationsController {
   @Get('admin')
   @UseGuards(AdminJwtGuard)
   async findAll(
-    @Request() req: any,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -55,7 +54,6 @@ export class VerificationsController {
 
     return this.verificationsService.findAll(status, pageNum, limitNum);
   }
-
 
   @Get('user/:userId')
   @UseGuards(AdminJwtGuard)

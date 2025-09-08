@@ -191,12 +191,11 @@ export class VerificationsService {
     // Update user's verificationId using userId number
     await this.userModel.findOneAndUpdate(
       { userId: userId },
-      { verificationId: savedVerification._id }
+      { verificationId: savedVerification._id } // Lưu ObjectId để populate
     ).exec();
 
     return savedVerification;
   }
-
 
   private async getNextVerificationId(): Promise<number> {
     const lastVerification = await this.verificationModel.findOne().sort({ verificationId: -1 }).exec();

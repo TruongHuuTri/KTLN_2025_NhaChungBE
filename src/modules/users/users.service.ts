@@ -175,7 +175,7 @@ export class UsersService {
       .findOne({ userId: parseInt(userId) })
       .populate({
         path: 'verificationId',
-        select: 'status submittedAt reviewedAt adminNote'
+        select: 'verificationId status submittedAt reviewedAt adminNote'
       })
       .select('isVerified verificationId')
       .exec();
@@ -188,11 +188,6 @@ export class UsersService {
       isVerified: user.isVerified,
       verification: user.verificationId || null,
     };
-  }
-
-  async adminExists(): Promise<boolean> {
-    const admin = await this.userModel.findOne({ role: 'admin' }).exec();
-    return !!admin;
   }
 
   private async getNextUserId(): Promise<number> {

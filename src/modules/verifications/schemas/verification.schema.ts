@@ -1,11 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type VerificationDocument = Verification & Document;
 
-export interface VerificationWithId extends Verification {
-  _id: Types.ObjectId;
-}
 
 @Schema({ timestamps: true, collection: 'verifications' })
 export class Verification {
