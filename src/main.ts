@@ -15,6 +15,7 @@ async function bootstrap() {
     forbidNonWhitelisted: false, // Tạm thời tắt để debug
     transform: true,
     skipMissingProperties: false,
+    transformOptions: { enableImplicitConversion: true },
   }));
   
   // Set global prefix

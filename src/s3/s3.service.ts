@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import * as crypto from 'crypto';
+import { randomUUID } from 'crypto';
+import { UploadFolder } from './dto/presign.dto';
 
 @Injectable()
 export class S3Service {
-  private s3 = new S3Client({
+  private readonly s3 = new S3Client({
     region: process.env.AWS_REGION!,
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -13,20 +14,27 @@ export class S3Service {
     },
   });
 
-  private bucket = process.env.S3_BUCKET!;
-  private base = process.env.PUBLIC_BASE_URL!;
+  private readonly bucket = process.env.S3_BUCKET!;
+  private readonly base = process.env.PUBLIC_BASE_URL!; // S3/CloudFront origin, ví dụ: https://dxxxx.cloudfront.net
 
-  async presignPut(userId: string, fileName: string, contentType: string, folder: 'images' | 'videos') {
-    const ext = (fileName.split('.').pop() || 'bin').toLowerCase();
-    const key = `uploads/${userId}/${folder}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  async presignPut(
+    userId: number,
+    fileName: string,
+    contentType: string,
+    folder: UploadFolder,
+  ) {
+    const safe = fileName.replace(/[^\w.\-]/g, '_');
+    const ext = (safe.split('.').pop() || 'bin').toLowerCase();
+
+    const key = `uploads/${userId}/${folder}/${Date.now()}-${randomUUID()}.${ext}`;
 
     const cmd = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
-      ContentType: contentType,
+      ContentType: contentType || 'application/octet-stream',
     });
 
-    const uploadUrl = await getSignedUrl(this.s3, cmd, { expiresIn: 300 });
+    const uploadUrl = await getSignedUrl(this.s3, cmd, { expiresIn: 300 }); // 5'
     return {
       key,
       uploadUrl,
