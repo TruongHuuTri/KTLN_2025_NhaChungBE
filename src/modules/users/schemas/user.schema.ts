@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -25,6 +25,13 @@ export class User {
 
   @Prop({ default: 'user' })
   role: string;
+
+  // Verification fields
+  @Prop({ default: false })
+  isVerified: boolean;
+
+  @Prop({ type: Types.ObjectId, ref: 'Verification' })
+  verificationId?: Types.ObjectId;
 
   @Prop()
   createdAt: Date;

@@ -9,11 +9,14 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('users')
@@ -27,15 +30,29 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() loginDto: LoginDto) {
     return this.usersService.login(loginDto);
   }
 
+  @Post(':id/change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  changePassword(@Param('id') id: string, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.usersService.changePassword(parseInt(id), changePasswordDto);
+  }
+
   @Get()
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('me/verification')
+  @UseGuards(JwtAuthGuard)
+  async getMyVerification(@Request() req: any) {
+    return this.usersService.getVerificationStatus(req.user.sub);
   }
 
   @Get(':id')

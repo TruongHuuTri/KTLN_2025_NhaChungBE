@@ -18,10 +18,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.usersService.findOne(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    return user;
+    console.log('JWT Payload:', payload);
+    
+    // Return the payload directly since we need the sub field
+    return { 
+      userId: payload.sub, 
+      email: payload.email,
+      name: payload.name,
+      role: payload.role,
+      sub: payload.sub  // This is what req.user.sub will contain
+    };
   }
 }

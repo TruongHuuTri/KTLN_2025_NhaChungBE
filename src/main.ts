@@ -12,8 +12,9 @@ async function bootstrap() {
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
-    forbidNonWhitelisted: true,
+    forbidNonWhitelisted: false, // Tạm thời tắt để debug
     transform: true,
+    skipMissingProperties: false,
   }));
   
   // Set global prefix

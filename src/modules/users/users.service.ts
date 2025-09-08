@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -128,6 +129,70 @@ export class UsersService {
         phone: user.phone,
       }
     };
+  }
+
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto): Promise<{ message: string }> {
+    // Validate new password and confirm password match
+    if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
+      throw new BadRequestException('Mật khẩu mới và xác nhận mật khẩu không khớp');
+    }
+
+    // Find user
+    const user = await this.userModel.findOne({ userId }).exec();
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy user');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+    }
+
+    // Check if new password is different from current password
+    const isSamePassword = await bcrypt.compare(changePasswordDto.newPassword, user.password);
+    if (isSamePassword) {
+      throw new BadRequestException('Mật khẩu mới phải khác mật khẩu hiện tại');
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, saltRounds);
+
+    // Update password
+    await this.userModel.findOneAndUpdate(
+      { userId },
+      { password: hashedNewPassword },
+      { new: true }
+    ).exec();
+
+    return { message: 'Đổi mật khẩu thành công' };
+  }
+
+  async getVerificationStatus(userId: string): Promise<{ isVerified: boolean; verification: any }> {
+    // Find user by userId number instead of ObjectId
+    const user = await this.userModel
+      .findOne({ userId: parseInt(userId) })
+      .populate({
+        path: 'verificationId',
+        select: 'status submittedAt reviewedAt adminNote'
+      })
+      .select('isVerified verificationId')
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy user');
+    }
+
+    return {
+      isVerified: user.isVerified,
+      verification: user.verificationId || null,
+    };
+  }
+
+  async adminExists(): Promise<boolean> {
+    const admin = await this.userModel.findOne({ role: 'admin' }).exec();
+    return !!admin;
   }
 
   private async getNextUserId(): Promise<number> {

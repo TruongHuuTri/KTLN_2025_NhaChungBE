@@ -185,9 +185,427 @@ PUT /api/users/:id
 }
 ```
 
+### 🔐 Change Password
+```http
+POST /api/users/:id/change-password
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "currentPassword": "oldpassword123",
+  "newPassword": "newpassword456",
+  "confirmPassword": "newpassword456"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Đổi mật khẩu thành công"
+}
+```
+
+**Validation Rules:**
+- `currentPassword`: Required, must match current password
+- `newPassword`: Required, minimum 6 characters
+- `confirmPassword`: Required, must match newPassword
+- New password must be different from current password
+
+**Error Responses:**
+```json
+// Current password incorrect (401)
+{
+  "statusCode": 401,
+  "message": "Mật khẩu hiện tại không đúng",
+  "error": "Unauthorized"
+}
+
+// Passwords don't match (400)
+{
+  "statusCode": 400,
+  "message": "Mật khẩu mới và xác nhận mật khẩu không khớp",
+  "error": "Bad Request"
+}
+
+// Same password (400)
+{
+  "statusCode": 400,
+  "message": "Mật khẩu mới phải khác mật khẩu hiện tại",
+  "error": "Bad Request"
+}
+```
+
+
 ### 🗑️ Delete User
 ```http
 DELETE /api/users/:id
+```
+
+---
+
+## 👨‍💼 Admin API
+
+> **Hệ thống Admin riêng biệt hoàn toàn với User thường**
+
+### 🏗️ Admin System Overview
+
+**Collections:**
+- `admins` - Admin users (riêng biệt với `users`)
+- `users` - Regular users
+
+**Key Features:**
+- ✅ Admin tokens khác User tokens
+- ✅ Collections riêng biệt
+- ✅ Authentication riêng
+- ✅ Quản lý verification độc lập
+
+### ➕ Create Admin (One-time only)
+```http
+POST /api/admin/create
+```
+
+**Request Body:**
+```json
+{
+  "name": "Admin System",
+  "email": "admin@nhachung.com",
+  "password": "admin123456",
+  "phone": "0999999999"
+}
+```
+
+**Response (201):**
+```json
+{
+  "adminId": 1,
+  "name": "Admin System",
+  "email": "admin@nhachung.com",
+  "phone": "0999999999",
+  "role": "admin",
+  "isActive": true,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Notes:**
+- ⚠️ **CHỈ TẠO ĐƯỢC MỘT LẦN DUY NHẤT**
+- ❌ **KHÔNG CẦN** Authorization header
+- ✅ Role tự động được set thành `admin`
+- ❌ Nếu admin đã tồn tại: `400 Bad Request`
+
+### 🔑 Admin Login
+```http
+POST /api/admin/login
+```
+
+**Request Body:**
+```json
+{
+  "email": "admin@nhachung.com",
+  "password": "admin123456"
+}
+```
+
+**Response (200):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "admin": {
+    "adminId": 1,
+    "name": "Admin System",
+    "email": "admin@nhachung.com",
+    "role": "admin",
+    "avatar": null,
+    "phone": "0999999999",
+    "lastLogin": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+**Admin JWT Token khác User JWT Token:**
+
+### **User Token payload:**
+```json
+{
+  "email": "user@example.com",
+  "sub": "11",           // userId number  
+  "name": "User Name",
+  "role": "user",
+  "type": undefined      // Không có type
+}
+```
+
+### **Admin Token payload:**
+```json
+{
+  "email": "admin@nhachung.com", 
+  "sub": "1",            // adminId number
+  "name": "Admin System",
+  "role": "admin",
+  "type": "admin"        // Có type để phân biệt
+}
+```
+
+### 📋 Get All Admins
+```http
+GET /api/admin
+```
+
+**Response:**
+```json
+[
+  {
+    "adminId": 1,
+    "name": "Admin System",
+    "email": "admin@nhachung.com",
+    "role": "admin",
+    "isActive": true,
+    "lastLogin": "2024-01-01T12:00:00.000Z",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+### 🔒 AdminJwtGuard Security
+
+**AdminJwtGuard kiểm tra:**
+1. ✅ Token hợp lệ và chưa hết hạn
+2. ✅ `payload.role === 'admin'`
+3. ✅ `payload.type === 'admin'`
+
+**User không thể truy cập Admin APIs:**
+- User token không có `type: "admin"`
+- AdminJwtGuard sẽ từ chối request
+
+---
+
+## ✅ Verification API
+
+### 📋 Submit Verification
+```http
+POST /api/verifications
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+{
+  "idNumber": "123456789012",
+  "fullName": "Nguyễn Văn A",
+  "dateOfBirth": "1990-01-01",
+  "gender": "male",
+  "issueDate": "2015-01-01",
+  "issuePlace": "Cục Cảnh sát quản lý hành chính về trật tự xã hội"
+}
+```
+
+> **Lưu ý bảo mật:** Ảnh CCCD không được upload lên server. Frontend sẽ xử lý OCR local để extract thông tin rồi chỉ gửi dữ liệu đã extract.
+
+**Response (201):**
+```json
+{
+  "message": "Nộp hồ sơ xác thực thành công",
+  "verification": {
+    "verificationId": 1,
+    "userId": 11,
+    "status": "pending",
+    "submittedAt": "2024-01-15T10:30:00Z",
+    "idNumber": "123456789012",
+    "fullName": "Nguyễn Văn A"
+  }
+}
+```
+
+**Validation Rules:**
+- `idNumber`: 9 hoặc 12 chữ số, unique per user
+- `fullName`: Ít nhất 2 từ
+- `dateOfBirth`: Phải từ 16 tuổi trở lên
+- `gender`: "male" hoặc "female"
+- `issueDate`: Không được ở tương lai
+- `issuePlace`: Bắt buộc, nơi cấp CCCD
+
+**Security Note:**
+- ✅ Không lưu ảnh CCCD vào database
+- ✅ OCR processing trên client-side
+- ✅ Chỉ gửi thông tin đã extract lên server
+
+### 👤 Get My Verification Status
+```http
+GET /api/users/me/verification
+Authorization: Bearer <token>
+```
+
+**Response (200) - Có verification:**
+```json
+{
+  "isVerified": false,
+  "verification": {
+    "verificationId": 1,
+    "status": "pending",
+    "submittedAt": "2024-01-15T10:30:00Z",
+    "reviewedAt": null,
+    "adminNote": null
+  }
+}
+```
+
+**Response (200) - Chưa nộp:**
+```json
+{
+  "isVerified": false,
+  "verification": null
+}
+```
+
+### 🔧 Admin: Get All Verifications
+```http
+GET /api/verifications/admin?status=pending&page=1&limit=10
+Authorization: Bearer <admin-token>
+```
+
+> **⚠️ Lưu ý:** Chỉ accept Admin token (có `type: "admin"`), User token sẽ bị từ chối.
+
+**Query Parameters:**
+- `status`: pending | approved | rejected (optional)
+- `page`: số trang (default: 1)
+- `limit`: số record/trang (default: 10)
+
+**Response (200):**
+```json
+{
+  "verifications": [
+    {
+      "verificationId": 1,
+      "userId": 11,
+      "status": "pending",
+      "idNumber": "123456789012",
+      "fullName": "Nguyễn Văn A",
+      "dateOfBirth": "1990-01-01T00:00:00Z",
+      "gender": "male",
+      "issueDate": "2015-01-01T00:00:00Z",
+      "issuePlace": "Cục Cảnh sát QLHC về TTXH",
+      "submittedAt": "2024-01-15T10:30:00Z",
+      "reviewedAt": null,
+      "reviewedBy": null,
+      "adminNote": null
+    }
+  ],
+  "total": 25,
+  "page": 1,
+  "totalPages": 3
+}
+```
+
+> **Lưu ý:** `userId` là number (11), không phải ObjectId populate.
+
+### ⚖️ Admin: Approve/Reject Verification
+```http
+PUT /api/verifications/admin/:verificationId
+Authorization: Bearer <admin-token>
+```
+
+> **⚠️ Lưu ý:** 
+> - Chỉ accept Admin token (có `type: "admin"`), User token sẽ bị từ chối.
+> - `:verificationId` là numeric ID (1, 2, 3...), không phải MongoDB `_id`
+
+**Request Body (Approve):**
+```json
+{
+  "status": "approved",
+  "adminNote": "Hồ sơ hợp lệ"
+}
+```
+
+**Request Body (Reject):**
+```json
+{
+  "status": "rejected",
+  "adminNote": "Thông tin xác thực không đúng"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Cập nhật trạng thái xác thực thành công",
+  "verification": {
+    "verificationId": 1,
+    "status": "approved",
+    "reviewedAt": "2024-01-15T15:30:00Z",
+    "reviewedBy": 1,
+    "adminNote": "Hồ sơ hợp lệ"
+  }
+}
+```
+
+### 👤 Admin: Get Verification by UserId
+```http
+GET /api/verifications/user/:userId
+Authorization: Bearer <admin-token>
+```
+
+**Example:**
+```http
+GET /api/verifications/user/11
+Authorization: Bearer <admin-token>
+```
+
+**Response (200) - Có verification:**
+```json
+{
+  "verificationId": 1,
+  "userId": 11,
+  "status": "pending",
+  "idNumber": "123456789012",
+  "fullName": "Nguyễn Văn A",
+  "dateOfBirth": "1990-01-01T00:00:00Z",
+  "gender": "male",
+  "issueDate": "2015-01-01T00:00:00Z",
+  "issuePlace": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
+  "submittedAt": "2024-01-15T10:30:00Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "adminNote": null
+}
+```
+
+**Response (404) - Không có verification:**
+```json
+{
+  "statusCode": 404,
+  "message": "Không tìm thấy hồ sơ xác thực",
+  "error": "Not Found"
+}
+```
+
+> **⚠️ Lưu ý:** Chỉ admin mới có thể truy cập endpoint này.
+
+**Error Responses:**
+```json
+// Already has pending verification (409)
+{
+  "statusCode": 409,
+  "message": "Đã có hồ sơ xác thực đang chờ duyệt",
+  "error": "Conflict"
+}
+
+// Already verified (409)
+{
+  "statusCode": 409,
+  "message": "Tài khoản đã được xác thực",
+  "error": "Conflict"
+}
+
+// Under 16 years old (400)
+{
+  "statusCode": 400,
+  "message": "Phải từ 16 tuổi trở lên",
+  "error": "Bad Request"
+}
 ```
 
 ---
@@ -775,8 +1193,41 @@ class ApiService {
     return result;
   }
 
+  // Admin
+  async adminLogin(email, password) {
+    const result = await this.request('/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    this.token = result.access_token;
+    localStorage.setItem('adminToken', this.token);
+    return result;
+  }
+
+  async createAdmin(adminData) {
+    return this.request('/admin/create', {
+      method: 'POST',
+      body: JSON.stringify(adminData),
+    });
+  }
+
+  async getAdmins() {
+    return this.request('/admin');
+  }
+
   async getUsers() {
     return this.request('/users');
+  }
+
+  async changePassword(userId, currentPassword, newPassword, confirmPassword) {
+    return this.request(`/users/${userId}/change-password`, {
+      method: 'POST',
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+        confirmPassword
+      }),
+    });
   }
 
   // Rent Posts
@@ -835,6 +1286,36 @@ class ApiService {
     });
   }
 
+  // Verifications
+  async submitVerification(verificationData) {
+    return this.request('/verifications', {
+      method: 'POST',
+      body: JSON.stringify(verificationData),
+    });
+  }
+
+  async getMyVerificationStatus() {
+    return this.request('/users/me/verification');
+  }
+
+  // Admin Verifications (require admin token)
+  async getVerificationsAdmin(status = null, page = 1, limit = 10) {
+    const params = new URLSearchParams({ page, limit });
+    if (status) params.append('status', status);
+    return this.request(`/verifications/admin?${params.toString()}`);
+  }
+
+  async updateVerificationStatus(verificationId, status, adminNote = '') {
+    return this.request(`/verifications/admin/${verificationId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, adminNote }),
+    });
+  }
+
+  async getVerificationByUserId(userId) {
+    return this.request(`/verifications/user/${userId}`);
+  }
+
   // Favourites
   async getFavourites(userId) {
     return this.request(`/favourites?userId=${userId}`);
@@ -851,8 +1332,19 @@ class ApiService {
 // Usage
 const api = new ApiService();
 
-// Login
+// User Login
 const { user } = await api.login('user@example.com', 'password123');
+
+// Admin Login  
+const { admin } = await api.adminLogin('admin@nhachung.com', 'admin123456');
+
+// Change password
+await api.changePassword(
+  user.userId, 
+  'oldpassword123', 
+  'newpassword456', 
+  'newpassword456'
+);
 
 // Get all rent posts
 const allRentPosts = await api.getRentPosts({ page: 1, limit: 10 });
@@ -926,6 +1418,58 @@ await api.deleteRentPost(phongTroPost.rentPostId);
 
 // Add to favourites
 await api.addFavourite(user.userId, 'rent', phongTroPost.rentPostId);
+
+// === ADMIN WORKFLOWS ===
+
+// Create first admin (one-time)
+const firstAdmin = await api.createAdmin({
+  name: "Admin System",
+  email: "admin@nhachung.com", 
+  password: "admin123456",
+  phone: "0999999999"
+});
+
+// Admin login and get token
+const { admin } = await api.adminLogin('admin@nhachung.com', 'admin123456');
+
+// Get all verifications (admin only)
+const verifications = await api.getVerificationsAdmin('pending', 1, 10);
+
+// Get verification by userId (admin only)
+const userVerification = await api.getVerificationByUserId(11);
+
+// Approve a verification (admin only) - dùng verificationId từ userVerification
+await api.updateVerificationStatus(
+  userVerification.verificationId,  // Numeric ID: 1, 2, 3...
+  'approved', 
+  'Hồ sơ hợp lệ'
+);
+
+// Reject a verification (admin only)
+await api.updateVerificationStatus(
+  2,  // verificationId 
+  'rejected', 
+  'Ảnh không rõ, vui lòng chụp lại'
+);
+
+// === USER VERIFICATION WORKFLOW ===
+
+// User submit verification
+const verificationData = {
+  idNumber: "123456789012",
+  fullName: "Nguyễn Văn A",
+  dateOfBirth: "1990-01-01",
+  gender: "male", 
+  issueDate: "2015-01-01",
+  issuePlace: "Cục Cảnh sát quản lý hành chính về trật tự xã hội"
+};
+
+await api.submitVerification(verificationData);
+
+// Check my verification status
+const myStatus = await api.getMyVerificationStatus();
+console.log('Verified:', myStatus.isVerified);
+console.log('Status:', myStatus.verification?.status);
 ```
 
 ### Vue.js Example
@@ -1196,7 +1740,161 @@ export interface ApiResponse<T> {
 }
 ```
 
-### 3. Pagination
+### 3. Change Password Component (React)
+```jsx
+import React, { useState } from 'react';
+import { useApi } from './hooks/useApi';
+
+const ChangePasswordForm = ({ userId, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const api = useApi();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.currentPassword) {
+      newErrors.currentPassword = 'Mật khẩu hiện tại không được để trống';
+    }
+    
+    if (!formData.newPassword) {
+      newErrors.newPassword = 'Mật khẩu mới không được để trống';
+    } else if (formData.newPassword.length < 6) {
+      newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Xác nhận mật khẩu không được để trống';
+    } else if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Mật khẩu mới và xác nhận mật khẩu không khớp';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    try {
+      await api.changePassword(
+        userId,
+        formData.currentPassword,
+        formData.newPassword,
+        formData.confirmPassword
+      );
+      
+      // Success
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      onSuccess?.('Đổi mật khẩu thành công!');
+      
+    } catch (error) {
+      if (error.status === 401) {
+        setErrors({ currentPassword: 'Mật khẩu hiện tại không đúng' });
+      } else if (error.status === 400) {
+        if (error.message.includes('không khớp')) {
+          setErrors({ confirmPassword: error.message });
+        } else if (error.message.includes('khác mật khẩu hiện tại')) {
+          setErrors({ newPassword: error.message });
+        } else {
+          setErrors({ general: error.message });
+        }
+      } else {
+        setErrors({ general: 'Có lỗi xảy ra, vui lòng thử lại' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="change-password-form">
+      <h3>Đổi mật khẩu</h3>
+      
+      {errors.general && (
+        <div className="error-message">{errors.general}</div>
+      )}
+      
+      <div className="form-group">
+        <label>Mật khẩu hiện tại:</label>
+        <input
+          type="password"
+          name="currentPassword"
+          value={formData.currentPassword}
+          onChange={handleChange}
+          className={errors.currentPassword ? 'error' : ''}
+        />
+        {errors.currentPassword && (
+          <span className="error-text">{errors.currentPassword}</span>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <label>Mật khẩu mới:</label>
+        <input
+          type="password"
+          name="newPassword"
+          value={formData.newPassword}
+          onChange={handleChange}
+          className={errors.newPassword ? 'error' : ''}
+        />
+        {errors.newPassword && (
+          <span className="error-text">{errors.newPassword}</span>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <label>Xác nhận mật khẩu mới:</label>
+        <input
+          type="password"
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          className={errors.confirmPassword ? 'error' : ''}
+        />
+        {errors.confirmPassword && (
+          <span className="error-text">{errors.confirmPassword}</span>
+        )}
+      </div>
+      
+      <button type="submit" disabled={loading}>
+        {loading ? 'Đang xử lý...' : 'Đổi mật khẩu'}
+      </button>
+    </form>
+  );
+};
+
+export default ChangePasswordForm;
+```
+
+### 4. Pagination
 ```javascript
 // Backend pagination
 const getRentPosts = async (page = 1, limit = 10) => {
