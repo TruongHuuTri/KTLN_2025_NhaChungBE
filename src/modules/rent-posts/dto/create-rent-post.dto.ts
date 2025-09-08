@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional, IsIn, ValidateNested, IsNumberString, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { RENT_POST_STATUSES } from '../schemas/rent-post.schema';
 
 export class CreateAddressDto {
   @IsNotEmpty({ message: 'Đường không được để trống' })
@@ -170,6 +171,6 @@ export class CreateRentPostDto {
   nhaNguyenCanInfo?: CreateNhaNguyenCanInfoDto;
 
   @IsOptional()
-  @IsIn(['active', 'inactive'], { message: 'Trạng thái không hợp lệ' })
-  status?: string;
+  @IsIn(RENT_POST_STATUSES as any, { message: 'Trạng thái không hợp lệ' })
+  status?: string; // hoặc RentPostStatus
 }

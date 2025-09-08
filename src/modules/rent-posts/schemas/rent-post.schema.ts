@@ -2,6 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type RentPostDocument = RentPost & Document;
+export const RENT_POST_STATUSES = ['pending', 'active', 'inactive', 'rejected'] as const;
+export type RentPostStatus = typeof RENT_POST_STATUSES[number];
 
 @Schema({ _id: false })
 export class Address {
@@ -138,8 +140,8 @@ export class RentPost {
   @Prop({ type: NhaNguyenCanInfo })
   nhaNguyenCanInfo?: NhaNguyenCanInfo;
 
-  @Prop({ default: 'active' })
-  status: string;
+  @Prop({ type: String, enum: RENT_POST_STATUSES, default: 'pending' })
+  status: RentPostStatus;
 
   @Prop()
   createdAt: Date;
