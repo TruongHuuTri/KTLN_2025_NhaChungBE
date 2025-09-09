@@ -1093,9 +1093,54 @@ POST /api/roommate-posts
 - `title`: Required, string, max 200 chars
 - `description`: Required, string, max 1000 chars
 - `personalInfo.age`: Required, number, min 18, max 100
-- `personalInfo.gender`: Required, enum: ["male", "female", "other"]
+- `personalInfo.gender`: Required, enum: ["male", "female"]
 - `requirements.ageRange`: Required, array of 2 numbers
 - `requirements.gender`: Required, enum: ["male", "female", "any"]
+
+### ✏️ Update Roommate Post
+```http
+PUT /api/roommate-posts/:id
+Authorization: Bearer <token>
+```
+
+**Request Body (partial update) — trường hợp có cập nhật personalInfo:**
+```json
+{
+  "title": "Cập nhật tiêu đề bài tìm bạn ở ghép",
+  "images": [
+    "https://cdn.domain.com/uploads/1/images/new-image-1.jpg"
+  ],
+  "personalInfo": {
+    "age": 26,
+    "gender": "male",
+    "occupation": "Designer",
+    "hobbies": ["đọc sách", "chạy bộ"],
+    "habits": ["ngủ sớm"]
+  },
+  "requirements": {
+    "ageRange": [22, 30],
+    "gender": "any",
+    "traits": ["gọn gàng"],
+    "maxPrice": 2500000
+  }
+}
+```
+
+**Request Body (partial update) — không cập nhật personalInfo:**
+```json
+{
+  "title": "Cập nhật tiêu đề bài tìm bạn ở ghép",
+  "images": [
+    "https://cdn.domain.com/uploads/1/images/new-image-1.jpg"
+  ]
+}
+```
+
+Lưu ý:
+- Chỉ cần gửi các field muốn thay đổi (partial update).
+- Nếu gửi `personalInfo` thì bắt buộc có đủ `age` (number 18–100) và `gender` (`male`/`female`). Nếu không cập nhật phần này thì bỏ hẳn key `personalInfo`.
+- Ảnh nên là URL public (có thể lấy từ quy trình Presigned URL ở mục Upload file S3).
+- Các field được gửi sẽ được validate theo rule tương ứng như khi tạo mới.
 
 ---
 
