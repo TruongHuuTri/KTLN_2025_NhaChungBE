@@ -557,28 +557,22 @@ Authorization: Bearer <admin-token>
 **Response (200) - Có verification:**
 ```json
 {
+  "isVerified": false,
+  "verification": {
   "verificationId": 1,
-  "userId": 11,
   "status": "pending",
-  "idNumber": "123456789012",
-  "fullName": "Nguyễn Văn A",
-  "dateOfBirth": "1990-01-01T00:00:00Z",
-  "gender": "male",
-  "issueDate": "2015-01-01T00:00:00Z",
-  "issuePlace": "Cục Cảnh sát quản lý hành chính về trật tự xã hội",
   "submittedAt": "2024-01-15T10:30:00Z",
   "reviewedAt": null,
-  "reviewedBy": null,
   "adminNote": null
+  }
 }
 ```
 
 **Response (404) - Không có verification:**
 ```json
 {
-  "statusCode": 404,
-  "message": "Không tìm thấy hồ sơ xác thực",
-  "error": "Not Found"
+  "isVerified": false,
+  "verification": null
 }
 ```
 
@@ -653,10 +647,14 @@ GET /api/rent-posts?userId=1&category=phong-tro
     "address": {
       "street": "Đường Nguyễn Văn Cừ",
       "ward": "Phường 4",
-      "district": "Quận 5",
-      "city": "TP.HCM",
-      "houseNumber": "123/45",
-      "showHouseNumber": true
+      "city": "Thành phố Hồ Chí Minh",
+      "specificAddress": "123/45A",
+      "showSpecificAddress": true,
+      "provinceCode": "79",
+      "provinceName": "Thành phố Hồ Chí Minh",
+      "wardCode": "26734",
+      "wardName": "Phường 4",
+      "additionalInfo": "Gần chợ Bình Tây, tiện đi lại"
     },
     "category": "phong-tro",
     "basicInfo": {
@@ -695,10 +693,32 @@ Authorization: Bearer <token>
   "address": {
     "street": "Đường Nguyễn Văn Cừ",
     "ward": "Phường 4",
-    "district": "Quận 5",
-    "city": "TP.HCM",
-    "houseNumber": "123/45",
-    "showHouseNumber": true
+    "city": "Thành phố Hồ Chí Minh",
+    "specificAddress": "123/45A",
+    "showSpecificAddress": true,
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "wardCode": "26734",
+    "wardName": "Phường 4",
+    "additionalInfo": "Gần chợ Bình Tây, tiện đi lại"
+  },
+  "utilities": {
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_m3",
+    "internetFee": 150000,
+    "garbageFee": 20000,
+    "cleaningFee": 0,
+    "parkingMotorbikeFee": 100000,
+    "cookingGasFee": 0,
+    "includedInRent": {
+      "electricity": false,
+      "water": false,
+      "internet": true,
+      "garbage": true,
+      "cleaning": false,
+      "parkingMotorbike": false
+    }
   },
   "area": 25,
   "price": 3000000,
@@ -717,7 +737,7 @@ Authorization: Bearer <token>
 **Request Body:**
 ```json
 {
-  "userId": "1",
+  "userId": 1,
   "title": "Căn hộ chung cư cao cấp view sông",
   "description": "Căn hộ 2PN/2WC, view sông đẹp, nội thất đầy đủ, an ninh 24/7",
   "images": ["chung-cu-1.jpg", "chung-cu-2.jpg"],
@@ -725,10 +745,36 @@ Authorization: Bearer <token>
   "address": {
     "street": "Đường Võ Văn Kiệt",
     "ward": "Phường 1",
-    "district": "Quận 1",
-    "city": "TP.HCM",
-    "houseNumber": "456",
-    "showHouseNumber": true
+    "city": "Thành phố Hồ Chí Minh",
+    "specificAddress": "456/12B",
+    "showSpecificAddress": true,
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "wardCode": "26701",
+    "wardName": "Phường 1",
+    "additionalInfo": "Gần trung tâm thành phố, tiện đi lại"
+  },
+  "utilities": {
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_m3",
+    "internetFee": 200000,
+    "garbageFee": 30000,
+    "cleaningFee": 0,
+    "parkingMotorbikeFee": 100000,
+    "parkingCarFee": 1200000,
+    "managementFee": 15000,
+    "managementFeeUnit": "per_m2_per_month",
+    "includedInRent": {
+      "electricity": false,
+      "water": false,
+      "internet": false,
+      "garbage": false,
+      "cleaning": false,
+      "parkingMotorbike": false,
+      "parkingCar": false,
+      "managementFee": false
+    }
   },
   "buildingInfo": {
     "buildingName": "Chung cư Diamond Plaza",
@@ -766,10 +812,37 @@ Authorization: Bearer <token>
   "address": {
     "street": "Đường Lê Văn Việt",
     "ward": "Phường Hiệp Phú",
-    "district": "Quận 9",
-    "city": "TP.HCM",
-    "houseNumber": "789",
-    "showHouseNumber": true
+    "city": "Thành phố Hồ Chí Minh",
+    "specificAddress": "789/34C",
+    "showSpecificAddress": true,
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "wardCode": "26914",
+    "wardName": "Phường Hiệp Phú",
+    "additionalInfo": "Hẻm xe hơi, gần trường học"
+  },
+  "utilities": {
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_person",
+    "internetFee": 200000,
+    "garbageFee": 30000,
+    "cleaningFee": 0,
+    "parkingMotorbikeFee": 100000,
+    "parkingCarFee": 800000,
+    "managementFee": 0,
+    "managementFeeUnit": "per_month",
+    "gardeningFee": 100000,
+    "includedInRent": {
+      "electricity": false,
+      "water": false,
+      "internet": false,
+      "garbage": false,
+      "cleaning": false,
+      "parkingMotorbike": false,
+      "parkingCar": false,
+      "managementFee": false
+    }
   },
   "propertyInfo": {
     "khuLo": "Khu A",
@@ -810,10 +883,9 @@ GET /api/rent-posts/:id
   "address": {
     "street": "Đường Nguyễn Văn Cừ",
     "ward": "Phường 4",
-    "district": "Quận 5",
-    "city": "TP.HCM",
-    "houseNumber": "123/45",
-    "showHouseNumber": true
+    "city": "Thành phố Hồ Chí Minh",
+    "specificAddress": "123/45A",
+    "showSpecificAddress": true
   },
   "category": "phong-tro",
   "basicInfo": {
@@ -941,8 +1013,7 @@ Ví dụ tạo bài đăng phòng trọ sau khi upload xong ảnh:
   "address": {
     "street": "Đường ABC",
     "ward": "Phường XYZ",
-    "district": "Quận 1",
-    "city": "TP.HCM"
+    "city": "Thành phố Hồ Chí Minh"
   },
   "area": 25,
   "price": 3000000,
@@ -972,12 +1043,12 @@ Lưu ý:
 #### Address (Địa chỉ)
 ```typescript
 {
-  street: string;               // Đường - BẮT BUỘC
+  street?: string;              // Đường - TÙY CHỌN
   ward: string;                 // Phường - BẮT BUỘC
   district: string;             // Quận/Huyện - BẮT BUỘC
   city: string;                 // Thành phố - BẮT BUỘC
-  houseNumber?: string;         // Số nhà
-  showHouseNumber?: boolean;    // Hiển thị số nhà
+  specificAddress?: string;     // Địa chỉ cụ thể
+  showSpecificAddress?: boolean; // Hiển thị địa chỉ cụ thể
 }
 ```
 
@@ -1009,6 +1080,8 @@ Lưu ý:
 
 ## 🤝 Roommate Posts API
 
+> **Lưu ý**: API đã được cập nhật để hỗ trợ đầy đủ các field từ form frontend, bao gồm thông tin liên hệ, video, thói quen sinh hoạt và các thông tin chi tiết khác.
+
 ### 📋 Get All Roommate Posts
 ```http
 GET /api/roommate-posts
@@ -1023,33 +1096,52 @@ GET /api/roommate-posts
 ```json
 [
   {
-    "postId": 1,
     "userId": 1,
-    "title": "Tìm bạn ở ghép Quận 7",
-    "description": "Cần tìm bạn ở ghép hoà đồng, gọn gàng",
-    "images": ["https://example.com/roommate1.jpg"],
+    "title": "Tìm bạn ở ghép phòng 2 người tại Quận 1",
+    "description": "Mình là sinh viên năm 3, sạch sẽ, yên tĩnh, muốn tìm bạn ở ghép cùng phòng. Phòng rộng rãi, có đầy đủ tiện nghi.",
+    "images": ["https://example.com/roommate1.jpg", "https://example.com/roommate2.jpg"],
+    "video": "https://example.com/intro_video.mp4",
     "currentRoom": {
-      "address": "456 Lê Văn Việt, Quận 7, TP.HCM",
-      "price": 4000000,
-      "area": 30,
-      "description": "Có ban công, nội thất đầy đủ"
+      "address": {
+        "street": "Đường Nguyễn Huệ",
+        "ward": "Phường Bến Nghé",
+        "city": "Thành phố Hồ Chí Minh",
+        "specificAddress": "123/45A",
+        "showSpecificAddress": true,
+        "provinceCode": "79",
+        "provinceName": "Thành phố Hồ Chí Minh",
+        "wardCode": "26701",
+        "wardName": "Phường Bến Nghé",
+        "additionalInfo": "Gần trung tâm thành phố, tiện đi lại"
+      },
+      "price": 3000000,
+      "area": 25,
+      "description": "Phòng 2 người, có điều hòa, wifi, nước nóng",
+      "roomType": "double",
+      "currentOccupants": 1,
+      "remainingDuration": "6-12 months"
     },
     "personalInfo": {
-      "age": 25,
+      "fullName": "Nguyễn Văn A",
+      "age": 22,
       "gender": "male",
-      "occupation": "Developer",
-      "hobbies": ["đọc sách", "chơi game"],
-      "habits": ["ngủ sớm", "dậy sớm"]
+      "occupation": "Sinh viên",
+      "hobbies": ["Đọc sách", "Xem phim", "Thể thao"],
+      "habits": ["Dậy sớm", "Tập thể dục"],
+      "lifestyle": "early",
+      "cleanliness": "very_clean"
     },
     "requirements": {
-      "ageRange": [20, 30],
+      "ageRange": [20, 25],
       "gender": "any",
-      "traits": ["gọn gàng", "hoà đồng"],
-      "maxPrice": 2000000
+      "traits": ["Hòa đồng", "Sạch sẽ", "Yên tĩnh"],
+      "maxPrice": 4000000
     },
-    "status": "searching",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "phone": "0123456789",
+    "email": "test@example.com",
+    "status": "active",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
   }
 ]
 ```
@@ -1057,45 +1149,102 @@ GET /api/roommate-posts
 ### ➕ Create Roommate Post
 ```http
 POST /api/roommate-posts
+Authorization: Bearer <token>
 ```
 
 **Request Body:**
 ```json
 {
-  "userId": 1,
-  "title": "Tìm bạn ở ghép Quận 7",
-  "description": "Cần tìm bạn ở ghép hoà đồng, gọn gàng",
-  "images": ["https://example.com/roommate1.jpg"],
+  "userId": "1",
+  "title": "Tìm bạn ở ghép phòng 2 người tại Quận 1",
+  "description": "Mình là sinh viên năm 3, sạch sẽ, yên tĩnh, muốn tìm bạn ở ghép cùng phòng. Phòng rộng rãi, có đầy đủ tiện nghi.",
+  "images": ["https://example.com/roommate1.jpg", "https://example.com/roommate2.jpg"],
+  "video": "https://example.com/intro_video.mp4",
   "currentRoom": {
-    "address": "456 Lê Văn Việt, Quận 7, TP.HCM",
-    "price": 4000000,
-    "area": 30,
-    "description": "Có ban công, nội thất đầy đủ"
+    "address": {
+      "street": "Đường Nguyễn Huệ",
+      "ward": "Phường Bến Nghé",
+      "city": "Thành phố Hồ Chí Minh",
+      "specificAddress": "123/45A",
+      "showSpecificAddress": true,
+      "provinceCode": "79",
+      "provinceName": "Thành phố Hồ Chí Minh",
+      "wardCode": "26701",
+      "wardName": "Phường Bến Nghé",
+      "additionalInfo": "Gần trung tâm thành phố, tiện đi lại"
+    },
+    "price": 3000000,
+    "area": 25,
+    "description": "Phòng 2 người, có điều hòa, wifi, nước nóng",
+    "roomType": "double",
+    "currentOccupants": 1,
+    "remainingDuration": "6-12 months"
+  },
+  "currentRoom": {
+    "shareMethod": "split_evenly",
+    "estimatedMonthlyUtilities": 500000,
+    "capIncludedAmount": 0,
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_m3",
+    "internetFee": 150000,
+    "garbageFee": 20000,
+    "cleaningFee": 0
   },
   "personalInfo": {
-    "age": 25,
+    "fullName": "Nguyễn Văn A",
+    "age": 22,
     "gender": "male",
-    "occupation": "Developer",
-    "hobbies": ["đọc sách", "chơi game"],
-    "habits": ["ngủ sớm", "dậy sớm"]
+    "occupation": "Sinh viên",
+    "hobbies": ["Đọc sách", "Xem phim", "Thể thao"],
+    "habits": ["Dậy sớm", "Tập thể dục"],
+    "lifestyle": "early",
+    "cleanliness": "very_clean"
   },
   "requirements": {
-    "ageRange": [20, 30],
+    "ageRange": [20, 25],
     "gender": "any",
-    "traits": ["gọn gàng", "hoà đồng"],
-    "maxPrice": 2000000
-  }
+    "traits": ["Hòa đồng", "Sạch sẽ", "Yên tĩnh"],
+    "maxPrice": 4000000
+  },
+  "phone": "0123456789",
+  "email": "test@example.com",
+  "status": "active"
 }
 ```
 
 **Validation Rules:**
-- `userId`: Required, number
-- `title`: Required, string, max 200 chars
-- `description`: Required, string, max 1000 chars
+- `userId`: Required, string (number as string)
+- `title`: Required, string
+- `description`: Required, string
+- `images`: Optional, array of strings (URLs)
+- `video`: Optional, string (URL)
+- `phone`: Optional, string
+- `email`: Optional, valid email format
+- `currentRoom.address.street`: Optional, string
+- `currentRoom.address.ward`: Required, string
+- `currentRoom.address.district`: Required, string
+- `currentRoom.address.city`: Required, string
+- `currentRoom.address.specificAddress`: Optional, string
+- `currentRoom.address.showSpecificAddress`: Optional, boolean
+- `currentRoom.price`: Required, number
+- `currentRoom.area`: Required, number
+- `currentRoom.description`: Required, string
+- `currentRoom.roomType`: Optional, enum: ["single", "double", "shared"]
+- `currentRoom.currentOccupants`: Optional, number, min 1
+- `currentRoom.remainingDuration`: Optional, enum: ["1-3 months", "3-6 months", "6-12 months", "over_1_year"]
+- `personalInfo.fullName`: Required, string
 - `personalInfo.age`: Required, number, min 18, max 100
-- `personalInfo.gender`: Required, enum: ["male", "female"]
+- `personalInfo.gender`: Required, enum: ["male", "female", "other"]
+- `personalInfo.occupation`: Required, string
+- `personalInfo.hobbies`: Optional, array of strings
+- `personalInfo.habits`: Optional, array of strings
+- `personalInfo.lifestyle`: Optional, enum: ["early", "normal", "late"]
+- `personalInfo.cleanliness`: Optional, enum: ["very_clean", "clean", "normal", "flexible"]
 - `requirements.ageRange`: Required, array of 2 numbers
 - `requirements.gender`: Required, enum: ["male", "female", "any"]
+- `requirements.traits`: Optional, array of strings
+- `requirements.maxPrice`: Required, number, min 0
 
 ### ✏️ Update Roommate Post
 ```http
@@ -1103,44 +1252,248 @@ PUT /api/roommate-posts/:id
 Authorization: Bearer <token>
 ```
 
-**Request Body (partial update) — trường hợp có cập nhật personalInfo:**
+**Request Body (partial update) — cập nhật đầy đủ:**
 ```json
 {
   "title": "Cập nhật tiêu đề bài tìm bạn ở ghép",
-  "images": [
-    "https://cdn.domain.com/uploads/1/images/new-image-1.jpg"
-  ],
+  "description": "Mô tả mới về bản thân và yêu cầu",
+  "images": ["https://cdn.domain.com/uploads/1/images/new-image-1.jpg"],
+  "video": "https://cdn.domain.com/uploads/1/videos/new-video.mp4",
+  "currentRoom": {
+    "address": {
+      "street": "Đường Lê Lợi",
+      "ward": "Phường Bến Thành",
+      "city": "Thành phố Hồ Chí Minh",
+      "specificAddress": "456/12B",
+      "showSpecificAddress": false
+    },
+    "price": 3500000,
+    "area": 30,
+    "description": "Mô tả phòng mới",
+    "roomType": "shared",
+    "currentOccupants": 2,
+    "remainingDuration": "3-6 months"
+  },
+  "currentRoom": {
+    "shareMethod": "by_usage",
+    "estimatedMonthlyUtilities": 600000,
+    "capIncludedAmount": 300000,
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_person",
+    "internetFee": 200000,
+    "garbageFee": 30000,
+    "cleaningFee": 50000
+  },
   "personalInfo": {
+    "fullName": "Tên mới",
     "age": 26,
     "gender": "male",
     "occupation": "Designer",
     "hobbies": ["đọc sách", "chạy bộ"],
-    "habits": ["ngủ sớm"]
+    "habits": ["ngủ sớm"],
+    "lifestyle": "normal",
+    "cleanliness": "clean"
   },
   "requirements": {
     "ageRange": [22, 30],
     "gender": "any",
-    "traits": ["gọn gàng"],
+    "traits": ["gọn gàng", "hoà đồng"],
     "maxPrice": 2500000
-  }
+  },
+  "phone": "0987654321",
+  "email": "newemail@example.com"
 }
 ```
 
-**Request Body (partial update) — không cập nhật personalInfo:**
+**Request Body (partial update) — chỉ cập nhật một số field:**
 ```json
 {
   "title": "Cập nhật tiêu đề bài tìm bạn ở ghép",
-  "images": [
-    "https://cdn.domain.com/uploads/1/images/new-image-1.jpg"
-  ]
+  "images": ["https://cdn.domain.com/uploads/1/images/new-image-1.jpg"],
+  "phone": "0987654321",
+  "email": "newemail@example.com"
 }
 ```
 
-Lưu ý:
-- Chỉ cần gửi các field muốn thay đổi (partial update).
-- Nếu gửi `personalInfo` thì bắt buộc có đủ `age` (number 18–100) và `gender` (`male`/`female`). Nếu không cập nhật phần này thì bỏ hẳn key `personalInfo`.
-- Ảnh nên là URL public (có thể lấy từ quy trình Presigned URL ở mục Upload file S3).
-- Các field được gửi sẽ được validate theo rule tương ứng như khi tạo mới.
+**Lưu ý:**
+- Chỉ cần gửi các field muốn thay đổi (partial update)
+- Nếu gửi `personalInfo` thì bắt buộc có đủ `fullName`, `age` (18-100) và `gender` (male/female/other)
+- Nếu gửi `currentRoom` thì bắt buộc có đủ `address`, `price`, `area`, `description`
+- Nếu gửi `requirements` thì bắt buộc có đủ `ageRange`, `gender`, `maxPrice`
+- Ảnh và video nên là URL public (có thể lấy từ quy trình Presigned URL ở mục Upload file S3)
+- Email phải đúng định dạng email hợp lệ
+- Các field được gửi sẽ được validate theo rule tương ứng như khi tạo mới
+
+### 📝 Field Descriptions
+
+#### CurrentRoom Object
+- `address`: Địa chỉ phòng hiện tại (object, bắt buộc)
+  - `street`: Đường (tùy chọn)
+  - `ward`: Phường (bắt buộc)
+  - `district`: Quận (bắt buộc)
+  - `city`: Thành phố (bắt buộc)
+  - `specificAddress`: Địa chỉ cụ thể (tùy chọn)
+  - `showSpecificAddress`: Hiển thị địa chỉ cụ thể (tùy chọn, boolean)
+- `price`: Giá thuê phòng (VNĐ/tháng) (bắt buộc)
+- `area`: Diện tích phòng (m²) (bắt buộc)
+- `description`: Mô tả chi tiết về phòng (bắt buộc)
+- `roomType`: Loại phòng - "single" (đơn), "double" (đôi), "shared" (3-4 người) (tùy chọn)
+- `currentOccupants`: Số người hiện tại đang ở (tùy chọn, tối thiểu 1)
+- `remainingDuration`: Thời gian ở còn lại - "1-3 months", "3-6 months", "6-12 months", "over_1_year" (tùy chọn)
+
+#### PersonalInfo Object
+- `fullName`: Họ và tên đầy đủ (bắt buộc)
+- `age`: Tuổi (bắt buộc, 18-100)
+- `gender`: Giới tính - "male", "female", "other" (bắt buộc)
+- `occupation`: Nghề nghiệp (bắt buộc)
+- `hobbies`: Danh sách sở thích (tùy chọn)
+- `habits`: Danh sách thói quen (tùy chọn)
+- `lifestyle`: Thói quen sinh hoạt - "early" (dậy sớm), "normal" (bình thường), "late" (dậy muộn) (tùy chọn)
+- `cleanliness`: Mức độ sạch sẽ - "very_clean", "clean", "normal", "flexible" (tùy chọn)
+
+#### Requirements Object
+- `ageRange`: Khoảng tuổi mong muốn [min, max] (bắt buộc)
+- `gender`: Giới tính mong muốn - "male", "female", "any" (bắt buộc)
+- `traits`: Danh sách tính cách mong muốn (tùy chọn)
+- `maxPrice`: Giá tối đa sẵn sàng chi trả (VNĐ/tháng) (bắt buộc)
+
+#### Root Level Fields
+- `roommatePostId`: ID duy nhất của bài đăng (tự động tạo)
+- `userId`: ID của người đăng (bắt buộc)
+- `title`: Tiêu đề bài đăng (bắt buộc)
+- `description`: Mô tả chi tiết (bắt buộc)
+- `images`: Danh sách URL hình ảnh (tùy chọn)
+- `video`: URL video giới thiệu (tùy chọn)
+- `phone`: Số điện thoại liên hệ (tùy chọn)
+- `email`: Email liên hệ (tùy chọn, phải đúng định dạng)
+- `status`: Trạng thái bài đăng - "active", "inactive" (mặc định: "active")
+
+---
+
+## 🏘️ Addresses API
+
+> **Lưu ý**: API quản lý địa chỉ Việt Nam, bao gồm tỉnh/thành phố và phường/xã. Hỗ trợ import dữ liệu từ CSV và tìm kiếm phường/xã theo tỉnh.
+
+### 📋 Get All Addresses
+```http
+GET /api/addresses
+```
+
+**Response:**
+```json
+[
+  {
+    "provinceCode": "01",
+    "provinceName": "Thành phố Hà Nội",
+    "wardCode": "10105001",
+    "wardName": "Phường Hoàn Kiếm",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+
+### 🏙️ Get All Provinces
+```http
+GET /api/addresses/provinces
+```
+
+**Response:**
+```json
+[
+  {
+    "provinceCode": "01",
+    "provinceName": "Thành phố Hà Nội"
+  },
+  {
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh"
+  }
+]
+```
+
+### 🏘️ Get Wards by Province
+```http
+GET /api/addresses/wards?provinceCode=01
+```
+
+**Query Parameters:**
+- `provinceCode`: Mã tỉnh/thành phố (bắt buộc)
+
+**Response:**
+```json
+[
+  {
+    "wardCode": "10105001",
+    "wardName": "Phường Hoàn Kiếm"
+  },
+  {
+    "wardCode": "10105002",
+    "wardName": "Phường Cửa Nam"
+  }
+]
+```
+
+### ➕ Create Address
+```http
+POST /api/addresses
+```
+
+**Request Body:**
+```json
+{
+  "provinceCode": "01",
+  "provinceName": "Thành phố Hà Nội",
+  "wardCode": "10105001",
+  "wardName": "Phường Hoàn Kiếm"
+}
+```
+
+### 📥 Import from CSV
+```http
+POST /api/addresses/import
+```
+
+**Description:** Import dữ liệu địa chỉ từ file CSV đã được xử lý.
+
+**Response:**
+```json
+{
+  "message": "Import thành công 3322 địa chỉ",
+  "imported": 3322
+}
+```
+
+### 🗑️ Clear All Addresses
+```http
+POST /api/addresses/clear
+```
+
+**Description:** Xóa tất cả dữ liệu địa chỉ (chỉ dùng khi cần reset).
+
+**Response:**
+```json
+{
+  "message": "Đã xóa tất cả dữ liệu địa chỉ"
+}
+```
+
+### 📝 Field Descriptions
+
+#### Address Object
+- `provinceCode`: Mã tỉnh/thành phố (bắt buộc)
+- `provinceName`: Tên tỉnh/thành phố (bắt buộc)
+- `wardCode`: Mã phường/xã (bắt buộc)
+- `wardName`: Tên phường/xã (bắt buộc)
+- `createdAt`: Thời gian tạo
+- `updatedAt`: Thời gian cập nhật
+
+### 🔄 Usage Flow
+
+1. **Import dữ liệu:** `POST /api/addresses/import`
+2. **Lấy danh sách tỉnh:** `GET /api/addresses/provinces`
+3. **Chọn tỉnh và lấy phường/xã:** `GET /api/addresses/wards?provinceCode=01`
 
 ---
 
@@ -1653,8 +2006,8 @@ export interface RentPost {
     ward: string;
     district: string;
     city: string;
-    houseNumber?: string;
-    showHouseNumber?: boolean;
+    specificAddress?: string;
+    showSpecificAddress?: boolean;
   };
   category: 'phong-tro' | 'chung-cu' | 'nha-nguyen-can';
   basicInfo: {
@@ -1701,8 +2054,8 @@ export interface CreatePhongTroDto {
     ward: string;
     district: string;
     city: string;
-    houseNumber?: string;
-    showHouseNumber?: boolean;
+    specificAddress?: string;
+    showSpecificAddress?: boolean;
   };
   area: number;
   price: number;
@@ -1722,8 +2075,8 @@ export interface CreateChungCuDto {
     ward: string;
     district: string;
     city: string;
-    houseNumber?: string;
-    showHouseNumber?: boolean;
+    specificAddress?: string;
+    showSpecificAddress?: boolean;
   };
   buildingInfo?: {
     buildingName?: string;
@@ -1754,8 +2107,8 @@ export interface CreateNhaNguyenCanDto {
     ward: string;
     district: string;
     city: string;
-    houseNumber?: string;
-    showHouseNumber?: boolean;
+    specificAddress?: string;
+    showSpecificAddress?: boolean;
   };
   propertyInfo?: {
     khuLo?: string;
@@ -1959,6 +2312,101 @@ const loadPosts = async (page) => {
   setTotalPages(Math.ceil(data.total / 10));
 };
 ```
+
+---
+
+## 📍 Address Fields Description
+
+### Cấu trúc địa chỉ mới
+Tất cả các API liên quan đến địa chỉ đã được cập nhật để hỗ trợ cấu trúc địa chỉ chi tiết hơn với các trường mới:
+
+#### Các trường cơ bản:
+- `street`: Tên đường (optional) - có thể để trống
+- `ward`: Tên phường/xã (required)
+- `city`: Tên thành phố/tỉnh (required)
+- `specificAddress`: Địa chỉ cụ thể (optional) - có thể nhập cả số lẫn chữ
+- `showSpecificAddress`: Hiển thị địa chỉ cụ thể (optional)
+
+#### Các trường mới từ API địa chỉ:
+- `provinceCode`: Mã tỉnh/thành phố (required)
+- `provinceName`: Tên tỉnh/thành phố (required)
+- `wardCode`: Mã phường/xã (required)
+- `wardName`: Tên phường/xã (required)
+- `additionalInfo`: Thông tin bổ sung về địa chỉ (optional)
+
+**Lưu ý**: 
+- Cấu trúc địa chỉ mới không bao gồm `district` (quận/huyện) vì dữ liệu địa chỉ mới chỉ có tỉnh/thành phố và phường/xã.
+- `street` là optional để linh hoạt hơn trong việc nhập địa chỉ.
+- `specificAddress` thay thế cho `houseNumber` để có thể nhập địa chỉ cụ thể bao gồm cả số và chữ.
+
+---
+
+## ⚡ Utilities (Phí điện, nước và dịch vụ)
+
+### Cấu trúc chung
+```json
+{
+  "utilities": {
+    "electricityPricePerKwh": 3500,
+    "waterPrice": 20000,
+    "waterBillingType": "per_m3",
+    "internetFee": 150000,
+    "garbageFee": 20000,
+    "cleaningFee": 0,
+    "parkingMotorbikeFee": 100000,
+    "parkingCarFee": 1200000,
+    "managementFee": 15000,
+    "managementFeeUnit": "per_m2_per_month",
+    "gardeningFee": 0,
+    "cookingGasFee": 0,
+    "includedInRent": {
+      "electricity": false,
+      "water": false,
+      "internet": true,
+      "garbage": true,
+      "cleaning": false,
+      "parkingMotorbike": false,
+      "parkingCar": false,
+      "managementFee": false
+    }
+  }
+}
+```
+
+### Áp dụng theo loại bài đăng
+- Phòng trọ (`phong-tro`): dùng các trường chung; có thêm `cookingGasFee`; không dùng `parkingCarFee`, `managementFee`, `managementFeeUnit` (sẽ bị bỏ qua nếu gửi).
+- Chung cư (`chung-cu`): dùng các trường chung; bổ sung `parkingCarFee`, `managementFee`, `managementFeeUnit` và `includedInRent.parkingCar`, `includedInRent.managementFee`.
+- Nhà nguyên căn (`nha-nguyen-can`): dùng các trường chung; bổ sung `parkingCarFee`, `managementFee`, `managementFeeUnit`, `gardeningFee`.
+- Ở ghép (`roommate-posts`): không có object `utilities` riêng; nằm trong `currentRoom` với các trường: `shareMethod`, `estimatedMonthlyUtilities`, `capIncludedAmount`, `electricityPricePerKwh`, `waterPrice`, `waterBillingType`, `internetFee`, `garbageFee`, `cleaningFee`.
+
+### Ghi chú
+- `waterBillingType`: `per_m3` (tính theo m3) hoặc `per_person` (tính theo đầu người).
+- `managementFeeUnit` (chung cư/nhà nguyên căn): `per_month` hoặc `per_m2_per_month`.
+- `includedInRent.*`: đánh dấu chi phí đã bao gồm trong giá thuê.
+
+### Ví dụ sử dụng:
+```json
+{
+  "address": {
+    "street": "Đường Nguyễn Huệ",
+    "ward": "Phường Bến Nghé",
+    "city": "Thành phố Hồ Chí Minh",
+    "specificAddress": "123/45A",
+    "showSpecificAddress": true,
+    "provinceCode": "79",
+    "provinceName": "Thành phố Hồ Chí Minh",
+    "wardCode": "26701",
+    "wardName": "Phường Bến Nghé",
+    "additionalInfo": "Gần trung tâm thành phố, tiện đi lại"
+  }
+}
+```
+
+### Lợi ích:
+- **Chuẩn hóa dữ liệu**: Sử dụng mã địa chỉ chính thức từ Bộ Nội vụ
+- **Tìm kiếm chính xác**: Có thể tìm kiếm theo mã tỉnh/phường
+- **Tích hợp API địa chỉ**: Dễ dàng tích hợp với API địa chỉ Việt Nam
+- **Thông tin bổ sung**: Có thể thêm mô tả chi tiết về vị trí
 
 ---
 

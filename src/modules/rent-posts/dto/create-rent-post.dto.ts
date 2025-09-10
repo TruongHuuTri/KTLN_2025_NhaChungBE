@@ -3,29 +3,47 @@ import { Type } from 'class-transformer';
 import { RENT_POST_STATUSES } from '../schemas/rent-post.schema';
 
 export class CreateAddressDto {
-  @IsNotEmpty({ message: 'Đường không được để trống' })
+  @IsOptional()
   @IsString({ message: 'Đường phải là chuỗi' })
-  street: string;
+  street?: string;
 
   @IsNotEmpty({ message: 'Phường không được để trống' })
   @IsString({ message: 'Phường phải là chuỗi' })
   ward: string;
-
-  @IsNotEmpty({ message: 'Quận không được để trống' })
-  @IsString({ message: 'Quận phải là chuỗi' })
-  district: string;
 
   @IsNotEmpty({ message: 'Thành phố không được để trống' })
   @IsString({ message: 'Thành phố phải là chuỗi' })
   city: string;
 
   @IsOptional()
-  @IsString({ message: 'Số nhà phải là chuỗi' })
-  houseNumber?: string;
+  @IsString({ message: 'Địa chỉ cụ thể phải là chuỗi' })
+  specificAddress?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'Hiển thị số nhà phải là boolean' })
-  showHouseNumber?: boolean;
+  @IsBoolean({ message: 'Hiển thị địa chỉ cụ thể phải là boolean' })
+  showSpecificAddress?: boolean;
+
+  // Các trường mới từ API địa chỉ
+  @IsNotEmpty({ message: 'Mã tỉnh không được để trống' })
+  @IsString({ message: 'Mã tỉnh phải là chuỗi' })
+  provinceCode: string;
+
+  @IsNotEmpty({ message: 'Tên tỉnh không được để trống' })
+  @IsString({ message: 'Tên tỉnh phải là chuỗi' })
+  provinceName: string;
+
+  @IsNotEmpty({ message: 'Mã phường/xã không được để trống' })
+  @IsString({ message: 'Mã phường/xã phải là chuỗi' })
+  wardCode: string;
+
+  @IsNotEmpty({ message: 'Tên phường/xã không được để trống' })
+  @IsString({ message: 'Tên phường/xã phải là chuỗi' })
+  wardName: string;
+
+  // Thông tin bổ sung
+  @IsOptional()
+  @IsString({ message: 'Thông tin bổ sung phải là chuỗi' })
+  additionalInfo?: string;
 }
 
 export class CreateBasicInfoDto {
@@ -123,6 +141,37 @@ export class CreateNhaNguyenCanInfoDto {
   features?: string[];
 }
 
+export class IncludedInRentDto {
+  @IsOptional() @IsBoolean() electricity?: boolean;
+  @IsOptional() @IsBoolean() water?: boolean;
+  @IsOptional() @IsBoolean() internet?: boolean;
+  @IsOptional() @IsBoolean() garbage?: boolean;
+  @IsOptional() @IsBoolean() cleaning?: boolean;
+  @IsOptional() @IsBoolean() parkingMotorbike?: boolean;
+  @IsOptional() @IsBoolean() parkingCar?: boolean;
+  @IsOptional() @IsBoolean() managementFee?: boolean;
+}
+
+export class UtilitiesDto {
+  @IsOptional() @IsNumber() electricityPricePerKwh?: number;
+  @IsOptional() @IsNumber() waterPrice?: number;
+  @IsOptional() @IsString() @IsIn(['per_m3', 'per_person']) waterBillingType?: string;
+  @IsOptional() @IsNumber() internetFee?: number;
+  @IsOptional() @IsNumber() garbageFee?: number;
+  @IsOptional() @IsNumber() cleaningFee?: number;
+  @IsOptional() @IsNumber() parkingMotorbikeFee?: number;
+  @IsOptional() @IsNumber() parkingCarFee?: number;
+  @IsOptional() @IsNumber() managementFee?: number;
+  @IsOptional() @IsString() @IsIn(['per_month', 'per_m2_per_month']) managementFeeUnit?: string;
+  @IsOptional() @IsNumber() gardeningFee?: number;
+  @IsOptional() @IsNumber() cookingGasFee?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => IncludedInRentDto)
+  includedInRent?: IncludedInRentDto;
+}
+
 export class CreateRentPostDto {
   @IsNotEmpty({ message: 'User ID không được để trống' })
   @IsNumberString({}, { message: 'User ID phải là số' })
@@ -173,4 +222,10 @@ export class CreateRentPostDto {
   @IsOptional()
   @IsIn(RENT_POST_STATUSES as any, { message: 'Trạng thái không hợp lệ' })
   status?: string; // hoặc RentPostStatus
+
+  // Utilities áp dụng cho mọi loại; field không dùng sẽ bị bỏ qua
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UtilitiesDto)
+  utilities?: UtilitiesDto;
 }

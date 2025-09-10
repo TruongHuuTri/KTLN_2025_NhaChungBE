@@ -191,7 +191,7 @@ export class VerificationsService {
     // Update user's verificationId using userId number
     await this.userModel.findOneAndUpdate(
       { userId: userId },
-      { verificationId: savedVerification._id } // Lưu ObjectId để populate
+      { verificationId: savedVerification.verificationId } // Lưu số tự tăng
     ).exec();
 
     return savedVerification;

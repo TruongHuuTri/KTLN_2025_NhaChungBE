@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserDocument } from './schemas/user.schema';
+import { Verification, VerificationDocument } from '../verifications/schemas/verification.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -13,6 +14,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
     private jwtService: JwtService,
   ) {}
 
@@ -173,10 +175,6 @@ export class UsersService {
     // Find user by userId number instead of ObjectId
     const user = await this.userModel
       .findOne({ userId: parseInt(userId) })
-      .populate({
-        path: 'verificationId',
-        select: 'verificationId status submittedAt reviewedAt adminNote'
-      })
       .select('isVerified verificationId')
       .exec();
 
@@ -184,9 +182,18 @@ export class UsersService {
       throw new NotFoundException('Không tìm thấy user');
     }
 
+    let verification: any = null;
+    if (user.verificationId) {
+      // Find verification by verificationId number
+      verification = await this.verificationModel
+        .findOne({ verificationId: user.verificationId })
+        .select('verificationId status submittedAt reviewedAt adminNote')
+        .exec();
+    }
+
     return {
       isVerified: user.isVerified,
-      verification: user.verificationId || null,
+      verification: verification,
     };
   }
 

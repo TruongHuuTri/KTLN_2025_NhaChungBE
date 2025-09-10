@@ -9,6 +9,7 @@ import { RoommatePostsModule } from './modules/roommate-posts/roommate-posts.mod
 import { FavouritesModule } from './modules/favourites/favourites.module';
 import { VerificationsModule } from './modules/verifications/verifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import {S3Module} from './s3/s3.module';
 @Module({
 
@@ -32,6 +33,7 @@ import {S3Module} from './s3/s3.module';
     FavouritesModule,
     VerificationsModule,
     AdminModule,
+    AddressesModule,
     S3Module,
   ],
   controllers: [AppController],

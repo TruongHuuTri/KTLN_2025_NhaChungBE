@@ -30,8 +30,8 @@ export class User {
   @Prop({ default: false })
   isVerified: boolean;
 
-  @Prop({ type: Types.ObjectId, ref: 'Verification' })
-  verificationId?: Types.ObjectId;
+  @Prop()
+  verificationId?: number;
 
   @Prop()
   createdAt: Date;

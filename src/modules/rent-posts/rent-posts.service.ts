@@ -31,12 +31,16 @@ export class RentPostsService {
     const nextRentPostId = await this.getNextRentPostId();
     
     const address: Address = {
-      street: createPhongTroDto.address.street,
+      street: createPhongTroDto.address.street || '',
       ward: createPhongTroDto.address.ward,
-      district: createPhongTroDto.address.district,
       city: createPhongTroDto.address.city,
-      houseNumber: createPhongTroDto.address.houseNumber || '',
-      showHouseNumber: createPhongTroDto.address.showHouseNumber || false,
+      specificAddress: createPhongTroDto.address.specificAddress || '',
+      showSpecificAddress: createPhongTroDto.address.showSpecificAddress || false,
+      provinceCode: createPhongTroDto.address.provinceCode,
+      provinceName: createPhongTroDto.address.provinceName,
+      wardCode: createPhongTroDto.address.wardCode,
+      wardName: createPhongTroDto.address.wardName,
+      additionalInfo: createPhongTroDto.address.additionalInfo || '',
     };
 
     const basicInfo: BasicInfo = {
@@ -61,6 +65,26 @@ export class RentPostsService {
       category: 'phong-tro',
       basicInfo,
       status: createPhongTroDto.status || 'active',
+      utilities: {
+        electricityPricePerKwh: createPhongTroDto.utilities?.electricityPricePerKwh || 0,
+        waterPrice: createPhongTroDto.utilities?.waterPrice || 0,
+        waterBillingType: createPhongTroDto.utilities?.waterBillingType || '',
+        internetFee: createPhongTroDto.utilities?.internetFee || 0,
+        garbageFee: createPhongTroDto.utilities?.garbageFee || 0,
+        cleaningFee: createPhongTroDto.utilities?.cleaningFee || 0,
+        parkingMotorbikeFee: createPhongTroDto.utilities?.parkingMotorbikeFee || 0,
+        cookingGasFee: createPhongTroDto.utilities?.cookingGasFee || 0,
+        includedInRent: {
+          electricity: createPhongTroDto.utilities?.includedInRent?.electricity || false,
+          water: createPhongTroDto.utilities?.includedInRent?.water || false,
+          internet: createPhongTroDto.utilities?.includedInRent?.internet || false,
+          garbage: createPhongTroDto.utilities?.includedInRent?.garbage || false,
+          cleaning: createPhongTroDto.utilities?.includedInRent?.cleaning || false,
+          parkingMotorbike: createPhongTroDto.utilities?.includedInRent?.parkingMotorbike || false,
+          parkingCar: false,
+          managementFee: false,
+        },
+      },
     });
 
     return createdRentPost.save();
@@ -71,12 +95,16 @@ export class RentPostsService {
     const nextRentPostId = await this.getNextRentPostId();
     
     const address: Address = {
-      street: createChungCuDto.address.street,
+      street: createChungCuDto.address.street || '',
       ward: createChungCuDto.address.ward,
-      district: createChungCuDto.address.district,
       city: createChungCuDto.address.city,
-      houseNumber: createChungCuDto.address.houseNumber || '',
-      showHouseNumber: createChungCuDto.address.showHouseNumber || false,
+      specificAddress: createChungCuDto.address.specificAddress || '',
+      showSpecificAddress: createChungCuDto.address.showSpecificAddress || false,
+      provinceCode: createChungCuDto.address.provinceCode,
+      provinceName: createChungCuDto.address.provinceName,
+      wardCode: createChungCuDto.address.wardCode,
+      wardName: createChungCuDto.address.wardName,
+      additionalInfo: createChungCuDto.address.additionalInfo || '',
     };
 
     const basicInfo: BasicInfo = {
@@ -110,6 +138,28 @@ export class RentPostsService {
       basicInfo,
       chungCuInfo,
       status: createChungCuDto.status || 'active',
+      utilities: {
+        electricityPricePerKwh: createChungCuDto.utilities?.electricityPricePerKwh || 0,
+        waterPrice: createChungCuDto.utilities?.waterPrice || 0,
+        waterBillingType: createChungCuDto.utilities?.waterBillingType || '',
+        internetFee: createChungCuDto.utilities?.internetFee || 0,
+        garbageFee: createChungCuDto.utilities?.garbageFee || 0,
+        cleaningFee: createChungCuDto.utilities?.cleaningFee || 0,
+        parkingMotorbikeFee: createChungCuDto.utilities?.parkingMotorbikeFee || 0,
+        parkingCarFee: createChungCuDto.utilities?.parkingCarFee || 0,
+        managementFee: createChungCuDto.utilities?.managementFee || 0,
+        managementFeeUnit: createChungCuDto.utilities?.managementFeeUnit || '',
+        includedInRent: {
+          electricity: createChungCuDto.utilities?.includedInRent?.electricity || false,
+          water: createChungCuDto.utilities?.includedInRent?.water || false,
+          internet: createChungCuDto.utilities?.includedInRent?.internet || false,
+          garbage: createChungCuDto.utilities?.includedInRent?.garbage || false,
+          cleaning: createChungCuDto.utilities?.includedInRent?.cleaning || false,
+          parkingMotorbike: createChungCuDto.utilities?.includedInRent?.parkingMotorbike || false,
+          parkingCar: createChungCuDto.utilities?.includedInRent?.parkingCar || false,
+          managementFee: createChungCuDto.utilities?.includedInRent?.managementFee || false,
+        },
+      },
     });
 
     return createdRentPost.save();
@@ -120,12 +170,16 @@ export class RentPostsService {
     const nextRentPostId = await this.getNextRentPostId();
     
     const address: Address = {
-      street: createNhaNguyenCanDto.address.street,
+      street: createNhaNguyenCanDto.address.street || '',
       ward: createNhaNguyenCanDto.address.ward,
-      district: createNhaNguyenCanDto.address.district,
       city: createNhaNguyenCanDto.address.city,
-      houseNumber: createNhaNguyenCanDto.address.houseNumber || '',
-      showHouseNumber: createNhaNguyenCanDto.address.showHouseNumber || false,
+      specificAddress: createNhaNguyenCanDto.address.specificAddress || '',
+      showSpecificAddress: createNhaNguyenCanDto.address.showSpecificAddress || false,
+      provinceCode: createNhaNguyenCanDto.address.provinceCode,
+      provinceName: createNhaNguyenCanDto.address.provinceName,
+      wardCode: createNhaNguyenCanDto.address.wardCode,
+      wardName: createNhaNguyenCanDto.address.wardName,
+      additionalInfo: createNhaNguyenCanDto.address.additionalInfo || '',
     };
 
     const basicInfo: BasicInfo = {
@@ -163,6 +217,29 @@ export class RentPostsService {
       basicInfo,
       nhaNguyenCanInfo,
       status: createNhaNguyenCanDto.status || 'active',
+      utilities: {
+        electricityPricePerKwh: createNhaNguyenCanDto.utilities?.electricityPricePerKwh || 0,
+        waterPrice: createNhaNguyenCanDto.utilities?.waterPrice || 0,
+        waterBillingType: createNhaNguyenCanDto.utilities?.waterBillingType || '',
+        internetFee: createNhaNguyenCanDto.utilities?.internetFee || 0,
+        garbageFee: createNhaNguyenCanDto.utilities?.garbageFee || 0,
+        cleaningFee: createNhaNguyenCanDto.utilities?.cleaningFee || 0,
+        parkingMotorbikeFee: createNhaNguyenCanDto.utilities?.parkingMotorbikeFee || 0,
+        parkingCarFee: createNhaNguyenCanDto.utilities?.parkingCarFee || 0,
+        managementFee: createNhaNguyenCanDto.utilities?.managementFee || 0,
+        managementFeeUnit: createNhaNguyenCanDto.utilities?.managementFeeUnit || '',
+        gardeningFee: createNhaNguyenCanDto.utilities?.gardeningFee || 0,
+        includedInRent: {
+          electricity: createNhaNguyenCanDto.utilities?.includedInRent?.electricity || false,
+          water: createNhaNguyenCanDto.utilities?.includedInRent?.water || false,
+          internet: createNhaNguyenCanDto.utilities?.includedInRent?.internet || false,
+          garbage: createNhaNguyenCanDto.utilities?.includedInRent?.garbage || false,
+          cleaning: createNhaNguyenCanDto.utilities?.includedInRent?.cleaning || false,
+          parkingMotorbike: createNhaNguyenCanDto.utilities?.includedInRent?.parkingMotorbike || false,
+          parkingCar: createNhaNguyenCanDto.utilities?.includedInRent?.parkingCar || false,
+          managementFee: createNhaNguyenCanDto.utilities?.includedInRent?.managementFee || false,
+        },
+      },
     });
 
     return createdRentPost.save();
