@@ -1178,9 +1178,7 @@ Authorization: Bearer <token>
     "description": "Phòng 2 người, có điều hòa, wifi, nước nóng",
     "roomType": "double",
     "currentOccupants": 1,
-    "remainingDuration": "6-12 months"
-  },
-  "currentRoom": {
+    "remainingDuration": "6-12 months",
     "shareMethod": "split_evenly",
     "estimatedMonthlyUtilities": 500000,
     "capIncludedAmount": 0,
@@ -1213,6 +1211,8 @@ Authorization: Bearer <token>
 }
 ```
 
+> Lưu ý quan trọng: JSON chỉ được phép có MỘT khóa `currentRoom`. Nếu lặp lại khóa `currentRoom`, block phía sau sẽ ghi đè block phía trước và gây thiếu field bắt buộc.
+
 **Validation Rules:**
 - `userId`: Required, string (number as string)
 - `title`: Required, string
@@ -1223,16 +1223,29 @@ Authorization: Bearer <token>
 - `email`: Optional, valid email format
 - `currentRoom.address.street`: Optional, string
 - `currentRoom.address.ward`: Required, string
-- `currentRoom.address.district`: Required, string
 - `currentRoom.address.city`: Required, string
+- `currentRoom.address.provinceCode`: Required, string
+- `currentRoom.address.provinceName`: Required, string
+- `currentRoom.address.wardCode`: Required, string
+- `currentRoom.address.wardName`: Required, string
 - `currentRoom.address.specificAddress`: Optional, string
 - `currentRoom.address.showSpecificAddress`: Optional, boolean
+- `currentRoom.address.additionalInfo`: Optional, string
 - `currentRoom.price`: Required, number
 - `currentRoom.area`: Required, number
 - `currentRoom.description`: Required, string
 - `currentRoom.roomType`: Optional, enum: ["single", "double", "shared"]
 - `currentRoom.currentOccupants`: Optional, number, min 1
 - `currentRoom.remainingDuration`: Optional, enum: ["1-3 months", "3-6 months", "6-12 months", "over_1_year"]
+- `currentRoom.shareMethod`: Optional, enum: ["split_evenly", "by_usage"]
+- `currentRoom.estimatedMonthlyUtilities`: Optional, number
+- `currentRoom.capIncludedAmount`: Optional, number
+- `currentRoom.electricityPricePerKwh`: Optional, number
+- `currentRoom.waterPrice`: Optional, number
+- `currentRoom.waterBillingType`: Optional, enum: ["per_m3", "per_person"]
+- `currentRoom.internetFee`: Optional, number
+- `currentRoom.garbageFee`: Optional, number
+- `currentRoom.cleaningFee`: Optional, number
 - `personalInfo.fullName`: Required, string
 - `personalInfo.age`: Required, number, min 18, max 100
 - `personalInfo.gender`: Required, enum: ["male", "female", "other"]
@@ -1265,16 +1278,18 @@ Authorization: Bearer <token>
       "ward": "Phường Bến Thành",
       "city": "Thành phố Hồ Chí Minh",
       "specificAddress": "456/12B",
-      "showSpecificAddress": false
+      "showSpecificAddress": false,
+      "provinceCode": "79",
+      "provinceName": "Thành phố Hồ Chí Minh",
+      "wardCode": "26704",
+      "wardName": "Phường Bến Thành"
     },
     "price": 3500000,
     "area": 30,
     "description": "Mô tả phòng mới",
     "roomType": "shared",
     "currentOccupants": 2,
-    "remainingDuration": "3-6 months"
-  },
-  "currentRoom": {
+    "remainingDuration": "3-6 months",
     "shareMethod": "by_usage",
     "estimatedMonthlyUtilities": 600000,
     "capIncludedAmount": 300000,
@@ -1330,17 +1345,32 @@ Authorization: Bearer <token>
 #### CurrentRoom Object
 - `address`: Địa chỉ phòng hiện tại (object, bắt buộc)
   - `street`: Đường (tùy chọn)
-  - `ward`: Phường (bắt buộc)
-  - `district`: Quận (bắt buộc)
-  - `city`: Thành phố (bắt buộc)
+  - `ward`: Tên phường/xã (bắt buộc)
+  - `city`: Tên thành phố/tỉnh (bắt buộc)
+  - `provinceCode`: Mã tỉnh (bắt buộc)
+  - `provinceName`: Tên tỉnh/thành phố (bắt buộc)
+  - `wardCode`: Mã phường/xã (bắt buộc)
+  - `wardName`: Tên phường/xã (bắt buộc)
   - `specificAddress`: Địa chỉ cụ thể (tùy chọn)
   - `showSpecificAddress`: Hiển thị địa chỉ cụ thể (tùy chọn, boolean)
+  - `additionalInfo`: Thông tin bổ sung (tùy chọn)
 - `price`: Giá thuê phòng (VNĐ/tháng) (bắt buộc)
 - `area`: Diện tích phòng (m²) (bắt buộc)
 - `description`: Mô tả chi tiết về phòng (bắt buộc)
 - `roomType`: Loại phòng - "single" (đơn), "double" (đôi), "shared" (3-4 người) (tùy chọn)
 - `currentOccupants`: Số người hiện tại đang ở (tùy chọn, tối thiểu 1)
 - `remainingDuration`: Thời gian ở còn lại - "1-3 months", "3-6 months", "6-12 months", "over_1_year" (tùy chọn)
+  
+  Các trường utilities trong `currentRoom` (tùy chọn):
+  - `shareMethod`: Cách chia tiền điện nước - `split_evenly` | `by_usage`
+  - `estimatedMonthlyUtilities`: Ước tính tổng phí mỗi tháng (VNĐ)
+  - `capIncludedAmount`: Mức trần nếu đã bao gồm trong giá thuê (VNĐ)
+  - `electricityPricePerKwh`: Giá điện (đ/kWh)
+  - `waterPrice`: Giá nước (đ)
+  - `waterBillingType`: Cách tính nước - `per_m3` | `per_person`
+  - `internetFee`: Phí internet (đ/tháng)
+  - `garbageFee`: Phí rác (đ/tháng)
+  - `cleaningFee`: Phí vệ sinh (đ/tháng)
 
 #### PersonalInfo Object
 - `fullName`: Họ và tên đầy đủ (bắt buộc)
