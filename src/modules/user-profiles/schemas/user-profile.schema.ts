@@ -28,8 +28,15 @@ export class UserProfile {
   currentLocation?: string;
 
   // Preferences
+  // Deprecated: dùng preferredWards thay thế (giữ để tương thích tạm thời)
   @Prop({ type: [String] })
   preferredDistricts?: string[];
+
+  @Prop({ type: [String] })
+  preferredWards?: string[];
+
+  @Prop({ type: [String] })
+  preferredWardCodes?: string[];
 
   @Prop({
     type: {
@@ -37,7 +44,7 @@ export class UserProfile {
       max: { type: Number }
     }
   })
-  budgetRange?: { min: number; max: number };
+  budgetRange?: { min?: number; max?: number };
 
   @Prop({ type: [String] })
   roomType?: string[];
@@ -71,11 +78,24 @@ export class UserProfile {
   @Prop()
   propertiesCount?: number;
 
-  @Prop({ type: [String] })
+  @Prop({ type: [String], enum: ['phong_tro','chung_cu','nha_nguyen_can','can_ho_dv','officetel','studio'] })
   propertyTypes?: string[];
 
+  // Deprecated: dùng targetWards/targetWardCodes và targetCityCode/Name thay thế (giữ tạm)
   @Prop({ type: [String] })
   targetDistricts?: string[];
+
+  @Prop()
+  targetCityCode?: string;
+
+  @Prop()
+  targetCityName?: string;
+
+  @Prop({ type: [String] })
+  targetWards?: string[];
+
+  @Prop({ type: [String] })
+  targetWardCodes?: string[];
 
   @Prop({
     type: {
@@ -85,7 +105,7 @@ export class UserProfile {
   })
   priceRange?: { min: number; max: number };
 
-  @Prop({ type: [String] })
+  @Prop({ type: [String], enum: ['sinh_vien','gia_dinh','nhan_vien_vp','cap_doi','nhom_ban'] })
   targetTenants?: string[];
 
   @Prop({ enum: ['strict', 'flexible', 'friendly'] })
@@ -100,9 +120,6 @@ export class UserProfile {
   // Business info (when upgrade to landlord)
   @Prop()
   businessLicense?: string;
-
-  @Prop()
-  taxCode?: string;
 
   @Prop({
     type: {
@@ -127,8 +144,8 @@ export class UserProfile {
     }
   })
   availableTime?: {
-    weekdays: string;
-    weekends: string;
+    weekdays?: string;
+    weekends?: string;
   };
 
   // Profile completion status

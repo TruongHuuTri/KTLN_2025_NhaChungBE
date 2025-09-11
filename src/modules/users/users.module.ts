@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { User, UserSchema } from './schemas/user.schema';
+import { UserProfile, UserProfileSchema } from '../user-profiles/schemas/user-profile.schema';
 import { Verification, VerificationSchema } from '../verifications/schemas/verification.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -13,7 +14,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
-      { name: Verification.name, schema: VerificationSchema }
+      { name: Verification.name, schema: VerificationSchema },
+      { name: UserProfile.name, schema: UserProfileSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({

@@ -1,14 +1,16 @@
-import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, IsEnum, Min, Max, ValidateNested } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, IsEnum, Min, Max, ValidateNested, IsUrl } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BudgetRangeDto {
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  min: number;
+  min?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  max: number;
+  max?: number;
 }
 
 export class PriceRangeDto {
@@ -33,11 +35,13 @@ export class BankAccountDto {
 }
 
 export class AvailableTimeDto {
+  @IsOptional()
   @IsString()
-  weekdays: string;
+  weekdays?: string;
 
+  @IsOptional()
   @IsString()
-  weekends: string;
+  weekends?: string;
 }
 
 export class CreateUserProfileDto {
@@ -69,10 +73,21 @@ export class CreateUserProfileDto {
   currentLocation?: string;
 
   // Preferences
+  // Deprecated: preferredDistricts (giữ tạm)
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   preferredDistricts?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferredWards?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferredWardCodes?: string[];
 
   @IsOptional()
   @ValidateNested()
@@ -130,13 +145,32 @@ export class CreateUserProfileDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @IsEnum(['phong_tro','chung_cu','nha_nguyen_can','can_ho_dv','officetel','studio'], { each: true })
   propertyTypes?: string[];
 
+  // Deprecated: targetDistricts (giữ tạm)
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   targetDistricts?: string[];
+
+  @IsOptional()
+  @IsString()
+  targetCityCode?: string;
+
+  @IsOptional()
+  @IsString()
+  targetCityName?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targetWards?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targetWardCodes?: string[];
 
   @IsOptional()
   @ValidateNested()
@@ -145,7 +179,7 @@ export class CreateUserProfileDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @IsEnum(['sinh_vien','gia_dinh','nhan_vien_vp','cap_doi','nhom_ban'], { each: true })
   targetTenants?: string[];
 
   @IsOptional()
@@ -163,12 +197,8 @@ export class CreateUserProfileDto {
 
   // Business info
   @IsOptional()
-  @IsString()
+  @IsUrl()
   businessLicense?: string;
-
-  @IsOptional()
-  @IsString()
-  taxCode?: string;
 
   @IsOptional()
   @ValidateNested()

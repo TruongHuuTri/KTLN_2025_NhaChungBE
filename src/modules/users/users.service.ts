@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { UserProfile, UserProfileDocument } from '../user-profiles/schemas/user-profile.schema';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserDocument } from './schemas/user.schema';
@@ -15,6 +16,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
+    @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfileDocument>,
     private jwtService: JwtService,
   ) {}
 
@@ -91,10 +93,14 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.userModel.deleteOne({ userId: parseInt(id) }).exec();
+    const numericUserId = parseInt(id);
+    const result = await this.userModel.deleteOne({ userId: numericUserId }).exec();
     if (result.deletedCount === 0) {
       throw new NotFoundException('Không tìm thấy user');
     }
+
+    // Cascade delete related user profile to avoid orphan profile blocking future registrations
+    await this.userProfileModel.deleteOne({ userId: numericUserId }).exec();
   }
 
   async login(loginDto: LoginDto) {

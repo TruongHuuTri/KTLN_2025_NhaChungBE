@@ -119,7 +119,7 @@ export class UserProfilesService {
     completion += (completedBasicFields / basicFields.length) * 30; // 30% weight
 
     // Preferences fields
-    const preferenceFields = ['preferredDistricts', 'budgetRange', 'roomType', 'amenities', 'lifestyle'];
+    const preferenceFields = ['preferredWards', 'budgetRange', 'roomType', 'amenities', 'lifestyle'];
     totalFields += preferenceFields.length;
     const completedPreferenceFields = preferenceFields.filter(field => profile[field] !== undefined).length;
     completion += (completedPreferenceFields / preferenceFields.length) * 40; // 40% weight
@@ -127,7 +127,7 @@ export class UserProfilesService {
     // Role-specific fields
     if (profile.businessType) {
       // Landlord fields
-      const landlordFields = ['experience', 'propertiesCount', 'propertyTypes', 'targetDistricts', 'priceRange'];
+      const landlordFields = ['experience', 'propertiesCount', 'propertyTypes', 'targetCityCode', 'targetCityName', 'targetWards', 'priceRange'];
       totalFields += landlordFields.length;
       const completedLandlordFields = landlordFields.filter(field => profile[field] !== undefined).length;
       completion += (completedLandlordFields / landlordFields.length) * 30; // 30% weight
