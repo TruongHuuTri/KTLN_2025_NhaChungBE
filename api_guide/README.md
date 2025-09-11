@@ -37,6 +37,12 @@ curl http://localhost:3001/api/users
 - Token Usage
 - JWT Authentication
 
+### 📝 [Registration System](./registration-system.md)
+- User Registration with OTP
+- Role Management (User ↔ Landlord)
+- Email Verification
+- Role Upgrade Flow
+
 ### 👥 [Users API](./users.md)
 - Get All Users
 - Create User

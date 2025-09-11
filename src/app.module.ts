@@ -11,6 +11,10 @@ import { VerificationsModule } from './modules/verifications/verifications.modul
 import { AdminModule } from './modules/admin/admin.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import {S3Module} from './s3/s3.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { EmailVerificationModule } from './modules/email-verification/email-verification.module';
+import { EmailService } from './shared/services/email.service';
+import { OTPService } from './shared/services/otp.service';
 @Module({
 
   imports: [
@@ -35,9 +39,11 @@ import {S3Module} from './s3/s3.module';
     AdminModule,
     AddressesModule,
     S3Module,
+    AuthModule,
+    EmailVerificationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EmailService, OTPService],
   
 })
 export class AppModule {}

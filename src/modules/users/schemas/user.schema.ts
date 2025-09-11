@@ -26,7 +26,14 @@ export class User {
   @Prop({ default: 'user' })
   role: string;
 
-  // Verification fields
+  // Email verification fields
+  @Prop({ default: false })
+  isEmailVerified: boolean;
+
+  @Prop()
+  emailVerifiedAt?: Date;
+
+  // Identity verification fields
   @Prop({ default: false })
   isVerified: boolean;
 
