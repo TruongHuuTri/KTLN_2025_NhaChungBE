@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { EmailVerificationService } from '../email-verification/email-verification.service';
+import { UserProfilesService } from '../user-profiles/user-profiles.service';
 import { EmailService } from '../../shared/services/email.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyRegistrationDto } from './dto/verify-registration.dto';
@@ -17,6 +18,7 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly userProfilesService: UserProfilesService,
     private readonly emailService: EmailService,
     private readonly jwtService: JwtService,
   ) {
@@ -99,6 +101,16 @@ export class AuthService {
 
     const savedUser = await newUser.save();
 
+    // Tạo profile mặc định cho user
+    try {
+      await this.userProfilesService.create({
+        userId: savedUser.userId,
+      });
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+      // Không throw error vì user đã được tạo thành công
+    }
+
     // Xóa thông tin tạm
     this.tempRegistrations.delete(email);
 
@@ -106,8 +118,9 @@ export class AuthService {
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
 
     return {
-      message: 'Đăng ký thành công. Vui lòng đăng nhập để sử dụng tài khoản.',
+      message: 'Đăng ký thành công. Vui lòng đăng nhập và hoàn thiện hồ sơ cá nhân.',
       user: userWithoutPassword,
+      nextStep: 'complete_profile', // Gợi ý bước tiếp theo
     };
   }
 

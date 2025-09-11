@@ -13,6 +13,7 @@ import { AddressesModule } from './modules/addresses/addresses.module';
 import {S3Module} from './s3/s3.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmailVerificationModule } from './modules/email-verification/email-verification.module';
+import { UserProfilesModule } from './modules/user-profiles/user-profiles.module';
 import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
 @Module({
@@ -41,6 +42,7 @@ import { OTPService } from './shared/services/otp.service';
     S3Module,
     AuthModule,
     EmailVerificationModule,
+    UserProfilesModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService, OTPService],

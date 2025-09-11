@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { EmailVerificationModule } from '../email-verification/email-verification.module';
+import { UserProfilesModule } from '../user-profiles/user-profiles.module';
 import { EmailService } from '../../shared/services/email.service';
 import { OTPService } from '../../shared/services/otp.service';
 
@@ -13,6 +14,7 @@ import { OTPService } from '../../shared/services/otp.service';
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     EmailVerificationModule,
+    UserProfilesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

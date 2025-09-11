@@ -43,6 +43,12 @@ curl http://localhost:3001/api/users
 - Email Verification
 - Role Upgrade Flow
 
+### 👤 [User Profiles](./user-profiles.md)
+- Profile Management
+- Completion Tracking
+- Role-based Information
+- Smart Recommendations
+
 ### 👥 [Users API](./users.md)
 - Get All Users
 - Create User
