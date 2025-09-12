@@ -57,6 +57,20 @@ export class Verification {
   @Prop()
   adminNote?: string;
 
+  // Kết quả FaceMatch từ AI
+  @Prop({
+    type: {
+      match: { type: Boolean },
+      similarity: { type: Number },
+      confidence: { type: String, enum: ['high', 'low'] }
+    }
+  })
+  faceMatchResult?: {
+    match: boolean;
+    similarity: number;
+    confidence: 'high' | 'low';
+  };
+
   @Prop()
   createdAt: Date;
 

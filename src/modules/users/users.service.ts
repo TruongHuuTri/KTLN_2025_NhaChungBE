@@ -193,7 +193,7 @@ export class UsersService {
       // Find verification by verificationId number
       verification = await this.verificationModel
         .findOne({ verificationId: user.verificationId })
-        .select('verificationId status submittedAt reviewedAt adminNote')
+        .select('verificationId status submittedAt reviewedAt adminNote faceMatchResult')
         .exec();
     }
 

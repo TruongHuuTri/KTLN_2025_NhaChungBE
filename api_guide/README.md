@@ -70,6 +70,7 @@ curl http://localhost:3001/api/users
 - Get Verification Status
 - Admin Verification Management
 - Approve/Reject Verification
+- 🤖 **FaceMatch Integration** - Auto-approval based on AI similarity
 
 ### 🏠 [Rent Posts API](./rent-posts.md)
 - Get All Rent Posts

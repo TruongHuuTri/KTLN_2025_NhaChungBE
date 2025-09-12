@@ -144,6 +144,20 @@ export class VerificationsService {
       }
     }
 
+    // Xác định status dựa trên FaceMatch result
+    let status = 'pending';
+    let faceMatchResult = createVerificationDto.faceMatchResult;
+    
+    if (faceMatchResult) {
+      // Tự động tính confidence dựa trên similarity
+      faceMatchResult.confidence = faceMatchResult.similarity >= 50 ? 'high' : 'low';
+      
+      // Xác định status
+      if (faceMatchResult.similarity >= 50) {
+        status = 'approved';  // Tự động approve nếu similarity >= 50%
+      }
+    }
+
     // Convert string dates to Date objects
     const birthDate = new Date(createVerificationDto.dateOfBirth);
     const issueDate = new Date(createVerificationDto.issueDate);
@@ -182,8 +196,9 @@ export class VerificationsService {
           gender: createVerificationDto.gender,
           issueDate: issueDate,
           issuePlace: createVerificationDto.issuePlace,
-          status: 'pending',
+          status: status,  // Status được xác định bởi AI
           submittedAt: new Date(),
+          faceMatchResult: createVerificationDto.faceMatchResult,  // Lưu kết quả FaceMatch
         });
 
     const savedVerification = await verification.save();
@@ -193,6 +208,14 @@ export class VerificationsService {
       { userId: userId },
       { verificationId: savedVerification.verificationId } // Lưu số tự tăng
     ).exec();
+
+    // Nếu được auto-approve, cập nhật isVerified của user
+    if (status === 'approved') {
+      await this.userModel.findOneAndUpdate(
+        { userId: userId },
+        { isVerified: true }
+      ).exec();
+    }
 
     return savedVerification;
   }

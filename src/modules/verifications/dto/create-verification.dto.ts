@@ -4,8 +4,31 @@ import {
   IsDateString, 
   IsIn, 
   Matches,
-  MinLength
+  MinLength,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
+  ValidateNested,
+  IsObject
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// Bỏ validation cho confidence - chỉ là thông tin bổ sung cho admin
+
+export class FaceMatchResultDto {
+  @IsBoolean({ message: 'Face match result phải là boolean' })
+  match: boolean;
+
+  @IsNumber({}, { message: 'Similarity phải là số' })
+  @Min(0, { message: 'Similarity phải >= 0' })
+  @Max(100, { message: 'Similarity phải <= 100' })
+  similarity: number;
+
+  // Confidence sẽ được Backend tự động tính dựa trên similarity
+  confidence?: 'high' | 'low';
+}
 
 export class CreateVerificationDto {
   @IsNotEmpty({ message: 'Số CMND/CCCD không được để trống' })
@@ -33,6 +56,13 @@ export class CreateVerificationDto {
   @IsNotEmpty({ message: 'Nơi cấp không được để trống' })
   @IsString({ message: 'Nơi cấp phải là chuỗi' })
   issuePlace: string;
+
+  // Kết quả FaceMatch từ Frontend (optional)
+  @IsOptional()
+  @IsObject({ message: 'FaceMatchResult phải là object' })
+  @ValidateNested()
+  @Type(() => FaceMatchResultDto)
+  faceMatchResult?: FaceMatchResultDto;
 
   // Không nhận ảnh CCCD từ client - chỉ nhận thông tin đã extract từ OCR
   // frontImage và backImage chỉ xử lý client-side, không gửi lên server

@@ -38,6 +38,7 @@ export class VerificationsController {
         submittedAt: savedVerification.submittedAt,
         idNumber: savedVerification.idNumber,
         fullName: savedVerification.fullName,
+        faceMatchResult: savedVerification.faceMatchResult,  // Thêm faceMatchResult vào response
       },
     };
   }
@@ -84,6 +85,7 @@ export class VerificationsController {
         reviewedAt: updatedVerification.reviewedAt,
         reviewedBy: updatedVerification.reviewedBy,
         adminNote: updatedVerification.adminNote,
+        faceMatchResult: updatedVerification.faceMatchResult,  // Thêm faceMatchResult vào admin response
       },
     };
   }
