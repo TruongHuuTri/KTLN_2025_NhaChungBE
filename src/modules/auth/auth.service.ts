@@ -56,7 +56,7 @@ export class AuthService {
   }
 
   /**
-   * Xác thực OTP và tạo tài khoản
+   * Xác thực OTP và TẠO USER
    */
   async verifyRegistration(verifyDto: VerifyRegistrationDto) {
     const { email, otp } = verifyDto;
@@ -101,16 +101,6 @@ export class AuthService {
 
     const savedUser = await newUser.save();
 
-    // Tạo profile mặc định cho user
-    try {
-      await this.userProfilesService.create({
-        userId: savedUser.userId,
-      });
-    } catch (error) {
-      console.error('Error creating user profile:', error);
-      // Không throw error vì user đã được tạo thành công
-    }
-
     // Xóa thông tin tạm
     this.tempRegistrations.delete(email);
 
@@ -118,9 +108,9 @@ export class AuthService {
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
 
     return {
-      message: 'Đăng ký thành công. Vui lòng đăng nhập và hoàn thiện hồ sơ cá nhân.',
+      message: 'OTP xác thực thành công. Vui lòng hoàn thiện hồ sơ cá nhân.',
       user: userWithoutPassword,
-      nextStep: 'complete_profile', // Gợi ý bước tiếp theo
+      nextStep: 'complete_profile', // Bước tiếp theo: hoàn thiện profile
     };
   }
 

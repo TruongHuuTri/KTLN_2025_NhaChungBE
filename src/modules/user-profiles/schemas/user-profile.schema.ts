@@ -13,7 +13,7 @@ export class UserProfile {
 
   // Basic Info
   @Prop()
-  age?: number;
+  dateOfBirth?: Date;
 
   @Prop({ enum: ['male', 'female', 'other'] })
   gender?: string;

@@ -4,6 +4,19 @@
 
 User Profiles API cho phép quản lý thông tin chi tiết của người dùng để cá nhân hóa trải nghiệm và gợi ý phù hợp.
 
+## 🔄 Flow Đăng Ký & Profile
+
+### **Luồng đăng ký hoàn chỉnh:**
+1. **Đăng ký** → `POST /api/auth/register` (gửi OTP)
+2. **Xác thực OTP** → `POST /api/auth/verify-registration` (tạo user)
+3. **Hoàn thiện profile** → `POST /api/user-profiles` (tạo profile cho user đã có)
+4. **Đăng nhập** → `POST /api/users/login` (lấy token)
+
+### **User được tạo khi verify OTP:**
+- User được tạo ngay khi verify OTP thành công
+- Profile được tạo riêng biệt sau đó
+- User có thể đăng nhập ngay sau khi tạo profile
+
 ## 🏗️ Kiến trúc
 
 - **Collection riêng**: `UserProfile` tách biệt với `User`
@@ -19,7 +32,7 @@ interface UserProfile {
   userId: number;
   
   // Basic Info
-  age?: number;
+  dateOfBirth?: Date;  // Thay đổi từ age sang dateOfBirth
   gender?: 'male' | 'female' | 'other';
   occupation?: string;
   income?: number;
@@ -74,16 +87,15 @@ interface UserProfile {
 
 ## 🔗 API Endpoints
 
-### 1. Tạo Profile
+### 1. Tạo Profile (cho user đã có)
 
 ```http
 POST /api/user-profiles
-Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "userId": 1,
-  "age": 25,
+  "dateOfBirth": "1999-01-15T00:00:00.000Z",
   "gender": "male",
   "occupation": "Developer",
   "income": 15000000,
@@ -108,7 +120,7 @@ Content-Type: application/json
 {
   "profileId": 1,
   "userId": 1,
-  "age": 25,
+  "dateOfBirth": "1999-01-15T00:00:00.000Z",
   "gender": "male",
   "occupation": "Developer",
   "income": 15000000,
@@ -127,26 +139,26 @@ Content-Type: application/json
   "socialLevel": 3,
   "isBasicInfoComplete": true,
   "isPreferencesComplete": true,
-  "isLandlordInfoComplete": true,
-  "completionPercentage": 100,
+  "isLandlordInfoComplete": false,
+  "completionPercentage": 75,
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
 }
 ```
 
-### 2. Lấy Profile theo UserId
+### 2. Lấy Profile của User hiện tại
 
 ```http
-GET /api/user-profiles/user/:userId
+GET /api/user-profiles/me
 Authorization: Bearer <token>
 ```
 
 **Permission:** User chỉ có thể xem profile của mình, Admin có thể xem tất cả.
 
-### 3. Cập nhật Profile
+### 3. Cập nhật Profile của User hiện tại
 
 ```http
-PATCH /api/user-profiles/user/:userId
+PATCH /api/user-profiles/me
 Authorization: Bearer <token>
 Content-Type: application/json
 

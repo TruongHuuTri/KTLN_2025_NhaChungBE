@@ -234,7 +234,7 @@ export class PersonalInfo {
   fullName: string;
 
   @Prop({ required: true })
-  age: number;
+  dateOfBirth: Date;
 
   @Prop({ required: true })
   gender: string;

@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsArray, IsOptional, ValidateNested, IsBoolean, IsEnum } from 'class-validator';
+import { IsString, IsNumber, IsArray, IsOptional, ValidateNested, IsBoolean, IsEnum, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AddressDto {
@@ -233,8 +233,8 @@ export class CurrentTenantDto {
   @IsString()
   fullName: string;
 
-  @IsNumber()
-  age: number;
+  @IsDateString()
+  dateOfBirth: string;
 
   @IsString()
   gender: string;

@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserProfile, UserProfileDocument } from './schemas/user-profile.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateUserProfileDto } from './dto/create-user-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { AgeUtils } from '../../shared/utils/age.utils';
 
 @Injectable()
 export class UserProfilesService {
   constructor(
     @InjectModel(UserProfile.name)
     private userProfileModel: Model<UserProfileDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
+
 
   /**
    * Tạo profile mới cho user
@@ -23,6 +28,13 @@ export class UserProfilesService {
     
     if (existingProfile) {
       throw new ConflictException('User đã có profile');
+    }
+
+    // Validate dateOfBirth nếu có
+    if (createUserProfileDto.dateOfBirth) {
+      if (!AgeUtils.validateAge(createUserProfileDto.dateOfBirth)) {
+        throw new BadRequestException('Tuổi phải từ 18-100');
+      }
     }
 
     // Tạo profileId
@@ -64,6 +76,13 @@ export class UserProfilesService {
     const profile = await this.userProfileModel.findOne({ userId });
     if (!profile) {
       throw new NotFoundException('Profile không tồn tại');
+    }
+
+    // Validate dateOfBirth nếu có
+    if (updateUserProfileDto.dateOfBirth) {
+      if (!AgeUtils.validateAge(updateUserProfileDto.dateOfBirth)) {
+        throw new BadRequestException('Tuổi phải từ 18-100');
+      }
     }
 
     // Cập nhật thông tin

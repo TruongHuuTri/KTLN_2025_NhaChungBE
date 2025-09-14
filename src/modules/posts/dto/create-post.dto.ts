@@ -7,7 +7,8 @@ import {
   IsBoolean, 
   IsEnum,
   IsEmail,
-  IsPhoneNumber
+  IsPhoneNumber,
+  IsDateString
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -299,8 +300,8 @@ export class PersonalInfoDto {
   @IsString()
   fullName: string;
 
-  @IsNumber()
-  age: number;
+  @IsDateString()
+  dateOfBirth: string;
 
   @IsString()
   gender: string;

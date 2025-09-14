@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, IsEnum, Min, Max, ValidateNested, IsUrl } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, IsEnum, Min, Max, ValidateNested, IsUrl, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BudgetRangeDto {
@@ -50,10 +50,8 @@ export class CreateUserProfileDto {
 
   // Basic Info
   @IsOptional()
-  @IsNumber()
-  @Min(18)
-  @Max(100)
-  age?: number;
+  @IsDateString()
+  dateOfBirth?: string;
 
   @IsOptional()
   @IsEnum(['male', 'female', 'other'])

@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsDateString } from 'class-validator';
 
 export class AddTenantDto {
   @IsNumber()
@@ -7,8 +7,8 @@ export class AddTenantDto {
   @IsString()
   fullName: string;
 
-  @IsNumber()
-  age: number;
+  @IsDateString()
+  dateOfBirth: string;
 
   @IsString()
   gender: string;
