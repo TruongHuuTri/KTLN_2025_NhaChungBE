@@ -72,19 +72,31 @@ curl http://localhost:3001/api/users
 - Approve/Reject Verification
 - 🤖 **FaceMatch Integration** - Auto-approval based on AI similarity
 
-### 🏠 [Rent Posts API](./rent-posts.md)
-- Get All Rent Posts
-- Create Rent Posts (Phòng trọ, Chung cư, Nhà nguyên căn)
-- Get Rent Post by ID
-- Update/Delete Rent Posts
-- Upload Files (S3 Presigned URL)
-- Data Structure
+### 🏠 [Rooms API](./rooms.md)
+- **Room Management** - Quản lý dãy nhà, tầng, phòng trọ
+- **Building Management** - Tạo và quản lý dãy nhà
+- **Roommate Management** - Quản lý người ở ghép
+- **Search & Filter** - Tìm kiếm phòng thông minh
+- **Full Room Info** - Thông tin phòng đầy đủ
 
-### 🤝 [Roommate Posts API](./roommate-posts.md)
-- Get All Roommate Posts
-- Create Roommate Post
-- Update Roommate Post
-- Field Descriptions
+### 📝 [Posts API](./posts.md)
+- **Unified Posts System** - Gộp rent-posts và roommate-posts
+- **Post Types** - 'rent' | 'roommate'
+- **Room Management Integration** - Liên kết với rooms collection
+- **Search & Filter** - Tìm kiếm thông minh
+- **Landlord Management** - Quản lý bài đăng từ room management
+
+### 📋 [Contracts API](./contracts.md)
+- **Contract Management** - Quản lý hợp đồng thuê
+- **Rental Requests** - Xử lý yêu cầu thuê trọ
+- **Invoice Management** - Tạo và quản lý hóa đơn
+- **Roommate Applications** - Ứng tuyển ở ghép
+- **User Current Room** - Phòng hiện tại của user
+
+### 🏠 [Landlord Management Flow](./landlord-management-flow.md)
+- **Complete Workflow** - Luồng hoạt động toàn diện
+- **Revenue Reports** - Báo cáo doanh thu
+- **Business Logic** - Logic nghiệp vụ chi tiết
 
 ### 🏘️ [Addresses API](./addresses.md)
 - Get All Addresses
