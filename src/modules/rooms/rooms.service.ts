@@ -217,7 +217,6 @@ export class RoomsService {
     return this.roomModel.find(query).exec();
   }
 
-  // Helper methods
   private async getNextBuildingId(): Promise<number> {
     const lastBuilding = await this.buildingModel.findOne().sort({ buildingId: -1 }).exec();
     return lastBuilding ? lastBuilding.buildingId + 1 : 1;

@@ -14,51 +14,60 @@ export class PostsService {
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
   ) {}
 
-  // Create Post
   async createPost(userId: number, postData: CreatePostDto): Promise<Post> {
     const postId = await this.getNextPostId();
+    const room = await this.validateAndGetRoom(postData.roomId);
     
-    // Get room info and validate
-    const room = await this.roomModel.findOne({ roomId: postData.roomId }).exec();
-    if (!room) {
-      throw new NotFoundException('Room not found');
-    }
+    const enrichedPostData = this.enrichPostData(postData, room);
     
-    // Set category from room
-    postData.category = room.category as 'chung-cu' | 'phong-tro' | 'nha-nguyen-can' | 'o-ghep';
-    
-    // Set room management info
-    postData.isManaged = true;
-    postData.buildingId = room.buildingId;
-    postData.landlordId = room.landlordId;
-    postData.source = 'room_management';
-
     const post = new this.postModel({
       postId,
       userId,
-      ...postData,
+      ...enrichedPostData,
     });
+    
     return post.save();
   }
 
-  // Get user's rooms for post creation
+  private async validateAndGetRoom(roomId: number): Promise<Room> {
+    const room = await this.roomModel.findOne({ roomId }).exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+    return room;
+  }
+
+  private enrichPostData(postData: CreatePostDto, room: Room): CreatePostDto {
+    return {
+      ...postData,
+      category: room.category as 'chung-cu' | 'phong-tro' | 'nha-nguyen-can' | 'o-ghep',
+      isManaged: true,
+      buildingId: room.buildingId,
+      landlordId: room.landlordId,
+      source: 'room_management',
+    };
+  }
+
   async getUserRooms(userId: number): Promise<Room[]> {
     return this.roomModel.find({ landlordId: userId, isActive: true }).exec();
   }
 
-  // Get post with room media info
   async getPostWithRoomMedia(postId: number): Promise<any> {
     const post = await this.getPostById(postId);
+    
     if (!post.roomId) {
       return post;
     }
-
+    
     const room = await this.roomModel.findOne({ roomId: post.roomId }).exec();
     if (!room) {
       return post;
     }
+    
+    return this.mergePostWithRoomMedia(post, room);
+  }
 
-    // Merge media: Post media takes priority, fallback to Room media
+  private mergePostWithRoomMedia(post: any, room: Room): any {
     return {
       ...post,
       images: post.images?.length > 0 ? post.images : room.images || [],
@@ -70,7 +79,6 @@ export class PostsService {
     };
   }
 
-  // Get Posts
   async getPosts(filters: SearchPostsDto = {}): Promise<Post[]> {
     const query: any = { status: 'active' };
 

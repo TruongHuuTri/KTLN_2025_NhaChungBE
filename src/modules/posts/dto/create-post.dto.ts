@@ -1,4 +1,14 @@
-import { IsString, IsNumber, IsArray, IsOptional, ValidateNested, IsBoolean, IsEnum } from 'class-validator';
+import { 
+  IsString, 
+  IsNumber, 
+  IsArray, 
+  IsOptional, 
+  ValidateNested, 
+  IsBoolean, 
+  IsEnum,
+  IsEmail,
+  IsPhoneNumber
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AddressDto {
@@ -349,19 +359,17 @@ export class CreatePostDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  images?: string[];  // Optional - nếu có thì dùng, không có thì lấy từ Room
+  images?: string[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  videos?: string[];  // Optional - nếu có thì dùng, không có thì lấy từ Room
+  videos?: string[];
 
-  // Liên kết với room (required)
   @IsNumber()
   roomId: number;
 
 
-  // Thông tin riêng cho roommate posts
   @IsOptional()
   @ValidateNested()
   @Type(() => PersonalInfoDto)
@@ -372,16 +380,15 @@ export class CreatePostDto {
   @Type(() => RequirementsDto)
   requirements?: RequirementsDto;
 
-  // Liên hệ
   @IsOptional()
   @IsString()
   phone?: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   email?: string;
 
-  // Các trường được set bởi service
+  // Service-managed fields
   @IsOptional()
   @IsBoolean()
   isManaged?: boolean;

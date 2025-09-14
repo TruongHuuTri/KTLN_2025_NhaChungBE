@@ -7,11 +7,11 @@ export class LandlordGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('Chưa đăng nhập');
+      throw new ForbiddenException('Authentication required');
     }
 
     if (user.role !== 'landlord') {
-      throw new ForbiddenException('Chỉ landlord mới có quyền truy cập');
+      throw new ForbiddenException('Landlord access required');
     }
 
     return true;

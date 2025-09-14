@@ -11,7 +11,6 @@ import { SearchPostsDto } from './dto/search-posts.dto';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  // Public endpoints
   @Get()
   async getPosts(@Query() filters: SearchPostsDto) {
     return this.postsService.getPosts(filters);
@@ -32,43 +31,36 @@ export class PostsController {
     return this.postsService.getPostWithRoomInfo(postId);
   }
 
-  // Protected endpoints
   @Get('user/rooms')
   @UseGuards(JwtAuthGuard)
   async getUserRooms(@Request() req) {
-    const userId = req.user.userId;
-    return this.postsService.getUserRooms(userId);
+    return this.postsService.getUserRooms(req.user.userId);
   }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   async createPost(@Request() req, @Body() postData: CreatePostDto) {
-    const userId = req.user.userId;
-    return this.postsService.createPost(userId, postData);
+    return this.postsService.createPost(req.user.userId, postData);
   }
 
   @Get('user/my-posts')
   @UseGuards(JwtAuthGuard)
   async getMyPosts(@Request() req) {
-    const userId = req.user.userId;
-    return this.postsService.getPostsByUser(userId);
+    return this.postsService.getPostsByUser(req.user.userId);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   async updatePost(@Request() req, @Param('id') postId: number, @Body() updateData: UpdatePostDto) {
-    // TODO: Add authorization check to ensure user owns the post
     return this.postsService.updatePost(postId, updateData);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   async deletePost(@Request() req, @Param('id') postId: number) {
-    // TODO: Add authorization check to ensure user owns the post
     return this.postsService.deletePost(postId);
   }
 
-  // Admin endpoints
   @Put(':id/status')
   @UseGuards(AdminJwtGuard)
   async updatePostStatus(@Param('id') postId: number, @Body() body: { status: string }) {
@@ -83,8 +75,7 @@ export class LandlordPostsController {
 
   @Get()
   async getLandlordPosts(@Request() req) {
-    const landlordId = req.user.userId;
-    return this.postsService.getPostsByLandlord(landlordId);
+    return this.postsService.getPostsByLandlord(req.user.userId);
   }
 
   @Get('room/:roomId')
