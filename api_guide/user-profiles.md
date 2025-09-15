@@ -9,7 +9,7 @@ User Profiles API cho phép quản lý thông tin chi tiết của người dùn
 ### **Luồng đăng ký hoàn chỉnh:**
 1. **Đăng ký** → `POST /api/auth/register` (gửi OTP)
 2. **Xác thực OTP** → `POST /api/auth/verify-registration` (tạo user)
-3. **Hoàn thiện profile** → `POST /api/user-profiles` (tạo profile cho user đã có)
+3. **Tạo profile mặc định** → `POST /api/user-profiles/me` (tạo profile trống cho user hiện tại)
 4. **Đăng nhập** → `POST /api/users/login` (lấy token)
 
 ### **User được tạo khi verify OTP:**
@@ -32,13 +32,16 @@ interface UserProfile {
   userId: number;
   
   // Basic Info
-  dateOfBirth?: Date;  // Thay đổi từ age sang dateOfBirth
+  dateOfBirth?: Date;  // Dùng dateOfBirth (không dùng age)
   gender?: 'male' | 'female' | 'other';
   occupation?: string;
   income?: number;
   currentLocation?: string;
   
   // Preferences
+  // Ưu tiên dùng wards (tương thích preferredDistricts trong giai đoạn chuyển đổi)
+  preferredWards?: string[];
+  preferredWardCodes?: string[];
   preferredDistricts?: string[];
   budgetRange?: { min: number; max: number };
   roomType?: string[];
@@ -56,16 +59,24 @@ interface UserProfile {
   experience?: 'new' | '1-2_years' | '3-5_years' | '5+_years';
   propertiesCount?: number;
   propertyTypes?: string[];
+  // Ưu tiên dùng wards/city (tương thích targetDistricts trong giai đoạn chuyển đổi)
+  targetCityCode?: string;
+  targetCityName?: string;
+  targetWards?: string[];
+  targetWardCodes?: string[];
   targetDistricts?: string[];
   priceRange?: { min: number; max: number };
-  targetTenants?: string[];
+  // Chấp nhận cả bộ key mới và cũ
+  targetTenants?: (
+    'student' | 'office_worker' | 'family' | 'couple' | 'group_friends' |
+    'sinh_vien' | 'nhan_vien_vp' | 'gia_dinh' | 'cap_doi' | 'nhom_ban'
+  )[];
   managementStyle?: 'strict' | 'flexible' | 'friendly';
   responseTime?: 'immediate' | 'within_hour' | 'within_day';
   additionalServices?: string[];
   
   // Business info
   businessLicense?: string;
-  taxCode?: string;
   bankAccount?: {
     bankName: string;
     accountNumber: string;
@@ -87,63 +98,11 @@ interface UserProfile {
 
 ## 🔗 API Endpoints
 
-### 1. Tạo Profile (cho user đã có)
+### 1. Tạo profile trống cho user hiện tại
 
 ```http
-POST /api/user-profiles
-Content-Type: application/json
-
-{
-  "userId": 1,
-  "dateOfBirth": "1999-01-15T00:00:00.000Z",
-  "gender": "male",
-  "occupation": "Developer",
-  "income": 15000000,
-  "currentLocation": "Quận 1, TP.HCM",
-  "preferredDistricts": ["Quận 1", "Quận 3", "Quận 7"],
-  "budgetRange": {
-    "min": 5000000,
-    "max": 10000000
-  },
-  "roomType": ["phong_tro", "chung_cu"],
-  "amenities": ["wifi", "parking", "gym"],
-  "lifestyle": "quiet",
-  "smoking": false,
-  "pets": false,
-  "cleanliness": 4,
-  "socialLevel": 3
-}
-```
-
-**Response:**
-```json
-{
-  "profileId": 1,
-  "userId": 1,
-  "dateOfBirth": "1999-01-15T00:00:00.000Z",
-  "gender": "male",
-  "occupation": "Developer",
-  "income": 15000000,
-  "currentLocation": "Quận 1, TP.HCM",
-  "preferredDistricts": ["Quận 1", "Quận 3", "Quận 7"],
-  "budgetRange": {
-    "min": 5000000,
-    "max": 10000000
-  },
-  "roomType": ["phong_tro", "chung_cu"],
-  "amenities": ["wifi", "parking", "gym"],
-  "lifestyle": "quiet",
-  "smoking": false,
-  "pets": false,
-  "cleanliness": 4,
-  "socialLevel": 3,
-  "isBasicInfoComplete": true,
-  "isPreferencesComplete": true,
-  "isLandlordInfoComplete": false,
-  "completionPercentage": 75,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
+POST /api/user-profiles/me
+Authorization: Bearer <token>
 ```
 
 ### 2. Lấy Profile của User hiện tại
@@ -162,10 +121,41 @@ PATCH /api/user-profiles/me
 Authorization: Bearer <token>
 Content-Type: application/json
 
+// Form Người Thuê (role=user)
 {
-  "age": 26,
-  "income": 18000000,
-  "preferredDistricts": ["Quận 1", "Quận 2", "Quận 7"]
+  "dateOfBirth": "2000-05-10",
+  "gender": "male",
+  "occupation": "student",
+  "currentLocation": "Phường 7, TP.HCM",
+  "preferredDistricts": ["Phường 7", "Phường 10"],
+  "budgetRange": { "min": 2000000, "max": 5000000 },
+  "roomType": ["phong_tro", "chung_cu"],
+  "amenities": ["wifi", "thang_may", "ban_cong"],
+  "lifestyle": "quiet",
+  "smoking": false,
+  "pets": false,
+  "cleanliness": 4,
+  "socialLevel": 3,
+  "contactMethod": ["Zalo", "Điện thoại"],
+  "availableTime": { "weekdays": "Sau 18:00", "weekends": "Cả ngày" }
+}
+
+// Form Chủ Nhà (role=landlord)
+{
+  "businessType": "individual",
+  "experience": "1-2_years",
+  "propertiesCount": 5,
+  "propertyTypes": ["phong_tro", "chung_cu"],
+  "priceRange": { "min": 2500000, "max": 10000000 },
+  "targetDistricts": ["Phường 7", "Phường 10"],
+  "targetTenants": ["student", "office_worker"],
+  "managementStyle": "friendly",
+  "responseTime": "within_day",
+  "additionalServices": ["bao_ve_24_7", "ve_sinh_khu_chung"],
+  "businessLicense": "https://cdn.example.com/licenses/abc.jpg",
+  "bankAccount": { "bankName": "Vietcombank", "accountNumber": "0123456789", "accountHolder": "Nguyen Van A" },
+  "contactMethod": ["Điện thoại"],
+  "availableTime": { "weekdays": "9:00-17:00", "weekends": "linh hoạt" }
 }
 ```
 
@@ -196,13 +186,13 @@ Authorization: Bearer <token>
 
 ## 🎯 Completion Percentage
 
-Hệ thống tự động tính toán % hoàn thiện profile:
+Hệ thống tự động tính toán % hoàn thiện profile (theo nhóm field phù hợp với role):
 
-- **Basic Info (30%)**: age, gender, occupation, income, currentLocation
-- **Preferences (40%)**: preferredDistricts, budgetRange, roomType, amenities, lifestyle
-- **Role-specific (30%)**: 
+- **Basic Info (30%)**: dateOfBirth, gender, occupation, income, currentLocation
+- **Preferences (40%)**: preferredWards (hoặc preferredDistricts), budgetRange, roomType, amenities, lifestyle
+- **Role-specific (30%)**:
   - User: smoking, pets, cleanliness, socialLevel
-  - Landlord: experience, propertiesCount, propertyTypes, targetDistricts, priceRange
+  - Landlord: experience, propertyTypes, targetWards (hoặc targetDistricts), priceRange
 
 ## 🔄 Flow Integration
 
@@ -226,48 +216,39 @@ Khi user đăng ký thành công, hệ thống tự động tạo profile với:
 
 ### 3. Khi upgrade role
 
-Khi user chuyển từ `user` → `landlord`, cần cập nhật thêm:
+Khi user chuyển từ `user` → `landlord`, cần cập nhật thêm (tối thiểu các trường chính):
 - `businessType`
 - `experience`
-- `propertiesCount`
 - `propertyTypes`
-- `targetDistricts`
+- `targetCityCode/Name` và/hoặc `targetWards/targetWardCodes` (tương thích `targetDistricts`)
 - `priceRange`
 - `targetTenants`
 - `managementStyle`
 - `responseTime`
 - `additionalServices`
 - `businessLicense`
-- `taxCode`
 - `bankAccount`
 - `contactMethod`
 - `availableTime`
 
 ## 🎨 Frontend Integration
 
-### 1. API Usage với UserId
+### 1. API Usage (sử dụng endpoint /me)
 
 ```typescript
-// Frontend sử dụng userId từ JWT token
-const getUserIdFromToken = () => {
-  const token = localStorage.getItem('token');
-  const payload = JSON.parse(atob(token.split('.')[1]));
-  return payload.sub; // userId
-};
-
 // Lấy profile của user hiện tại
 const getMyProfile = async () => {
-  const userId = getUserIdFromToken();
-  const response = await fetch(`/api/user-profiles/user/${userId}`, {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/api/user-profiles/me`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   return response.json();
 };
 
-// Cập nhật profile của user hiện tại
+// Cập nhật profile của user hiện tại (gửi đúng form theo role)
 const updateMyProfile = async (data) => {
-  const userId = getUserIdFromToken();
-  const response = await fetch(`/api/user-profiles/user/${userId}`, {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/api/user-profiles/me`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -284,21 +265,21 @@ const updateMyProfile = async (data) => {
 ```typescript
 // Step 1: Basic Info
 const basicInfoFields = [
-  'age', 'gender', 'occupation', 'income', 'currentLocation'
+  'dateOfBirth', 'gender', 'occupation', 'income', 'currentLocation'
 ];
 
 // Step 2: Preferences
 const preferenceFields = [
-  'preferredDistricts', 'budgetRange', 'roomType', 'amenities', 'lifestyle'
+  'preferredWards', 'budgetRange', 'roomType', 'amenities', 'lifestyle'
 ];
 
 // Step 3: Role-specific
 const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
 const landlordFields = [
-  'businessType', 'experience', 'propertiesCount', 'propertyTypes',
-  'targetDistricts', 'priceRange', 'targetTenants', 'managementStyle',
-  'responseTime', 'additionalServices', 'businessLicense', 'taxCode',
-  'bankAccount', 'contactMethod', 'availableTime'
+  'businessType', 'experience', 'propertyTypes', 'priceRange',
+  'targetWards', 'targetWardCodes', 'targetCityCode', 'targetCityName',
+  'targetTenants', 'managementStyle', 'responseTime', 'additionalServices',
+  'businessLicense', 'bankAccount', 'contactMethod', 'availableTime'
 ];
 ```
 
@@ -340,3 +321,28 @@ const recommendations = {
 - Role change cần cập nhật thêm thông tin landlord
 - Tất cả endpoints cần authentication
 - Profile có thể cập nhật nhiều lần
+- Verify-registration hiện trả về access_token để FE tiếp tục flow ngay (không bắt buộc login lại)
+- BE không ép enum cho các trường lựa chọn nữa; FE gửi string/string[] theo select sẽ được lưu nguyên giá trị
+- Địa chỉ khác nhau theo role được chấp nhận linh hoạt:
+  - User: preferredWards | preferredWardCodes | preferredDistricts
+  - Landlord: targetWards | targetWardCodes | targetDistricts | targetCityCode | targetCityName
+
+## 🔔 Thay đổi gần đây (dành cho FE)
+
+1) Auth/OTP
+- verify-registration trả: { access_token, user, nextStep }
+- FE dùng token này để gọi POST /user-profiles/me và PATCH /user-profiles/me ngay sau OTP
+
+2) Bỏ enum cứng, lưu giá trị raw từ FE
+- Không còn enum bắt buộc cho: gender, lifestyle, businessType, experience, managementStyle, responseTime
+- Mảng lựa chọn: roomType[], propertyTypes[], targetTenants[], amenities[], additionalServices[]
+- FE chịu trách nhiệm chuẩn hóa giá trị thông qua select; BE lưu nguyên trạng
+
+3) Địa chỉ theo role và Completion
+- User (Preferences 40%): cần 1 trong nhóm preferred* (preferredWards|preferredWardCodes|preferredDistricts) + budgetRange, roomType, amenities, lifestyle
+- Landlord (Role 30%): cần experience, propertyTypes, priceRange + 1 trong nhóm target* (targetWards|targetWardCodes|targetDistricts|targetCityCode|targetCityName)
+- Basic 30% dùng dateOfBirth (YYYY-MM-DD), gender, occupation, income, currentLocation
+
+4) Gợi ý sử dụng
+- Khi hoàn tất OTP, gọi: POST /user-profiles/me nếu chưa có profile, sau đó PATCH /user-profiles/me theo role hiện tại
+- Tránh gửi đồng thời cả preferred* và target* trong cùng một payload nếu đang ở một role cụ thể; chỉ gửi nhóm phù hợp role

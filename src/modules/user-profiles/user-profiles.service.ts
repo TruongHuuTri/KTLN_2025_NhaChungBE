@@ -85,7 +85,7 @@ export class UserProfilesService {
       }
     }
 
-    // Cập nhật thông tin
+    // Cập nhật thông tin (giữ nguyên dữ liệu FE gửi)
     Object.assign(profile, updateUserProfileDto);
     const updatedProfile = await profile.save();
 
@@ -129,40 +129,46 @@ export class UserProfilesService {
     if (!profile) return;
 
     let completion = 0;
-    let totalFields = 0;
+    // Dùng lại ở nhiều nơi: xác định đã có khu vực mục tiêu (landlord)
+    const hasTargetArea = !!(profile['targetWards'] && (profile['targetWards'] as any[]).length)
+      || !!(profile['targetDistricts'] && (profile['targetDistricts'] as any[]).length)
+      || !!(profile['targetWardCodes'] && (profile['targetWardCodes'] as any[]).length)
+      || !!profile['targetCityCode'] || !!profile['targetCityName'];
 
-    // Basic info fields
-    const basicFields = ['age', 'gender', 'occupation', 'income', 'currentLocation'];
-    totalFields += basicFields.length;
+    // Basic info fields (30%)
+    const basicFields = ['dateOfBirth', 'gender', 'occupation', 'income', 'currentLocation'];
     const completedBasicFields = basicFields.filter(field => profile[field] !== undefined).length;
-    completion += (completedBasicFields / basicFields.length) * 30; // 30% weight
+    completion += (completedBasicFields / basicFields.length) * 30;
 
-    // Preferences fields
-    const preferenceFields = ['preferredWards', 'budgetRange', 'roomType', 'amenities', 'lifestyle'];
-    totalFields += preferenceFields.length;
-    const completedPreferenceFields = preferenceFields.filter(field => profile[field] !== undefined).length;
-    completion += (completedPreferenceFields / preferenceFields.length) * 40; // 40% weight
+    // Preferences fields (40%) - user: preferredCity + preferredWards
+    const preferenceCoreFields = ['budgetRange', 'roomType', 'amenities', 'lifestyle'];
+    const completedCorePref = preferenceCoreFields.filter(field => profile[field] !== undefined).length;
+    const hasPreferredArea = !!profile['preferredCity'] && !!(profile['preferredWards'] && (profile['preferredWards'] as any[]).length);
+    const completedPreferenceFields = completedCorePref + (hasPreferredArea ? 1 : 0);
+    const totalPreferenceFields = preferenceCoreFields.length + 1; // +1 nhóm preferred area
+    completion += (completedPreferenceFields / totalPreferenceFields) * 40;
 
     // Role-specific fields
     if (profile.businessType) {
-      // Landlord fields
-      const landlordFields = ['experience', 'propertiesCount', 'propertyTypes', 'targetCityCode', 'targetCityName', 'targetWards', 'priceRange'];
-      totalFields += landlordFields.length;
-      const completedLandlordFields = landlordFields.filter(field => profile[field] !== undefined).length;
-      completion += (completedLandlordFields / landlordFields.length) * 30; // 30% weight
+      // Landlord fields (30%) - yêu cầu targetCity + targetWards
+      const landlordFields = ['experience', 'propertyTypes', 'priceRange'];
+      const baseCompleted = landlordFields.filter(field => profile[field] !== undefined).length;
+      const landlordHasTarget = !!profile['targetCity'] && !!(profile['targetWards'] && (profile['targetWards'] as any[]).length);
+      const completedLandlordFields = baseCompleted + (landlordHasTarget ? 1 : 0);
+      const totalLandlordFields = landlordFields.length + 1; // +1 nhóm target
+      completion += (completedLandlordFields / totalLandlordFields) * 30;
     } else {
-      // User fields
+      // User fields (30%)
       const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
-      totalFields += userFields.length;
       const completedUserFields = userFields.filter(field => profile[field] !== undefined).length;
-      completion += (completedUserFields / userFields.length) * 30; // 30% weight
+      completion += (completedUserFields / userFields.length) * 30;
     }
 
     // Cập nhật completion status
     profile.isBasicInfoComplete = completedBasicFields === basicFields.length;
-    profile.isPreferencesComplete = completedPreferenceFields === preferenceFields.length;
+    profile.isPreferencesComplete = completedPreferenceFields === totalPreferenceFields;
     profile.isLandlordInfoComplete = profile.businessType ? 
-      !!(profile.experience && profile.propertiesCount && profile.propertyTypes) : true;
+      !!(profile.experience && profile.propertyTypes && profile.priceRange && profile['targetCity'] && profile['targetWards'] && (profile['targetWards'] as any[]).length) : true;
     profile.completionPercentage = Math.round(completion);
 
     await profile.save();

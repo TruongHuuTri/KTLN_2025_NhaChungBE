@@ -69,7 +69,7 @@ export class UserProfilesController {
   @UseGuards(JwtAuthGuard)
   findByUserId(@Param('userId') userId: string, @Request() req) {
     // Kiểm tra permission: user chỉ có thể xem profile của mình hoặc admin có thể xem tất cả
-    if (req.user.sub !== userId && req.user.role !== 'admin') {
+    if (Number(req.user.sub) !== Number(userId) && req.user.role !== 'admin') {
       throw new ForbiddenException('Không có quyền truy cập profile này');
     }
     return this.userProfilesService.findByUserId(+userId);
@@ -86,7 +86,7 @@ export class UserProfilesController {
     @Request() req
   ) {
     // Kiểm tra permission: user chỉ có thể cập nhật profile của mình hoặc admin có thể cập nhật tất cả
-    if (req.user.sub !== userId && req.user.role !== 'admin') {
+    if (Number(req.user.sub) !== Number(userId) && req.user.role !== 'admin') {
       throw new ForbiddenException('Không có quyền cập nhật profile này');
     }
     return this.userProfilesService.update(+userId, updateUserProfileDto);
@@ -99,7 +99,7 @@ export class UserProfilesController {
   @UseGuards(JwtAuthGuard)
   removeByUserId(@Param('userId') userId: string, @Request() req) {
     // Kiểm tra permission: user chỉ có thể xóa profile của mình hoặc admin có thể xóa tất cả
-    if (req.user.sub !== userId && req.user.role !== 'admin') {
+    if (Number(req.user.sub) !== Number(userId) && req.user.role !== 'admin') {
       throw new ForbiddenException('Không có quyền xóa profile này');
     }
     return this.userProfilesService.remove(+userId);

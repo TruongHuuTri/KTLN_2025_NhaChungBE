@@ -54,7 +54,7 @@ export class CreateUserProfileDto {
   dateOfBirth?: string;
 
   @IsOptional()
-  @IsEnum(['male', 'female', 'other'])
+  @IsString()
   gender?: string;
 
   @IsOptional()
@@ -71,21 +71,14 @@ export class CreateUserProfileDto {
   currentLocation?: string;
 
   // Preferences
-  // Deprecated: preferredDistricts (giữ tạm)
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  preferredDistricts?: string[];
+  @IsString()
+  preferredCity?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   preferredWards?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  preferredWardCodes?: string[];
 
   @IsOptional()
   @ValidateNested()
@@ -103,7 +96,7 @@ export class CreateUserProfileDto {
   amenities?: string[];
 
   @IsOptional()
-  @IsEnum(['quiet', 'social', 'party', 'study'])
+  @IsString()
   lifestyle?: string;
 
   // Roommate specific
@@ -129,11 +122,11 @@ export class CreateUserProfileDto {
 
   // Landlord specific
   @IsOptional()
-  @IsEnum(['individual', 'company', 'agency'])
+  @IsString()
   businessType?: string;
 
   @IsOptional()
-  @IsEnum(['new', '1-2_years', '3-5_years', '5+_years'])
+  @IsString()
   experience?: string;
 
   @IsOptional()
@@ -143,32 +136,18 @@ export class CreateUserProfileDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(['phong_tro','chung_cu','nha_nguyen_can','can_ho_dv','officetel','studio'], { each: true })
+  @IsString({ each: true })
   propertyTypes?: string[];
 
-  // Deprecated: targetDistricts (giữ tạm)
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  targetDistricts?: string[];
-
   @IsOptional()
   @IsString()
-  targetCityCode?: string;
-
-  @IsOptional()
-  @IsString()
-  targetCityName?: string;
+  targetCity?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   targetWards?: string[];
 
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  targetWardCodes?: string[];
 
   @IsOptional()
   @ValidateNested()
@@ -177,15 +156,15 @@ export class CreateUserProfileDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(['sinh_vien','gia_dinh','nhan_vien_vp','cap_doi','nhom_ban'], { each: true })
+  @IsString({ each: true })
   targetTenants?: string[];
 
   @IsOptional()
-  @IsEnum(['strict', 'flexible', 'friendly'])
+  @IsString()
   managementStyle?: string;
 
   @IsOptional()
-  @IsEnum(['immediate', 'within_hour', 'within_day'])
+  @IsString()
   responseTime?: string;
 
   @IsOptional()

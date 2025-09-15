@@ -104,11 +104,16 @@ export class AuthService {
     // Xóa thông tin tạm
     this.tempRegistrations.delete(email);
 
+    // Tạo JWT cho FE tiếp tục flow (upload presign, gọi API bảo vệ)
+    const payload = { sub: savedUser.userId, email: savedUser.email, role: savedUser.role };
+    const access_token = await this.jwtService.signAsync(payload);
+
     // Trả về thông tin user (không bao gồm password)
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
 
     return {
       message: 'OTP xác thực thành công. Vui lòng hoàn thiện hồ sơ cá nhân.',
+      access_token,
       user: userWithoutPassword,
       nextStep: 'complete_profile', // Bước tiếp theo: hoàn thiện profile
     };

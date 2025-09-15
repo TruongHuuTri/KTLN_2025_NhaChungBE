@@ -15,7 +15,7 @@ export class UserProfile {
   @Prop()
   dateOfBirth?: Date;
 
-  @Prop({ enum: ['male', 'female', 'other'] })
+  @Prop()
   gender?: string;
 
   @Prop()
@@ -28,15 +28,11 @@ export class UserProfile {
   currentLocation?: string;
 
   // Preferences
-  // Deprecated: dùng preferredWards thay thế (giữ để tương thích tạm thời)
-  @Prop({ type: [String] })
-  preferredDistricts?: string[];
+  @Prop()
+  preferredCity?: string;
 
   @Prop({ type: [String] })
   preferredWards?: string[];
-
-  @Prop({ type: [String] })
-  preferredWardCodes?: string[];
 
   @Prop({
     type: {
@@ -52,7 +48,7 @@ export class UserProfile {
   @Prop({ type: [String] })
   amenities?: string[];
 
-  @Prop({ enum: ['quiet', 'social', 'party', 'study'] })
+  @Prop()
   lifestyle?: string;
 
   // Roommate specific
@@ -69,49 +65,42 @@ export class UserProfile {
   socialLevel?: number;
 
   // Landlord specific
-  @Prop({ enum: ['individual', 'company', 'agency'] })
+  @Prop()
   businessType?: string;
 
-  @Prop({ enum: ['new', '1-2_years', '3-5_years', '5+_years'] })
+  @Prop()
   experience?: string;
 
   @Prop()
   propertiesCount?: number;
 
-  @Prop({ type: [String], enum: ['phong_tro','chung_cu','nha_nguyen_can','can_ho_dv','officetel','studio'] })
+  @Prop({ type: [String] })
   propertyTypes?: string[];
 
-  // Deprecated: dùng targetWards/targetWardCodes và targetCityCode/Name thay thế (giữ tạm)
-  @Prop({ type: [String] })
-  targetDistricts?: string[];
-
   @Prop()
-  targetCityCode?: string;
-
-  @Prop()
-  targetCityName?: string;
+  targetCity?: string;
 
   @Prop({ type: [String] })
   targetWards?: string[];
 
-  @Prop({ type: [String] })
-  targetWardCodes?: string[];
+  
 
   @Prop({
     type: {
+      _id: false,
       min: { type: Number },
       max: { type: Number }
     }
   })
   priceRange?: { min: number; max: number };
 
-  @Prop({ type: [String], enum: ['sinh_vien','gia_dinh','nhan_vien_vp','cap_doi','nhom_ban'] })
+  @Prop({ type: [String] })
   targetTenants?: string[];
 
-  @Prop({ enum: ['strict', 'flexible', 'friendly'] })
+  @Prop()
   managementStyle?: string;
 
-  @Prop({ enum: ['immediate', 'within_hour', 'within_day'] })
+  @Prop()
   responseTime?: string;
 
   @Prop({ type: [String] })
@@ -123,6 +112,7 @@ export class UserProfile {
 
   @Prop({
     type: {
+      _id: false,
       bankName: { type: String },
       accountNumber: { type: String },
       accountHolder: { type: String }
@@ -139,6 +129,7 @@ export class UserProfile {
 
   @Prop({
     type: {
+      _id: false,
       weekdays: { type: String },
       weekends: { type: String }
     }
@@ -163,3 +154,7 @@ export class UserProfile {
 }
 
 export const UserProfileSchema = SchemaFactory.createForClass(UserProfile);
+UserProfileSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+});
