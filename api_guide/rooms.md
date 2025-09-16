@@ -390,7 +390,7 @@ export default {
 #### **POST /api/landlord/rooms** - Tạo phòng mới
 *Lưu ý: `category` sẽ được tự động lấy từ `buildingType` của building*
 
-**1. CHUNG CƯ (Building có buildingType: "chung-cu"):**
+**1. CHUNG CƯ (Building có buildingType: "chung-cu"):**        
 ```json
 {
   "buildingId": 1,
