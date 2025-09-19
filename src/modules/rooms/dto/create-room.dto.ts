@@ -71,10 +71,6 @@ export class ChungCuInfoDto {
 
   @IsOptional()
   @IsString()
-  furniture?: string; // 'full', 'co-ban', 'trong'
-
-  @IsOptional()
-  @IsString()
   legalStatus?: string; // 'co-so-hong', 'cho-so'
 }
 
@@ -110,10 +106,6 @@ export class NhaNguyenCanInfoDto {
   @IsOptional()
   @IsString()
   legalStatus?: string; // 'co-so-hong', 'cho-so'
-
-  @IsOptional()
-  @IsString()
-  furniture?: string; // 'full', 'co-ban', 'trong'
 
   @IsOptional()
   @IsArray()
@@ -259,8 +251,7 @@ export class CreateRoomDto {
   @IsString()
   roomNumber: string;
 
-  @IsNumber()
-  floor: number;
+  // floor sẽ nằm trong chungCuInfo.floorNumber
 
   // category sẽ được lấy từ buildingType của building
 
@@ -278,22 +269,6 @@ export class CreateRoomDto {
   @IsOptional()
   @IsString()
   furniture?: string;
-
-  @IsOptional()
-  @IsNumber()
-  bedrooms?: number;
-
-  @IsOptional()
-  @IsNumber()
-  bathrooms?: number;
-
-  @IsOptional()
-  @IsString()
-  direction?: string;
-
-  @IsOptional()
-  @IsString()
-  legalStatus?: string;
 
   // Thông tin riêng theo loại
   @IsOptional()

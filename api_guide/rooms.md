@@ -17,18 +17,14 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
   landlordId: Number,       // userId của chủ trọ
   buildingId: Number,       // ID dãy nhà
   roomNumber: String,       // Số phòng (A101, B205)
-  floor: Number,            // Tầng
+  // floor: dùng chungCuInfo.floorNumber khi là chung cư
   category: String,         // 'phong-tro', 'chung-cu', 'nha-nguyen-can'
   
   // BasicInfo
   area: Number,             // Diện tích (m²)
   price: Number,            // Giá thuê/tháng
   deposit: Number,          // Tiền cọc
-  furniture: String,        // Tình trạng nội thất: 'full', 'co-ban', 'trong'
-  bedrooms: Number,         // Số phòng ngủ
-  bathrooms: Number,        // Số phòng vệ sinh
-  direction: String,        // Hướng: 'dong', 'tay', 'nam', 'bac'
-  legalStatus: String,      // Tình trạng sổ: 'co-so-hong', 'cho-so'
+  furniture: String,        // Tình trạng nội thất: 'full', 'co-ban', 'trong' (đặt ngoài)
 
   // Thông tin riêng theo loại
   chungCuInfo: {            // Chỉ có khi category = 'chung-cu'
@@ -135,7 +131,6 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
   landlordId: Number,       // userId của chủ trọ
   name: String,             // Tên dãy nhà (VD: "Dãy A", "Dãy B")
   address: Object,          // Địa chỉ (reuse Address schema)
-  totalFloors: Number,      // Số tầng
   totalRooms: Number,       // Tổng số phòng
   buildingType: String,     // 'chung-cu', 'nha-nguyen-can', 'phong-tro'
   images: [String],         // Ảnh dãy nhà
@@ -272,7 +267,6 @@ export default {
     "wardCode": "26734",
     "wardName": "Phường Bến Nghé"
   },
-  "totalFloors": 20,
   "totalRooms": 200,
   "buildingType": "chung-cu",
   "images": ["url1", "url2"],
@@ -293,7 +287,6 @@ export default {
     "wardCode": "26735",
     "wardName": "Phường Thủ Thiêm"
   },
-  "totalFloors": 5,
   "totalRooms": 20,
   "buildingType": "phong-tro",
   "images": ["url1", "url2"],
@@ -314,7 +307,6 @@ export default {
     "wardCode": "26736",
     "wardName": "Phường Võ Thị Sáu"
   },
-  "totalFloors": 1,
   "totalRooms": 10,
   "buildingType": "nha-nguyen-can",
   "images": ["url1", "url2"],
@@ -331,7 +323,6 @@ export default {
     "landlordId": 123,
     "name": "Dãy A - Khu A",
     "address": { /* ... */ },
-    "totalFloors": 5,
     "totalRooms": 20,
     "buildingType": "phong-tro",
     "isActive": true,
@@ -372,7 +363,7 @@ export default {
 {
   "name": "Dãy A - Khu A (Updated)",
   "description": "Mô tả mới",
-  "totalFloors": 6
+  
 }
 ```
 
@@ -395,15 +386,10 @@ export default {
 {
   "buildingId": 1,
   "roomNumber": "A101",
-  "floor": 1,
   "area": 45,
   "price": 8000000,
   "deposit": 8000000,
   "furniture": "full",
-  "bedrooms": 1,
-  "bathrooms": 1,
-  "direction": "nam",
-  "legalStatus": "co-so-hong",
   "chungCuInfo": {
     "buildingName": "Dãy nhà A",
     "blockOrTower": "Block A",
@@ -413,7 +399,6 @@ export default {
     "bedrooms": 1,
     "bathrooms": 1,
     "direction": "nam",
-    "furniture": "full",
     "legalStatus": "co-so-hong"
   },
   "utilities": {
@@ -467,15 +452,10 @@ export default {
 {
   "buildingId": 2,
   "roomNumber": "B201",
-  "floor": 2,
   "area": 25,
   "price": 3000000,
   "deposit": 3000000,
   "furniture": "full",
-  "bedrooms": 1,
-  "bathrooms": 1,
-  "direction": "dong",
-  "legalStatus": "co-so-hong",
   "utilities": {
     "electricityPricePerKwh": 3500,
     "waterPrice": 25000,
@@ -527,15 +507,10 @@ export default {
 {
   "buildingId": 3,
   "roomNumber": "C301",
-  "floor": 1,
   "area": 120,
   "price": 15000000,
   "deposit": 15000000,
   "furniture": "full",
-  "bedrooms": 3,
-  "bathrooms": 2,
-  "direction": "nam",
-  "legalStatus": "co-so-hong",
   "nhaNguyenCanInfo": {
     "khuLo": "Khu A",
     "unitCode": "C301",
@@ -545,7 +520,6 @@ export default {
     "direction": "nam",
     "totalFloors": 3,
     "legalStatus": "co-so-hong",
-    "furniture": "full",
     "features": ["Hẻm xe hơi", "Nhà nở hậu"],
     "landArea": 100,
     "usableArea": 120,
@@ -607,16 +581,13 @@ export default {
     "landlordId": 123,
     "buildingId": 1,
     "roomNumber": "A101",
-    "floor": 1,
     "category": "phong-tro",
     "area": 25,
     "price": 3000000,
     "deposit": 3000000,
     "furniture": "full",
-    "bedrooms": 1,
-    "bathrooms": 1,
-    "direction": "dong",
-    "legalStatus": "co-so-hong",
+    "chungCuInfo": null,
+    "nhaNguyenCanInfo": null,
     "maxOccupancy": 2,
     "canShare": true,
     "sharePrice": 1500000,
@@ -643,16 +614,13 @@ export default {
   "landlordId": 123,
   "buildingId": 1,
   "roomNumber": "A101",
-  "floor": 1,
   "category": "phong-tro",
   "area": 25,
   "price": 3000000,
   "deposit": 3000000,
   "furniture": "full",
-  "bedrooms": 1,
-  "bathrooms": 1,
-  "direction": "dong",
-  "legalStatus": "co-so-hong",
+  "chungCuInfo": null,
+  "nhaNguyenCanInfo": null,
   "utilities": {
     "electricityPricePerKwh": 3500,
     "waterPrice": 25000,
@@ -730,15 +698,13 @@ export default {
   {
     "roomId": 1,
     "roomNumber": "A101",
-    "floor": 1,
     "category": "phong-tro",
     "area": 25,
     "price": 3000000,
     "deposit": 3000000,
     "furniture": "full",
-    "bedrooms": 1,
-    "bathrooms": 1,
-    "direction": "dong",
+    "chungCuInfo": null,
+    "nhaNguyenCanInfo": null,
     "maxOccupancy": 2,
     "canShare": true,
     "sharePrice": 1500000,

@@ -45,9 +45,6 @@ export class CreateBuildingDto {
   address: AddressDto;
 
   @IsNumber()
-  totalFloors: number;
-
-  @IsNumber()
   totalRooms: number;
 
   @IsEnum(['chung-cu', 'nha-nguyen-can', 'phong-tro'])

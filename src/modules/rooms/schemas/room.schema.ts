@@ -63,9 +63,6 @@ export class ChungCuInfo {
   direction: string; // 'dong', 'tay', 'nam', 'bac', 'dong-nam', 'dong-bac', 'tay-nam', 'tay-bac'
 
   @Prop({ default: '' })
-  furniture: string; // 'full', 'co-ban', 'trong'
-
-  @Prop({ default: '' })
   legalStatus: string; // 'co-so-hong', 'cho-so'
 }
 
@@ -94,9 +91,6 @@ export class NhaNguyenCanInfo {
 
   @Prop({ default: '' })
   legalStatus: string; // 'co-so-hong', 'cho-so'
-
-  @Prop({ default: '' })
-  furniture: string; // 'full', 'co-ban', 'trong'
 
   @Prop({ default: 0 })
   landArea: number;
@@ -225,9 +219,6 @@ export class Room {
   roomNumber: string;
 
   @Prop({ required: true })
-  floor: number;
-
-  @Prop({ required: true })
   category: string; // 'phong-tro', 'chung-cu', 'nha-nguyen-can'
 
   // BasicInfo
@@ -242,18 +233,6 @@ export class Room {
 
   @Prop({ default: '' })
   furniture: string;
-
-  @Prop({ default: 0 })
-  bedrooms: number;
-
-  @Prop({ default: 0 })
-  bathrooms: number;
-
-  @Prop({ default: '' })
-  direction: string;
-
-  @Prop({ default: '' })
-  legalStatus: string;
 
   // Thông tin riêng theo loại
   @Prop({ type: ChungCuInfo })

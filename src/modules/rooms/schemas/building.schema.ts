@@ -51,9 +51,6 @@ export class Building {
   address: Address;
 
   @Prop({ required: true })
-  totalFloors: number;
-
-  @Prop({ required: true })
   totalRooms: number;
 
   @Prop({ required: true })
