@@ -205,14 +205,6 @@ export class UtilitiesDto {
   managementFeeUnit?: string;
 
   @IsOptional()
-  @IsNumber()
-  gardeningFee?: number;
-
-  @IsOptional()
-  @IsNumber()
-  cookingGasFee?: number;
-
-  @IsOptional()
   @ValidateNested()
   @Type(() => IncludedInRentDto)
   includedInRent?: IncludedInRentDto;

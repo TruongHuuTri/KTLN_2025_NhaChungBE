@@ -167,12 +167,6 @@ export class Utilities {
   @Prop({ default: '' })
   managementFeeUnit: string;
 
-  @Prop({ default: 0 })
-  gardeningFee: number;
-
-  @Prop({ default: 0 })
-  cookingGasFee: number;
-
   @Prop({ type: IncludedInRent, default: {} })
   includedInRent: IncludedInRent;
 }

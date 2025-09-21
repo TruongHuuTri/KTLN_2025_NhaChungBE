@@ -59,8 +59,6 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
     parkingCarFee: Number,
     managementFee: Number,
     managementFeeUnit: String,   // 'per_month' | 'per_m2_per_month'
-    gardeningFee: Number,
-    cookingGasFee: Number,
     includedInRent: {
       electricity: Boolean,
       water: Boolean,
@@ -412,8 +410,6 @@ export default {
     "parkingCarFee": 500000,
     "managementFee": 200000,
     "managementFeeUnit": "per-room",
-    "gardeningFee": 50000,
-    "cookingGasFee": 100000,
     "includedInRent": {
       "electricity": false,
       "water": false,
@@ -467,8 +463,6 @@ export default {
     "parkingCarFee": 500000,
     "managementFee": 200000,
     "managementFeeUnit": "per-room",
-    "gardeningFee": 50000,
-    "cookingGasFee": 100000,
     "includedInRent": {
       "electricity": false,
       "water": false,
@@ -537,8 +531,6 @@ export default {
     "parkingCarFee": 500000,
     "managementFee": 200000,
     "managementFeeUnit": "per-room",
-    "gardeningFee": 50000,
-    "cookingGasFee": 100000,
     "includedInRent": {
       "electricity": false,
       "water": false,
@@ -632,8 +624,6 @@ export default {
     "parkingCarFee": 500000,
     "managementFee": 200000,
     "managementFeeUnit": "per-room",
-    "gardeningFee": 50000,
-    "cookingGasFee": 100000,
     "includedInRent": {
       "electricity": false,
       "water": false,
