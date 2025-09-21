@@ -10,12 +10,16 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
 
 ### **🔄 Luồng tạo Post mới:**
 1. **Chọn loại post**: `cho-thue` hoặc `tim-o-ghep`
-2. **Nhập thông tin**: tiêu đề, mô tả
-3. **Chọn phòng**: từ danh sách phòng của user (bắt buộc)
+2. **Chọn phòng**: từ danh sách phòng được filter theo loại post
+   - **Cho thuê**: Chỉ hiển thị phòng trống hoàn toàn (`currentOccupants = 0`)
+   - **Tìm ở ghép**: Chỉ hiển thị phòng có chỗ trống (`availableSpots > 0`) và cho phép ở ghép (`canShare = true`)
+3. **Nhập thông tin**: tiêu đề, mô tả
 4. **System tự động**:
+   - Validate phòng có phù hợp với loại post không
    - Lấy thông tin phòng từ Room collection
    - Set `isManaged = true` và `source = 'room_management'`
    - Tự động set `category` từ room
+   - Set `status = 'active'` (tự động duyệt)
 
 ### **💾 Lưu trữ dữ liệu:**
 - ✅ **Post chỉ lưu `roomId`** (reference)
@@ -27,6 +31,15 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
 - ✅ **Nếu Post có media**: dùng media của Post
 - ✅ **Nếu Post không có media**: dùng media của Room
 - ✅ **Fallback logic**: Post media > Room media
+
+### **✅ Validation Rules:**
+- **Cho thuê (`cho-thue`)**:
+  - Phòng phải trống hoàn toàn (`currentOccupants = 0`)
+  - Phòng phải active và available
+- **Tìm ở ghép (`tim-o-ghep`)**:
+  - Phòng phải có chỗ trống (`availableSpots > 0`)
+  - Phòng phải cho phép ở ghép (`canShare = true`)
+  - Phòng phải active và available
 
 ## 🏗️ Data Structure
 
@@ -259,6 +272,24 @@ Lấy danh sách phòng của user để tạo post
 }
 ```
 
+**Query Parameters:**
+- `postType` (optional): `cho-thue` | `tim-o-ghep`
+  - **Cho thuê**: Chỉ trả về phòng trống hoàn toàn
+  - **Tìm ở ghép**: Chỉ trả về phòng có chỗ trống và cho phép ở ghép
+  - **Không có**: Trả về tất cả phòng available
+
+**Examples:**
+```javascript
+// Lấy tất cả phòng
+GET /api/posts/user/rooms
+
+// Lấy phòng cho thuê (chỉ phòng trống)
+GET /api/posts/user/rooms?postType=cho-thue
+
+// Lấy phòng tìm ở ghép (có chỗ trống + cho phép ở ghép)
+GET /api/posts/user/rooms?postType=tim-o-ghep
+```
+
 **Response:**
 ```javascript
 [
@@ -282,6 +313,11 @@ Lấy danh sách phòng của user để tạo post
 #### **POST /api/posts**
 Tạo bài đăng mới
 
+**Validation:**
+- **Cho thuê**: Phòng phải trống hoàn toàn (`currentOccupants = 0`)
+- **Tìm ở ghép**: Phòng phải có chỗ trống (`availableSpots > 0`) và cho phép ở ghép (`canShare = true`)
+- **Tự động duyệt**: `status = 'active'` (hiển thị ngay lập tức)
+
 **Request Body:**
 ```javascript
 {
@@ -294,6 +330,30 @@ Tạo bài đăng mới
   "phone": "0123456789",
   "email": "landlord@example.com"
   // category sẽ tự động lấy từ room
+}
+```
+
+**Error Responses:**
+```javascript
+// Phòng không trống cho thuê
+{
+  "statusCode": 400,
+  "message": "Room must be completely empty to rent out",
+  "error": "Bad Request"
+}
+
+// Phòng hết chỗ cho ở ghép
+{
+  "statusCode": 400,
+  "message": "Room is full, no available spots",
+  "error": "Bad Request"
+}
+
+// Phòng không cho phép ở ghép
+{
+  "statusCode": 400,
+  "message": "Room does not allow sharing",
+  "error": "Bad Request"
 }
 ```
 
@@ -443,24 +503,89 @@ GET /api/posts/search?keyword=phòng trọ&postType=rent
 
 ## 🚀 Frontend Integration
 
+### **Luồng giao diện mới:**
+
+#### **1. Chọn loại post:**
+```javascript
+// User chọn loại post
+const [postType, setPostType] = useState('cho-thue'); // 'cho-thue' | 'tim-o-ghep'
+```
+
+#### **2. Lấy danh sách phòng được filter:**
+```javascript
+// Lấy phòng theo loại post
+const getFilteredRooms = async (postType) => {
+  const response = await fetch(`/api/posts/user/rooms?postType=${postType}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return response.json();
+};
+
+// Sử dụng
+const rooms = await getFilteredRooms('cho-thue'); // Chỉ phòng trống
+const rooms = await getFilteredRooms('tim-o-ghep'); // Chỉ phòng có chỗ trống + cho phép ở ghép
+```
+
+#### **3. Hiển thị phòng phù hợp:**
+```javascript
+// Cho thuê - chỉ hiển thị phòng trống
+{rooms.map(room => (
+  <div key={room.roomId}>
+    <h3>{room.roomNumber}</h3>
+    <p>✅ Phòng trống ({room.currentOccupants}/{room.maxOccupancy})</p>
+    <button onClick={() => selectRoom(room)}>Chọn phòng này</button>
+  </div>
+))}
+
+// Tìm ở ghép - chỉ hiển thị phòng có chỗ trống
+{rooms.map(room => (
+  <div key={room.roomId}>
+    <h3>{room.roomNumber}</h3>
+    <p>✅ Có chỗ trống ({room.availableSpots} chỗ)</p>
+    <p>✅ Cho phép ở ghép</p>
+    <button onClick={() => selectRoom(room)}>Chọn phòng này</button>
+  </div>
+))}
+```
+
+#### **4. Tạo post với validation:**
+```javascript
+// Create post
+const createPost = async (postData) => {
+  try {
+    const response = await fetch('/api/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(postData)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    return response.json();
+  } catch (error) {
+    // Handle validation errors
+    if (error.message.includes('completely empty')) {
+      alert('Phòng phải trống hoàn toàn để cho thuê');
+    } else if (error.message.includes('no available spots')) {
+      alert('Phòng đã hết chỗ trống');
+    } else if (error.message.includes('does not allow sharing')) {
+      alert('Phòng không cho phép ở ghép');
+    }
+  }
+};
+```
+
 ### **React/Next.js Example:**
 ```javascript
 // Search posts
 const searchPosts = async (filters) => {
   const response = await fetch(`/api/posts/search?${new URLSearchParams(filters)}`);
-  return response.json();
-};
-
-// Create post
-const createPost = async (postData) => {
-  const response = await fetch('/api/posts', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(postData)
-  });
   return response.json();
 };
 
@@ -844,6 +969,22 @@ export default {
 - **Authorization**: User chỉ có thể edit/delete bài đăng của mình
 - **Admin Override**: Admin có thể quản lý tất cả bài đăng
 - **Input Validation**: Tất cả input được validate trước khi lưu
+
+## 🔄 Recent Updates
+
+### **Validation & Filtering (Latest)**
+- ✅ **Room Validation**: Kiểm tra phòng trống dựa trên loại post
+- ✅ **Smart Filtering**: API lấy phòng được filter theo loại post
+- ✅ **Auto Approval**: Bài đăng tự động active (không cần admin duyệt)
+- ✅ **Error Handling**: Thông báo lỗi rõ ràng cho từng trường hợp
+
+### **New Features:**
+- **GET /posts/user/rooms?postType=cho-thue**: Chỉ phòng trống hoàn toàn
+- **GET /posts/user/rooms?postType=tim-o-ghep**: Chỉ phòng có chỗ trống + cho phép ở ghép
+- **Validation Rules**: 
+  - Cho thuê: `currentOccupants = 0`
+  - Tìm ở ghép: `availableSpots > 0` AND `canShare = true`
+- **Auto Status**: `status = 'active'` (hiển thị ngay lập tức)
 
 ---
 

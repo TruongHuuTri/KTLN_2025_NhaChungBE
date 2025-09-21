@@ -18,12 +18,16 @@ export class PostsService {
     const postId = await this.getNextPostId();
     const room = await this.validateAndGetRoom(postData.roomId);
     
+    // Kiểm tra logic phòng trống dựa trên loại post
+    this.validateRoomAvailability(room, postData.postType);
+    
     const enrichedPostData = this.enrichPostData(postData, room);
     
     const post = new this.postModel({
       postId,
       userId,
       ...enrichedPostData,
+      status: 'active', // Tự động duyệt luôn
     });
     
     return post.save();
@@ -37,6 +41,29 @@ export class PostsService {
     return room;
   }
 
+  private validateRoomAvailability(room: Room, postType: string): void {
+    // Kiểm tra phòng có active không
+    if (!room.isActive || room.status !== 'available') {
+      throw new BadRequestException('Room is not available for posting');
+    }
+
+    // Logic khác nhau cho từng loại post
+    if (postType === 'cho-thue') {
+      // Cho thuê: Phòng phải trống hoàn toàn
+      if (room.currentOccupants > 0) {
+        throw new BadRequestException('Room must be completely empty to rent out');
+      }
+    } else if (postType === 'tim-o-ghep') {
+      // Tìm ở ghép: Phòng phải có chỗ trống và cho phép ở ghép
+      if (!room.canShare) {
+        throw new BadRequestException('Room does not allow sharing');
+      }
+      if (room.availableSpots <= 0) {
+        throw new BadRequestException('Room is full, no available spots');
+      }
+    }
+  }
+
   private enrichPostData(postData: CreatePostDto, room: Room): CreatePostDto {
     return {
       ...postData,
@@ -48,8 +75,24 @@ export class PostsService {
     };
   }
 
-  async getUserRooms(userId: number): Promise<Room[]> {
-    return this.roomModel.find({ landlordId: userId, isActive: true }).exec();
+  async getUserRooms(userId: number, postType?: string): Promise<Room[]> {
+    const query: any = { 
+      landlordId: userId, 
+      isActive: true,
+      status: 'available'
+    };
+
+    // Filter theo loại post
+    if (postType === 'cho-thue') {
+      // Cho thuê: Chỉ hiển thị phòng trống hoàn toàn
+      query.currentOccupants = 0;
+    } else if (postType === 'tim-o-ghep') {
+      // Tìm ở ghép: Chỉ hiển thị phòng có chỗ trống và cho phép ở ghép
+      query.canShare = true;
+      query.availableSpots = { $gt: 0 };
+    }
+
+    return this.roomModel.find(query).exec();
   }
 
   async getPostWithRoomMedia(postId: number): Promise<any> {

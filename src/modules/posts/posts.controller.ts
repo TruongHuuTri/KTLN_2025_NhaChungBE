@@ -33,8 +33,8 @@ export class PostsController {
 
   @Get('user/rooms')
   @UseGuards(JwtAuthGuard)
-  async getUserRooms(@Request() req) {
-    return this.postsService.getUserRooms(req.user.userId);
+  async getUserRooms(@Request() req, @Query('postType') postType?: string) {
+    return this.postsService.getUserRooms(req.user.userId, postType);
   }
 
   @Post()
