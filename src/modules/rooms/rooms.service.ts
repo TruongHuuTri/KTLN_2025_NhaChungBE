@@ -83,29 +83,43 @@ export class RoomsService {
     return this.roomModel.find({ landlordId, isActive: true }).exec();
   }
 
-  async getRoomsByBuilding(buildingId: number): Promise<Room[]> {
-    return this.roomModel.find({ buildingId, isActive: true }).exec();
+  async getRoomsByBuilding(buildingId: number, landlordId?: number): Promise<Room[]> {
+    const query: any = { buildingId, isActive: true };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+    return this.roomModel.find(query).exec();
   }
 
-  async getRoomById(roomId: number): Promise<Room> {
-    const room = await this.roomModel.findOne({ roomId }).exec();
+  async getRoomById(roomId: number, landlordId?: number): Promise<Room> {
+    const query: any = { roomId };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+    
+    const room = await this.roomModel.findOne(query).exec();
     if (!room) {
       throw new NotFoundException('Room not found');
     }
     return room;
   }
 
-  async updateRoom(roomId: number, updateData: UpdateRoomDto): Promise<Room> {
+  async updateRoom(roomId: number, updateData: UpdateRoomDto, landlordId?: number): Promise<Room> {
     // Recalculate availableSpots if maxOccupancy or currentOccupants changed
     if (updateData.maxOccupancy !== undefined || updateData.currentOccupants !== undefined) {
-      const currentRoom = await this.getRoomById(roomId);
+      const currentRoom = await this.getRoomById(roomId, landlordId);
       const maxOccupancy = updateData.maxOccupancy ?? currentRoom.maxOccupancy;
       const currentOccupants = updateData.currentOccupants ?? currentRoom.currentOccupants;
       updateData.availableSpots = maxOccupancy - currentOccupants;
     }
 
+    const query: any = { roomId };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+
     const room = await this.roomModel.findOneAndUpdate(
-      { roomId },
+      query,
       { ...updateData, updatedAt: new Date() },
       { new: true }
     ).exec();
@@ -115,9 +129,14 @@ export class RoomsService {
     return room;
   }
 
-  async deleteRoom(roomId: number): Promise<void> {
+  async deleteRoom(roomId: number, landlordId?: number): Promise<void> {
+    const query: any = { roomId };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+
     const result = await this.roomModel.findOneAndUpdate(
-      { roomId },
+      query,
       { isActive: false, updatedAt: new Date() }
     ).exec();
     if (!result) {
@@ -126,15 +145,20 @@ export class RoomsService {
   }
 
   // Roommate Management
-  async addTenantToRoom(roomId: number, tenantData: AddTenantDto): Promise<Room> {
-    const room = await this.getRoomById(roomId);
+  async addTenantToRoom(roomId: number, tenantData: AddTenantDto, landlordId?: number): Promise<Room> {
+    const room = await this.getRoomById(roomId, landlordId);
     
     if (room.currentOccupants >= room.maxOccupancy) {
       throw new BadRequestException('Room is full');
     }
 
+    const query: any = { roomId };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+
     const updatedRoom = await this.roomModel.findOneAndUpdate(
-      { roomId },
+      query,
       {
         $push: { currentTenants: tenantData },
         $inc: { currentOccupants: 1 },
@@ -149,16 +173,21 @@ export class RoomsService {
     return updatedRoom as Room;
   }
 
-  async removeTenantFromRoom(roomId: number, userId: number): Promise<Room> {
-    const room = await this.getRoomById(roomId);
+  async removeTenantFromRoom(roomId: number, userId: number, landlordId?: number): Promise<Room> {
+    const room = await this.getRoomById(roomId, landlordId);
     
     const tenantIndex = room.currentTenants.findIndex(tenant => tenant.userId === userId);
     if (tenantIndex === -1) {
       throw new NotFoundException('Tenant not found in this room');
     }
 
+    const query: any = { roomId };
+    if (landlordId) {
+      query.landlordId = landlordId;
+    }
+
     const updatedRoom = await this.roomModel.findOneAndUpdate(
-      { roomId },
+      query,
       {
         $pull: { currentTenants: { userId } },
         $inc: { currentOccupants: -1 },
@@ -173,8 +202,8 @@ export class RoomsService {
     return updatedRoom as Room;
   }
 
-  async getRoomTenants(roomId: number): Promise<any[]> {
-    const room = await this.getRoomById(roomId);
+  async getRoomTenants(roomId: number, landlordId?: number): Promise<any[]> {
+    const room = await this.getRoomById(roomId, landlordId);
     return room.currentTenants || [];
   }
 

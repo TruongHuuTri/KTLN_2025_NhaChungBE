@@ -52,46 +52,53 @@ export class RoomsController {
   async getRooms(@Request() req, @Query('buildingId') buildingId?: number) {
     const landlordId = req.user.userId;
     if (buildingId) {
-      return this.roomsService.getRoomsByBuilding(buildingId);
+      return this.roomsService.getRoomsByBuilding(buildingId, landlordId);
     }
     return this.roomsService.getRoomsByLandlord(landlordId);
   }
 
   @Get('rooms/:id')
-  async getRoomById(@Param('id') roomId: number) {
-    return this.roomsService.getRoomById(roomId);
+  async getRoomById(@Request() req, @Param('id') roomId: number) {
+    const landlordId = req.user.userId;
+    return this.roomsService.getRoomById(roomId, landlordId);
   }
 
   @Put('rooms/:id')
-  async updateRoom(@Param('id') roomId: number, @Body() updateData: UpdateRoomDto) {
-    return this.roomsService.updateRoom(roomId, updateData);
+  async updateRoom(@Request() req, @Param('id') roomId: number, @Body() updateData: UpdateRoomDto) {
+    const landlordId = req.user.userId;
+    return this.roomsService.updateRoom(roomId, updateData, landlordId);
   }
 
   @Delete('rooms/:id')
-  async deleteRoom(@Param('id') roomId: number) {
-    return this.roomsService.deleteRoom(roomId);
+  async deleteRoom(@Request() req, @Param('id') roomId: number) {
+    const landlordId = req.user.userId;
+    return this.roomsService.deleteRoom(roomId, landlordId);
   }
 
   // Roommate Management
   @Get('rooms/:id/tenants')
-  async getRoomTenants(@Param('id') roomId: number) {
-    return this.roomsService.getRoomTenants(roomId);
+  async getRoomTenants(@Request() req, @Param('id') roomId: number) {
+    const landlordId = req.user.userId;
+    return this.roomsService.getRoomTenants(roomId, landlordId);
   }
 
   @Post('rooms/:id/tenants')
-  async addTenantToRoom(@Param('id') roomId: number, @Body() tenantData: AddTenantDto) {
-    return this.roomsService.addTenantToRoom(roomId, tenantData);
+  async addTenantToRoom(@Request() req, @Param('id') roomId: number, @Body() tenantData: AddTenantDto) {
+    const landlordId = req.user.userId;
+    return this.roomsService.addTenantToRoom(roomId, tenantData, landlordId);
   }
 
   @Delete('rooms/:id/tenants/:userId')
-  async removeTenantFromRoom(@Param('id') roomId: number, @Param('userId') userId: number) {
-    return this.roomsService.removeTenantFromRoom(roomId, userId);
+  async removeTenantFromRoom(@Request() req, @Param('id') roomId: number, @Param('userId') userId: number) {
+    const landlordId = req.user.userId;
+    return this.roomsService.removeTenantFromRoom(roomId, userId, landlordId);
   }
 
   // Search Rooms
   @Get('rooms/search')
-  async searchRooms(@Query() filters: any) {
-    return this.roomsService.searchRooms(filters);
+  async searchRooms(@Request() req, @Query() filters: any) {
+    const landlordId = req.user.userId;
+    return this.roomsService.searchRooms({ ...filters, landlordId });
   }
 }
 

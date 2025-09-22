@@ -142,6 +142,7 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
 ## 🔗 API Endpoints
 
 > **Lưu ý**: Tất cả endpoints đều yêu cầu authentication và quyền landlord
+> **Bảo mật**: Mỗi landlord chỉ có thể truy cập và quản lý phòng của chính họ
 
 ## 🚀 Frontend Integration
 
@@ -245,6 +246,12 @@ export default {
 - **phong-tro**: Phòng trọ thông thường
 - **chung-cu**: Chung cư (có thêm chungCuInfo)
 - **nha-nguyen-can**: Nhà nguyên căn (có thêm nhaNguyenCanInfo)
+
+### **Security & Access Control:**
+- **Landlord Isolation**: Mỗi landlord chỉ có thể truy cập phòng của chính họ
+- **Building Filtering**: Khi filter theo `buildingId`, hệ thống kiểm tra building có thuộc về landlord không
+- **Room Ownership**: Tất cả operations đều verify `landlordId` trước khi thực hiện
+- **Automatic Filtering**: API tự động filter theo `landlordId` từ JWT token
 
 ## 📊 Complete API List
 
@@ -564,7 +571,18 @@ export default {
 }
 ```
 
-#### **GET /api/landlord/rooms?buildingId=1** - Lấy danh sách phòng
+#### **GET /api/landlord/rooms** - Lấy danh sách phòng của landlord
+**Query Parameters:**
+- `buildingId` (optional): Lọc theo dãy nhà cụ thể (chỉ dãy nhà thuộc về landlord)
+
+**Examples:**
+```javascript
+// Lấy tất cả phòng của landlord
+GET /api/landlord/rooms
+
+// Lấy phòng trong dãy nhà cụ thể (chỉ dãy nhà thuộc về landlord)
+GET /api/landlord/rooms?buildingId=1
+```
 **Response:**
 ```json
 [
@@ -598,7 +616,7 @@ export default {
 ]
 ```
 
-#### **GET /api/landlord/rooms/:id** - Lấy thông tin phòng
+#### **GET /api/landlord/rooms/:id** - Lấy thông tin phòng (chỉ phòng thuộc về landlord)
 **Response:**
 ```json
 {
@@ -662,7 +680,7 @@ export default {
 }
 ```
 
-#### **PUT /api/landlord/rooms/:id** - Cập nhật phòng
+#### **PUT /api/landlord/rooms/:id** - Cập nhật phòng (chỉ phòng thuộc về landlord)
 ```json
 {
   "price": 3500000,
@@ -672,7 +690,7 @@ export default {
 }
 ```
 
-#### **DELETE /api/landlord/rooms/:id** - Xóa phòng
+#### **DELETE /api/landlord/rooms/:id** - Xóa phòng (chỉ phòng thuộc về landlord)
 **Response:**
 ```json
 {
@@ -712,7 +730,7 @@ export default {
 
 ### **👥 Roommate Management APIs**
 
-#### **POST /api/landlord/rooms/:id/tenants** - Thêm người thuê vào phòng
+#### **POST /api/landlord/rooms/:id/tenants** - Thêm người thuê vào phòng (chỉ phòng thuộc về landlord)
 ```json
 {
   "userId": 123,
@@ -726,7 +744,7 @@ export default {
 }
 ```
 
-#### **DELETE /api/landlord/rooms/:id/tenants/:userId** - Xóa người thuê khỏi phòng
+#### **DELETE /api/landlord/rooms/:id/tenants/:userId** - Xóa người thuê khỏi phòng (chỉ phòng thuộc về landlord)
 **Response:**
 ```json
 {
@@ -736,7 +754,7 @@ export default {
 }
 ```
 
-#### **GET /api/landlord/rooms/:id/tenants** - Lấy danh sách người thuê
+#### **GET /api/landlord/rooms/:id/tenants** - Lấy danh sách người thuê (chỉ phòng thuộc về landlord)
 **Response:**
 ```json
 [
@@ -776,6 +794,9 @@ export default {
 
 - **JWT Authentication**: Required cho tất cả endpoints
 - **Landlord Authorization**: Chỉ landlord mới có thể quản lý phòng của mình
+- **Data Isolation**: Mỗi landlord chỉ có thể truy cập phòng thuộc về họ
+- **Building Access Control**: Khi filter theo buildingId, chỉ trả về phòng trong building thuộc về landlord
+- **Room Access Control**: Tất cả operations (GET, PUT, DELETE) đều kiểm tra quyền sở hữu
 - **Input Validation**: Validate tất cả input data
 - **File Upload Security**: Validate file types và sizes
 
