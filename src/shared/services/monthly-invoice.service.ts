@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { RentalContract, RentalContractDocument } from '../../modules/contracts/schemas/rental-contract.schema';
 import { Invoice, InvoiceDocument } from '../../modules/contracts/schemas/invoice.schema';
 import { PaymentOrder, PaymentOrderDocument } from '../../modules/contracts/schemas/payment-order.schema';
+import { UtilityType, UTILITY_LABELS } from '../types/utilities.types';
 
 @Injectable()
 export class MonthlyInvoiceService {
@@ -186,16 +187,82 @@ export class MonthlyInvoiceService {
   }
 
   /**
-   * Tạo hóa đơn tiền điện nước
+   * Tạo hóa đơn tiền điện nước dựa trên thông tin phòng
    */
   async createUtilitiesInvoice(
     contract: RentalContract,
     tenant: any,
-    amount: number,
-    description: string
+    roomInfo: any,
+    usageData?: {
+      electricityKwh?: number;
+      waterM3?: number;
+      waterPersons?: number;
+    }
   ): Promise<Invoice> {
     try {
       const invoiceId = await this.getNextInvoiceId();
+      let totalAmount = 0;
+      let description = '';
+
+      // Tính phí điện
+      if (roomInfo.utilities?.electricityPricePerKwh > 0 && usageData?.electricityKwh) {
+        const electricityFee = roomInfo.utilities.electricityPricePerKwh * usageData.electricityKwh;
+        totalAmount += electricityFee;
+        description += `Điện: ${usageData.electricityKwh}kWh x ${roomInfo.utilities.electricityPricePerKwh} = ${electricityFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí nước
+      if (roomInfo.utilities?.waterPrice > 0) {
+        let waterFee = 0;
+        if (roomInfo.utilities.waterBillingType === 'per_m3' && usageData?.waterM3) {
+          waterFee = roomInfo.utilities.waterPrice * usageData.waterM3;
+          description += `Nước: ${usageData.waterM3}m³ x ${roomInfo.utilities.waterPrice} = ${waterFee.toLocaleString()} VNĐ\n`;
+        } else if (roomInfo.utilities.waterBillingType === 'per_person' && usageData?.waterPersons) {
+          waterFee = roomInfo.utilities.waterPrice * usageData.waterPersons;
+          description += `Nước: ${usageData.waterPersons} người x ${roomInfo.utilities.waterPrice} = ${waterFee.toLocaleString()} VNĐ\n`;
+        }
+        totalAmount += waterFee;
+      }
+
+      // Tính phí internet
+      if (roomInfo.utilities?.internetFee > 0 && !roomInfo.utilities.includedInRent?.internet) {
+        totalAmount += roomInfo.utilities.internetFee;
+        description += `Internet: ${roomInfo.utilities.internetFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí rác
+      if (roomInfo.utilities?.garbageFee > 0 && !roomInfo.utilities.includedInRent?.garbage) {
+        totalAmount += roomInfo.utilities.garbageFee;
+        description += `Rác: ${roomInfo.utilities.garbageFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí dọn dẹp
+      if (roomInfo.utilities?.cleaningFee > 0 && !roomInfo.utilities.includedInRent?.cleaning) {
+        totalAmount += roomInfo.utilities.cleaningFee;
+        description += `Dọn dẹp: ${roomInfo.utilities.cleaningFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí gửi xe máy
+      if (roomInfo.utilities?.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) {
+        totalAmount += roomInfo.utilities.parkingMotorbikeFee;
+        description += `Gửi xe máy: ${roomInfo.utilities.parkingMotorbikeFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí gửi xe ô tô
+      if (roomInfo.utilities?.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) {
+        totalAmount += roomInfo.utilities.parkingCarFee;
+        description += `Gửi xe ô tô: ${roomInfo.utilities.parkingCarFee.toLocaleString()} VNĐ\n`;
+      }
+
+      // Tính phí quản lý
+      if (roomInfo.utilities?.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee) {
+        let managementFee = roomInfo.utilities.managementFee;
+        if (roomInfo.utilities.managementFeeUnit === 'per_m2_per_month') {
+          managementFee = roomInfo.utilities.managementFee * roomInfo.area;
+        }
+        totalAmount += managementFee;
+        description += `Quản lý: ${managementFee.toLocaleString()} VNĐ\n`;
+      }
 
       const invoice = new this.invoiceModel({
         invoiceId,
@@ -204,10 +271,10 @@ export class MonthlyInvoiceService {
         roomId: contract.roomId,
         contractId: contract.contractId,
         invoiceType: 'utilities',
-        amount,
+        amount: totalAmount,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 ngày
         status: 'pending',
-        description,
+        description: description.trim(),
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -225,6 +292,216 @@ export class MonthlyInvoiceService {
   private async getNextInvoiceId(): Promise<number> {
     const lastInvoice = await this.invoiceModel.findOne().sort({ invoiceId: -1 }).exec();
     return lastInvoice ? lastInvoice.invoiceId + 1 : 1;
+  }
+
+  /**
+   * Tạo hóa đơn tiện ích hàng tháng dựa trên thông tin phòng
+   */
+  async createMonthlyUtilitiesInvoice(
+    contract: RentalContract,
+    tenant: any,
+    roomInfo: any,
+    usageData?: {
+      electricityKwh?: number;
+      waterM3?: number;
+      waterPersons?: number;
+    }
+  ): Promise<Invoice | null> {
+    try {
+      // Kiểm tra xem có phí tiện ích nào cần tính không
+      const hasUtilities = roomInfo.utilities && (
+        (roomInfo.utilities.electricityPricePerKwh > 0 && usageData?.electricityKwh) ||
+        (roomInfo.utilities.waterPrice > 0 && (usageData?.waterM3 || usageData?.waterPersons)) ||
+        (roomInfo.utilities.internetFee > 0 && !roomInfo.utilities.includedInRent?.internet) ||
+        (roomInfo.utilities.garbageFee > 0 && !roomInfo.utilities.includedInRent?.garbage) ||
+        (roomInfo.utilities.cleaningFee > 0 && !roomInfo.utilities.includedInRent?.cleaning) ||
+        (roomInfo.utilities.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) ||
+        (roomInfo.utilities.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) ||
+        (roomInfo.utilities.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee)
+      );
+
+      if (!hasUtilities) {
+        this.logger.log(`No utilities fees for tenant ${tenant.tenantId}`);
+        return null;
+      }
+
+      return await this.createUtilitiesInvoice(contract, tenant, roomInfo, usageData);
+    } catch (error) {
+      this.logger.error(`Error creating monthly utilities invoice:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo hóa đơn tiện ích ước tính (khi không có dữ liệu sử dụng)
+   */
+  async createEstimatedUtilitiesInvoice(
+    contract: RentalContract,
+    tenant: any,
+    roomInfo: any
+  ): Promise<Invoice | null> {
+    try {
+      // Sử dụng ước tính từ phòng
+      const estimatedAmount = roomInfo.estimatedMonthlyUtilities || 0;
+      
+      if (estimatedAmount <= 0) {
+        this.logger.log(`No estimated utilities for tenant ${tenant.tenantId}`);
+        return null;
+      }
+
+      const invoiceId = await this.getNextInvoiceId();
+      const invoice = new this.invoiceModel({
+        invoiceId,
+        tenantId: tenant.tenantId,
+        landlordId: contract.landlordId,
+        roomId: contract.roomId,
+        contractId: contract.contractId,
+        invoiceType: 'utilities',
+        amount: estimatedAmount,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 ngày
+        status: 'pending',
+        description: `Tiện ích ước tính tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      return await invoice.save();
+    } catch (error) {
+      this.logger.error(`Error creating estimated utilities invoice:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo hóa đơn tiện ích dựa trên mảng availableUtilities
+   */
+  async createUtilitiesInvoiceFromAvailable(
+    contract: RentalContract,
+    tenant: any,
+    roomInfo: any,
+    usageData?: {
+      electricityKwh?: number;
+      waterM3?: number;
+      waterPersons?: number;
+    }
+  ): Promise<Invoice | null> {
+    try {
+      if (!roomInfo.availableUtilities || roomInfo.availableUtilities.length === 0) {
+        this.logger.log(`No available utilities for tenant ${tenant.tenantId}`);
+        return null;
+      }
+
+      const invoiceId = await this.getNextInvoiceId();
+      let totalAmount = 0;
+      let description = '';
+
+      // Tính phí cho từng tiện ích có sẵn
+      for (const utility of roomInfo.availableUtilities) {
+        let utilityFee = 0;
+        let utilityDescription = '';
+
+        switch (utility) {
+          case UtilityType.ELECTRICITY:
+            if (roomInfo.utilities?.electricityPricePerKwh > 0 && usageData?.electricityKwh) {
+              utilityFee = roomInfo.utilities.electricityPricePerKwh * usageData.electricityKwh;
+              utilityDescription = `Điện: ${usageData.electricityKwh}kWh x ${roomInfo.utilities.electricityPricePerKwh} = ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.WATER:
+            if (roomInfo.utilities?.waterPrice > 0) {
+              if (roomInfo.utilities.waterBillingType === 'per_m3' && usageData?.waterM3) {
+                utilityFee = roomInfo.utilities.waterPrice * usageData.waterM3;
+                utilityDescription = `Nước: ${usageData.waterM3}m³ x ${roomInfo.utilities.waterPrice} = ${utilityFee.toLocaleString()} VNĐ`;
+              } else if (roomInfo.utilities.waterBillingType === 'per_person' && usageData?.waterPersons) {
+                utilityFee = roomInfo.utilities.waterPrice * usageData.waterPersons;
+                utilityDescription = `Nước: ${usageData.waterPersons} người x ${roomInfo.utilities.waterPrice} = ${utilityFee.toLocaleString()} VNĐ`;
+              }
+            }
+            break;
+
+          case UtilityType.INTERNET:
+            if (roomInfo.utilities?.internetFee > 0 && !roomInfo.utilities.includedInRent?.internet) {
+              utilityFee = roomInfo.utilities.internetFee;
+              utilityDescription = `Internet: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.GARBAGE:
+            if (roomInfo.utilities?.garbageFee > 0 && !roomInfo.utilities.includedInRent?.garbage) {
+              utilityFee = roomInfo.utilities.garbageFee;
+              utilityDescription = `Rác: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.CLEANING:
+            if (roomInfo.utilities?.cleaningFee > 0 && !roomInfo.utilities.includedInRent?.cleaning) {
+              utilityFee = roomInfo.utilities.cleaningFee;
+              utilityDescription = `Dọn dẹp: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.PARKING_MOTORBIKE:
+            if (roomInfo.utilities?.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) {
+              utilityFee = roomInfo.utilities.parkingMotorbikeFee;
+              utilityDescription = `Gửi xe máy: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.PARKING_CAR:
+            if (roomInfo.utilities?.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) {
+              utilityFee = roomInfo.utilities.parkingCarFee;
+              utilityDescription = `Gửi xe ô tô: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          case UtilityType.MANAGEMENT:
+            if (roomInfo.utilities?.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee) {
+              utilityFee = roomInfo.utilities.managementFee;
+              if (roomInfo.utilities.managementFeeUnit === 'per_m2_per_month') {
+                utilityFee = roomInfo.utilities.managementFee * roomInfo.area;
+              }
+              utilityDescription = `Quản lý: ${utilityFee.toLocaleString()} VNĐ`;
+            }
+            break;
+
+          default:
+            // Các tiện ích khác có thể có giá cố định
+            utilityDescription = `${UTILITY_LABELS[utility]}: Miễn phí`;
+            break;
+        }
+
+        if (utilityFee > 0) {
+          totalAmount += utilityFee;
+          description += `${utilityDescription}\n`;
+        }
+      }
+
+      if (totalAmount <= 0) {
+        this.logger.log(`No utilities fees for tenant ${tenant.tenantId}`);
+        return null;
+      }
+
+      const invoice = new this.invoiceModel({
+        invoiceId,
+        tenantId: tenant.tenantId,
+        landlordId: contract.landlordId,
+        roomId: contract.roomId,
+        contractId: contract.contractId,
+        invoiceType: 'utilities',
+        amount: totalAmount,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 ngày
+        status: 'pending',
+        description: description.trim(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      return await invoice.save();
+    } catch (error) {
+      this.logger.error(`Error creating utilities invoice from available:`, error);
+      throw error;
+    }
   }
 
   /**

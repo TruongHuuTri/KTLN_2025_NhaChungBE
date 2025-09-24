@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { UtilityType } from '../../../shared/types/utilities.types';
 
 export type RoomDocument = Room & Document;
 
@@ -238,6 +239,10 @@ export class Room {
   // Utilities
   @Prop({ type: Utilities })
   utilities?: Utilities;
+
+  // Danh sách tiện ích có sẵn
+  @Prop({ type: [String], enum: Object.values(UtilityType), default: [] })
+  availableUtilities: UtilityType[];
 
   // Address
   @Prop({ type: Address, required: true })
