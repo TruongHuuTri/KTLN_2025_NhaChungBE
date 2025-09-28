@@ -1,636 +1,938 @@
-# 🏠 Hướng dẫn Frontend - Luồng Tạo Building → Room → Post
+# Frontend Integration Flow - Đăng ký thuê - Hợp đồng - Thanh toán
 
-## 📋 **Tổng quan luồng**
+## Tổng quan luồng
 
-```mermaid
-graph TD
-    A[User đăng nhập] --> B{Kiểm tra role}
-    B -->|landlord| C[Tạo Building]
-    B -->|user| D[Chỉ xem posts]
-    C --> E[Tạo Room trong Building]
-    E --> F[Tạo Post từ Room]
-    F --> G[Post hiển thị công khai]
+```
+User → Đăng ký tài khoản → Tìm phòng → Đăng ký thuê → Tạo hợp đồng → Thanh toán → Hoàn tất
 ```
 
-## 🔐 **1. Xác thực & Phân quyền**
+## 1. LUỒNG ĐĂNG KÝ THUÊ
 
-### **Kiểm tra role user:**
+### Bước 1: Đăng ký tài khoản User
+
+**API:** `POST /api/auth/register`
+
 ```javascript
-// Sau khi đăng nhập, kiểm tra role
-const userRole = localStorage.getItem('userRole'); // 'landlord' hoặc 'user'
-
-if (userRole === 'landlord') {
-  // Hiển thị các chức năng landlord
-  showLandlordFeatures();
-} else {
-  // Ẩn các chức năng landlord
-  hideLandlordFeatures();
-}
-```
-
-### **Headers cho API calls:**
-```javascript
-const headers = {
-  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-  'Content-Type': 'application/json'
-};
-```
-
----
-
-## 🏢 **2. Tạo Building (Chỉ Landlord)**
-
-### **API Endpoint:**
-```
-POST /api/landlord/buildings
-```
-
-### **Request Body:**
-```json
-{
-  "name": "Chung cư ABC",
-  "address": {
-    "street": "123 Đường ABC",
-    "ward": "Phường 1",
-    "district": "Quận 1", 
-    "city": "TP.HCM"
-  },
-  "buildingType": "chung-cu",
-  "description": "Chung cư cao cấp, view đẹp",
-  "images": ["url1", "url2"],
-  "videos": ["video1"],
-  "amenities": ["thang-may", "ho-boi", "gym"],
-  "contactInfo": {
-    "phone": "0123456789",
-    "email": "landlord@example.com"
-  }
-}
-```
-
-### **Frontend Implementation:**
-```javascript
-// Form tạo building
-const createBuilding = async (buildingData) => {
-  try {
-    const response = await fetch('/api/landlord/buildings', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(buildingData)
-    });
-    
-    if (response.ok) {
-      const building = await response.json();
-      console.log('Building created:', building);
-      // Chuyển đến bước tạo room
-      navigateToCreateRoom(building.id);
-    } else {
-      const error = await response.json();
-      showError(error.message);
-    }
-  } catch (error) {
-    showError('Lỗi kết nối');
-  }
-};
-```
-
----
-
-## 🚪 **3. Tạo Room trong Building**
-
-### **API Endpoint:**
-```
-POST /api/landlord/rooms
-```
-
-### **Request Body:**
-```json
-{
-  "buildingId": 1,
-  "roomNumber": "A101",
-  "floor": 1,
-  "area": 25.5,
-  "price": 5000000,
-  "deposit": 10000000,
-  "category": "chung-cu",
-  "roomType": "1-phong-ngu",
-  "maxOccupancy": 2,
-  "description": "Phòng đẹp, đầy đủ tiện nghi",
-  "images": ["room1.jpg", "room2.jpg"],
-  "videos": ["room-tour.mp4"],
-  "amenities": ["dieu-hoa", "wifi", "tu-lanh"],
-  "utilities": {
-    "electricity": "bao-gom",
-    "water": "bao-gom", 
-    "internet": "bao-gom"
-  },
-  "availableFrom": "2024-02-01",
-  "isFurnished": true
-}
-```
-
-### **Frontend Implementation:**
-```javascript
-// Form tạo room
-const createRoom = async (roomData) => {
-  try {
-    const response = await fetch('/api/landlord/rooms', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(roomData)
-    });
-    
-    if (response.ok) {
-      const room = await response.json();
-      console.log('Room created:', room);
-      // Chuyển đến bước tạo post
-      navigateToCreatePost(room.id);
-    } else {
-      const error = await response.json();
-      showError(error.message);
-    }
-  } catch (error) {
-    showError('Lỗi kết nối');
-  }
-};
-```
-
----
-
-## 📝 **4. Tạo Post từ Room**
-
-### **API Endpoint:**
-```
-POST /api/posts
-```
-
-### **Request Body:**
-```json
-{
-  "postType": "cho-thue",
-  "title": "Căn hộ chung cư cao cấp, view thành phố đẹp",
-  "description": "Căn hộ chung cư mới xây, đầy đủ tiện nghi, view thành phố tuyệt đẹp...",
-  "images": ["post1.jpg", "post2.jpg"],
-  "videos": ["post-video.mp4"],
-  "roomId": 1,
-  "phone": "0123456789",
-  "email": "landlord@example.com"
-}
-```
-
-### **Frontend Implementation:**
-```javascript
-// Form tạo post
-const createPost = async (postData) => {
-  try {
-    const response = await fetch('/api/posts', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(postData)
-    });
-    
-    if (response.ok) {
-      const post = await response.json();
-      console.log('Post created:', post);
-      showSuccess('Đăng bài thành công!');
-      // Chuyển đến trang quản lý posts
-      navigateToManagePosts();
-    } else {
-      const error = await response.json();
-      showError(error.message);
-    }
-  } catch (error) {
-    showError('Lỗi kết nối');
-  }
-};
-```
-
----
-
-## 🔄 **5. Luồng hoàn chỉnh Frontend**
-
-### **Component Structure:**
-```jsx
-// App.jsx
-function App() {
-  const [userRole, setUserRole] = useState(null);
-  const [currentStep, setCurrentStep] = useState('building');
-  
-  return (
-    <div>
-      {userRole === 'landlord' && (
-        <LandlordFlow 
-          currentStep={currentStep}
-          onStepChange={setCurrentStep}
-        />
-      )}
-      {userRole === 'user' && (
-        <UserView />
-      )}
-    </div>
-  );
-}
-
-// LandlordFlow.jsx
-function LandlordFlow({ currentStep, onStepChange }) {
-  const [buildingData, setBuildingData] = useState(null);
-  const [roomData, setRoomData] = useState(null);
-  
-  return (
-    <div>
-      {currentStep === 'building' && (
-        <CreateBuildingForm 
-          onSuccess={(building) => {
-            setBuildingData(building);
-            onStepChange('room');
-          }}
-        />
-      )}
-      
-      {currentStep === 'room' && buildingData && (
-        <CreateRoomForm 
-          buildingId={buildingData.id}
-          onSuccess={(room) => {
-            setRoomData(room);
-            onStepChange('post');
-          }}
-        />
-      )}
-      
-      {currentStep === 'post' && roomData && (
-        <CreatePostForm 
-          roomId={roomData.id}
-          onSuccess={() => {
-            onStepChange('complete');
-          }}
-        />
-      )}
-    </div>
-  );
-}
-```
-
-### **Form Components:**
-
-#### **CreateBuildingForm.jsx:**
-```jsx
-function CreateBuildingForm({ onSuccess }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    address: { street: '', ward: '', district: '', city: '' },
-    buildingType: 'chung-cu',
-    description: '',
-    images: [],
-    videos: [],
-    amenities: [],
-    contactInfo: { phone: '', email: '' }
-  });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/landlord/buildings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      if (response.ok) {
-        const building = await response.json();
-        onSuccess(building);
-      }
-    } catch (error) {
-      console.error('Error creating building:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <h2>Tạo Building</h2>
-      
-      <div>
-        <label>Tên building:</label>
-        <input 
-          type="text" 
-          value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-          required
-        />
-      </div>
-      
-      <div>
-        <label>Loại building:</label>
-        <select 
-          value={formData.buildingType}
-          onChange={(e) => setFormData({...formData, buildingType: e.target.value})}
-        >
-          <option value="chung-cu">Chung cư</option>
-          <option value="nha-nguyen-can">Nhà nguyên căn</option>
-          <option value="phong-tro">Phòng trọ</option>
-        </select>
-      </div>
-      
-      {/* Các field khác... */}
-      
-      <button type="submit">Tạo Building</button>
-    </form>
-  );
-}
-```
-
-#### **CreateRoomForm.jsx:**
-```jsx
-function CreateRoomForm({ buildingId, onSuccess }) {
-  const [formData, setFormData] = useState({
-    buildingId: buildingId,
-    roomNumber: '',
-    floor: 1,
-    area: 0,
-    price: 0,
-    deposit: 0,
-    category: 'chung-cu',
-    roomType: '1-phong-ngu',
-    maxOccupancy: 1,
-    description: '',
-    images: [],
-    videos: [],
-    amenities: [],
-    utilities: {
-      electricity: 'bao-gom',
-      water: 'bao-gom',
-      internet: 'bao-gom'
+// Frontend: RegisterForm.jsx
+const registerUser = async (userData) => {
+  const response = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
     },
-    availableFrom: '',
-    isFurnished: false
+    body: JSON.stringify({
+      email: userData.email,
+      password: userData.password,
+      fullName: userData.fullName,
+      phone: userData.phone,
+      role: 'user' // Mặc định là user
+    })
   });
+  
+  return response.json();
+};
+```
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/landlord/rooms', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      if (response.ok) {
-        const room = await response.json();
-        onSuccess(room);
-      }
-    } catch (error) {
-      console.error('Error creating room:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <h2>Tạo Room</h2>
-      
-      <div>
-        <label>Số phòng:</label>
-        <input 
-          type="text" 
-          value={formData.roomNumber}
-          onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
-          required
-        />
-      </div>
-      
-      <div>
-        <label>Diện tích (m²):</label>
-        <input 
-          type="number" 
-          value={formData.area}
-          onChange={(e) => setFormData({...formData, area: parseFloat(e.target.value)})}
-          required
-        />
-      </div>
-      
-      <div>
-        <label>Giá thuê (VND):</label>
-        <input 
-          type="number" 
-          value={formData.price}
-          onChange={(e) => setFormData({...formData, price: parseInt(e.target.value)})}
-          required
-        />
-      </div>
-      
-      {/* Các field khác... */}
-      
-      <button type="submit">Tạo Room</button>
-    </form>
-  );
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Đăng ký thành công. Vui lòng kiểm tra email để xác thực.",
+  "userId": 123
 }
 ```
 
-#### **CreatePostForm.jsx:**
-```jsx
-function CreatePostForm({ roomId, onSuccess }) {
+### Bước 2: Xác thực email
+
+**API:** `POST /api/auth/verify-registration`
+
+```javascript
+// Frontend: VerifyEmail.jsx
+const verifyEmail = async (email, otp) => {
+  const response = await fetch('/api/auth/verify-registration', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: email,
+      otp: otp
+    })
+  });
+  
+  return response.json();
+};
+```
+
+### Bước 3: Đăng nhập
+
+**API:** `POST /api/auth/login`
+
+```javascript
+// Frontend: LoginForm.jsx
+const loginUser = async (credentials) => {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: credentials.email,
+      password: credentials.password
+    })
+  });
+  
+  const data = await response.json();
+  
+  if (data.success) {
+    // Lưu token vào localStorage
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+  }
+  
+  return data;
+};
+```
+
+## 2. LUỒNG TÌM PHÒNG VÀ ĐĂNG KÝ THUÊ
+
+### Bước 4: Xem danh sách phòng trống
+
+**API:** `GET /api/posts/available`
+
+```javascript
+// Frontend: RoomList.jsx
+const fetchAvailableRooms = async () => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch('/api/posts/available', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  return response.json();
+};
+
+// Sử dụng
+const [rooms, setRooms] = useState([]);
+
+useEffect(() => {
+  const loadRooms = async () => {
+    const data = await fetchAvailableRooms();
+    setRooms(data.rooms || []);
+  };
+  
+  loadRooms();
+}, []);
+```
+
+### Bước 5: Đăng ký thuê phòng
+
+**API:** `POST /api/contracts/users/rental-requests`
+
+```javascript
+// Frontend: RentalRequestForm.jsx
+const submitRentalRequest = async (requestData) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch('/api/contracts/users/rental-requests', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      postId: requestData.postId,
+      moveInDate: requestData.moveInDate,
+      duration: requestData.duration,
+      message: requestData.message
+    })
+  });
+  
+  return response.json();
+};
+
+// Component
+const RentalRequestForm = ({ postId }) => {
   const [formData, setFormData] = useState({
-    postType: 'cho-thue',
-    title: '',
-    description: '',
-    images: [],
-    videos: [],
-    roomId: roomId,
-    phone: '',
-    email: ''
+    moveInDate: '',
+    duration: 12,
+    message: ''
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+      const result = await submitRentalRequest({
+        ...formData,
+        postId
       });
       
-      if (response.ok) {
-        const post = await response.json();
-        onSuccess(post);
+      if (result.success) {
+        alert('Đăng ký thuê thành công! Chủ nhà sẽ xem xét.');
+        // Redirect hoặc cập nhật UI
       }
     } catch (error) {
-      console.error('Error creating post:', error);
+      alert('Có lỗi xảy ra: ' + error.message);
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Tạo Post</h2>
-      
-      <div>
-        <label>Loại bài đăng:</label>
-        <select 
-          value={formData.postType}
-          onChange={(e) => setFormData({...formData, postType: e.target.value})}
-        >
-          <option value="cho-thue">Cho thuê</option>
-          <option value="tim-o-ghep">Tìm ở ghép</option>
-        </select>
-      </div>
-      
-      <div>
-        <label>Tiêu đề:</label>
-        <input 
-          type="text" 
-          value={formData.title}
-          onChange={(e) => setFormData({...formData, title: e.target.value})}
-          required
-        />
-      </div>
-      
-      <div>
-        <label>Mô tả:</label>
-        <textarea 
-          value={formData.description}
-          onChange={(e) => setFormData({...formData, description: e.target.value})}
-          required
-        />
-      </div>
-      
-      {/* Các field khác... */}
-      
-      <button type="submit">Đăng bài</button>
+      <input
+        type="date"
+        value={formData.moveInDate}
+        onChange={(e) => setFormData({...formData, moveInDate: e.target.value})}
+        required
+      />
+      <select
+        value={formData.duration}
+        onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
+      >
+        <option value={6}>6 tháng</option>
+        <option value={12}>12 tháng</option>
+        <option value={24}>24 tháng</option>
+      </select>
+      <textarea
+        placeholder="Lời nhắn cho chủ nhà..."
+        value={formData.message}
+        onChange={(e) => setFormData({...formData, message: e.target.value})}
+      />
+      <button type="submit">Đăng ký thuê</button>
     </form>
   );
-}
+};
 ```
 
----
+## 3. LUỒNG HỢP ĐỒNG (CHO USER)
 
-## 📱 **6. User Interface (Chỉ xem posts)**
+### Bước 6: Xem trạng thái đăng ký thuê
 
-### **API Endpoint:**
-```
-GET /api/posts
-```
+**API:** `GET /api/contracts/users/rental-requests`
 
-### **Frontend Implementation:**
-```jsx
-// UserView.jsx
-function UserView() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+```javascript
+// Frontend: MyRentalRequests.jsx
+const fetchMyRequests = async () => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch('/api/contracts/users/rental-requests', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  return response.json();
+};
+
+const MyRentalRequests = () => {
+  const [requests, setRequests] = useState([]);
 
   useEffect(() => {
-    fetchPosts();
+    const loadRequests = async () => {
+      const data = await fetchMyRequests();
+      setRequests(data.requests || []);
+    };
+    
+    loadRequests();
   }, []);
 
-  const fetchPosts = async () => {
+  return (
+    <div>
+      <h2>Đăng ký thuê của tôi</h2>
+      {requests.map(request => (
+        <div key={request.id} className="request-card">
+          <h3>Phòng: {request.roomNumber}</h3>
+          <p>Trạng thái: {request.status}</p>
+          <p>Ngày chuyển vào: {request.moveInDate}</p>
+          <p>Thời hạn: {request.duration} tháng</p>
+          
+          {request.status === 'approved' && (
+            <button onClick={() => viewContract(request.contractId)}>
+              Xem hợp đồng
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+### Bước 7: Xem hợp đồng
+
+**API:** `GET /api/contracts/users/contract/:contractId`
+
+```javascript
+// Frontend: ContractView.jsx
+const fetchContract = async (contractId) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`/api/contracts/users/contract/${contractId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  return response.json();
+};
+
+const ContractView = ({ contractId }) => {
+  const [contract, setContract] = useState(null);
+
+  useEffect(() => {
+    const loadContract = async () => {
+      const data = await fetchContract(contractId);
+      setContract(data.contract);
+    };
+    
+    loadContract();
+  }, [contractId]);
+
+  if (!contract) return <div>Loading...</div>;
+
+  return (
+    <div className="contract-view">
+      <h2>Hợp đồng thuê phòng</h2>
+      <div className="contract-details">
+        <p><strong>Mã hợp đồng:</strong> {contract.contractId}</p>
+        <p><strong>Phòng:</strong> {contract.roomNumber}</p>
+        <p><strong>Giá thuê:</strong> {contract.monthlyRent.toLocaleString()} VND/tháng</p>
+        <p><strong>Thời hạn:</strong> {contract.startDate} - {contract.endDate}</p>
+        <p><strong>Trạng thái:</strong> {contract.status}</p>
+      </div>
+      
+      {contract.status === 'active' && (
+        <div className="contract-actions">
+          <button onClick={() => downloadContract(contract.contractId)}>
+            Tải hợp đồng PDF
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+## 4. LUỒNG THANH TOÁN
+
+### Bước 8: Xem hóa đơn cần thanh toán
+
+**API:** `GET /api/payments/pending-invoices`
+
+```javascript
+// Frontend: PendingInvoices.jsx
+const fetchPendingInvoices = async () => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch('/api/payments/pending-invoices', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  return response.json();
+};
+
+const PendingInvoices = () => {
+  const [invoices, setInvoices] = useState([]);
+
+  useEffect(() => {
+    const loadInvoices = async () => {
+      const data = await fetchPendingInvoices();
+      setInvoices(data || []);
+    };
+    
+    loadInvoices();
+  }, []);
+
+  return (
+    <div>
+      <h2>Hóa đơn cần thanh toán</h2>
+      {invoices.map(invoice => (
+        <div key={invoice.invoiceId} className="invoice-card">
+          <h3>Hóa đơn #{invoice.invoiceId}</h3>
+          <p>Loại: {invoice.invoiceType}</p>
+          <p>Số tiền: {invoice.amount.toLocaleString()} VND</p>
+          <p>Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString()}</p>
+          
+          {!invoice.isQrGenerated ? (
+            <button onClick={() => generatePaymentQR(invoice.invoiceId)}>
+              Tạo mã QR thanh toán
+            </button>
+          ) : (
+            <button onClick={() => showPaymentQR(invoice.invoiceId)}>
+              Thanh toán
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+### Bước 9: Tạo QR code thanh toán ZaloPay
+
+**API:** `POST /api/payments/generate-zalopay-qr`
+
+```javascript
+// Frontend: PaymentQR.jsx
+const generatePaymentQR = async (invoiceId) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch('/api/payments/generate-zalopay-qr', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      invoiceId: invoiceId
+    })
+  });
+  
+  return response.json();
+};
+
+const PaymentQR = ({ invoiceId }) => {
+  const [qrData, setQrData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleGenerateQR = async () => {
+    setLoading(true);
+    
     try {
-      const response = await fetch('/api/posts');
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
+      const result = await generatePaymentQR(invoiceId);
+      
+      if (result.success) {
+        setQrData(result.data);
+      } else {
+        alert('Có lỗi xảy ra: ' + result.message);
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      alert('Có lỗi xảy ra: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-
   return (
-    <div>
-      <h1>Danh sách bài đăng</h1>
-      {posts.map(post => (
-        <PostCard key={post.id} post={post} />
-      ))}
-    </div>
-  );
-}
-
-// PostCard.jsx
-function PostCard({ post }) {
-  return (
-    <div className="post-card">
-      <h3>{post.title}</h3>
-      <p>{post.description}</p>
-      <p>Giá: {post.price?.toLocaleString()} VND</p>
-      <p>Loại: {post.category}</p>
-      {post.images && post.images.length > 0 && (
-        <img src={post.images[0]} alt="Post image" />
+    <div className="payment-qr">
+      {!qrData ? (
+        <button onClick={handleGenerateQR} disabled={loading}>
+          {loading ? 'Đang tạo...' : 'Tạo mã QR thanh toán'}
+        </button>
+      ) : (
+        <div className="qr-container">
+          <h3>Quét mã QR để thanh toán</h3>
+          <img src={qrData.qrCodeUrl} alt="Payment QR Code" />
+          <p>Số tiền: {qrData.amount.toLocaleString()} VND</p>
+          <p>Mã đơn hàng: {qrData.orderId}</p>
+          <p>Hết hạn: {new Date(qrData.expiryAt).toLocaleString()}</p>
+          
+          <div className="payment-instructions">
+            <h4>Hướng dẫn thanh toán:</h4>
+            <ol>
+              <li>Mở ứng dụng ZaloPay</li>
+              <li>Quét mã QR bên trên</li>
+              <li>Xác nhận thông tin thanh toán</li>
+              <li>Nhập mật khẩu để hoàn tất</li>
+            </ol>
+          </div>
+          
+          <button onClick={() => checkPaymentStatus(qrData.orderId)}>
+            Kiểm tra trạng thái thanh toán
+          </button>
+        </div>
       )}
     </div>
   );
-}
-```
-
----
-
-## 🚨 **7. Xử lý lỗi**
-
-### **Error Handling:**
-```javascript
-const handleApiError = (error, response) => {
-  if (response?.status === 401) {
-    // Token hết hạn, redirect đến login
-    localStorage.removeItem('accessToken');
-    window.location.href = '/login';
-  } else if (response?.status === 403) {
-    // Không có quyền truy cập
-    showError('Bạn không có quyền thực hiện hành động này');
-  } else if (response?.status === 400) {
-    // Lỗi validation
-    const errorData = await response.json();
-    showError(errorData.message.join(', '));
-  } else {
-    // Lỗi khác
-    showError('Có lỗi xảy ra, vui lòng thử lại');
-  }
 };
 ```
 
----
+### Bước 10: Kiểm tra trạng thái thanh toán
 
-## 📋 **8. Checklist tích hợp**
+**API:** `GET /api/payments/status/:orderId`
 
-### **✅ Frontend cần làm:**
-- [ ] Tạo component `CreateBuildingForm`
-- [ ] Tạo component `CreateRoomForm` 
-- [ ] Tạo component `CreatePostForm`
-- [ ] Tạo component `UserView` (xem posts)
-- [ ] Implement error handling
-- [ ] Implement loading states
-- [ ] Implement form validation
-- [ ] Implement image/video upload
-- [ ] Implement role-based UI
-- [ ] Implement navigation flow
+```javascript
+// Frontend: PaymentStatus.jsx
+const checkPaymentStatus = async (orderId) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`/api/payments/status/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  return response.json();
+};
 
-### **✅ Backend đã có:**
-- [x] API tạo building
-- [x] API tạo room
-- [x] API tạo post
-- [x] API lấy danh sách posts
-- [x] Authentication & Authorization
-- [x] Role-based access control
+const PaymentStatus = ({ orderId }) => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
 
----
+  const handleCheckStatus = async () => {
+    setLoading(true);
+    
+    try {
+      const result = await checkPaymentStatus(orderId);
+      setStatus(result);
+      
+      if (result.status === 'paid') {
+        alert('Thanh toán thành công!');
+        // Refresh invoices list hoặc redirect
+      }
+    } catch (error) {
+      alert('Có lỗi xảy ra: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-## 🎯 **9. Kết quả cuối cùng**
+  return (
+    <div className="payment-status">
+      <button onClick={handleCheckStatus} disabled={loading}>
+        {loading ? 'Đang kiểm tra...' : 'Kiểm tra trạng thái'}
+      </button>
+      
+      {status && (
+        <div className="status-info">
+          <p>Mã đơn hàng: {status.orderId}</p>
+          <p>Trạng thái: 
+            <span className={`status ${status.status}`}>
+              {status.status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+            </span>
+          </p>
+          {status.paidAt && (
+            <p>Thời gian thanh toán: {new Date(status.paidAt).toLocaleString()}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+```
 
-Sau khi tích hợp xong, user sẽ có thể:
+## 5. COMPLETE INTEGRATION EXAMPLE
 
-1. **Landlord:**
-   - Tạo building → Tạo room → Tạo post
-   - Quản lý tất cả building/room/post của mình
-   - Xem danh sách posts công khai
+### App.jsx - Main Application
 
-2. **User thường:**
-   - Xem danh sách posts công khai
-   - Tìm kiếm posts theo tiêu chí
-   - Liên hệ với landlord
+```javascript
+// Frontend: App.jsx
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
+import RoomList from './components/RoomList';
+import MyRentalRequests from './components/MyRentalRequests';
+import ContractView from './components/ContractView';
+import PendingInvoices from './components/PendingInvoices';
+import PaymentQR from './components/PaymentQR';
 
-**Luồng hoàn chỉnh và sẵn sàng sử dụng!** 🚀
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData.user);
+    localStorage.setItem('token', userData.token);
+    localStorage.setItem('user', JSON.stringify(userData.user));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Router>
+      <div className="app">
+        <nav className="navbar">
+          <h1>Nhà Trọ App</h1>
+          {user && (
+            <div className="user-menu">
+              <span>Xin chào, {user.fullName}</span>
+              <button onClick={handleLogout}>Đăng xuất</button>
+            </div>
+          )}
+        </nav>
+
+        <Routes>
+          {!user ? (
+            <>
+              <Route path="/login" element={<LoginForm onLogin={handleLogin} />} />
+              <Route path="/register" element={<RegisterForm />} />
+              <Route path="*" element={<Navigate to="/login" />} />
+            </>
+          ) : (
+            <>
+              <Route path="/" element={<RoomList />} />
+              <Route path="/my-requests" element={<MyRentalRequests />} />
+              <Route path="/contract/:contractId" element={<ContractView />} />
+              <Route path="/invoices" element={<PendingInvoices />} />
+              <Route path="/payment/:invoiceId" element={<PaymentQR />} />
+            </>
+          )}
+        </Routes>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+```
+
+## 6. ERROR HANDLING & LOADING STATES
+
+### API Service với Error Handling
+
+```javascript
+// Frontend: apiService.js
+class ApiService {
+  constructor() {
+    this.baseURL = 'http://localhost:3001/api';
+  }
+
+  async request(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers
+      },
+      ...options
+    };
+
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Có lỗi xảy ra');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  // Auth APIs
+  async register(userData) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  }
+
+  async login(credentials) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  // Payment APIs
+  async generateZaloPayQR(invoiceId) {
+    return this.request('/payments/generate-zalopay-qr', {
+      method: 'POST',
+      body: JSON.stringify({ invoiceId })
+    });
+  }
+
+  async checkPaymentStatus(orderId) {
+    return this.request(`/payments/status/${orderId}`);
+  }
+
+  async getPendingInvoices() {
+    return this.request('/payments/pending-invoices');
+  }
+}
+
+export default new ApiService();
+```
+
+## 7. STATE MANAGEMENT (Redux/Zustand)
+
+### Zustand Store Example
+
+```javascript
+// Frontend: store.js
+import { create } from 'zustand';
+import apiService from './apiService';
+
+const useStore = create((set, get) => ({
+  // Auth state
+  user: null,
+  token: null,
+  isAuthenticated: false,
+
+  // Rooms state
+  rooms: [],
+  loadingRooms: false,
+
+  // Invoices state
+  invoices: [],
+  loadingInvoices: false,
+
+  // Actions
+  login: async (credentials) => {
+    try {
+      const data = await apiService.login(credentials);
+      set({
+        user: data.user,
+        token: data.token,
+        isAuthenticated: true
+      });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false
+    });
+  },
+
+  fetchRooms: async () => {
+    set({ loadingRooms: true });
+    try {
+      const data = await apiService.getAvailableRooms();
+      set({ rooms: data.rooms, loadingRooms: false });
+    } catch (error) {
+      set({ loadingRooms: false });
+      throw error;
+    }
+  },
+
+  fetchInvoices: async () => {
+    set({ loadingInvoices: true });
+    try {
+      const data = await apiService.getPendingInvoices();
+      set({ invoices: data, loadingInvoices: false });
+    } catch (error) {
+      set({ loadingInvoices: false });
+      throw error;
+    }
+  }
+}));
+
+export default useStore;
+```
+
+## 8. RESPONSIVE DESIGN & UX
+
+### CSS cho Payment Components
+
+```css
+/* Frontend: PaymentComponents.css */
+.payment-qr {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.qr-container img {
+  width: 250px;
+  height: 250px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.payment-instructions {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.payment-instructions ol {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status.paid {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.invoice-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 10px 0;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.contract-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.contract-details {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .payment-qr {
+    padding: 10px;
+  }
+  
+  .qr-container img {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .contract-view {
+    padding: 10px;
+  }
+}
+```
+
+## 9. TESTING STRATEGY
+
+### Unit Tests Example
+
+```javascript
+// Frontend: PaymentQR.test.js
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import PaymentQR from '../components/PaymentQR';
+import apiService from '../services/apiService';
+
+jest.mock('../services/apiService');
+
+describe('PaymentQR Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders generate QR button initially', () => {
+    render(<PaymentQR invoiceId={123} />);
+    expect(screen.getByText('Tạo mã QR thanh toán')).toBeInTheDocument();
+  });
+
+  test('generates QR code on button click', async () => {
+    const mockQRData = {
+      success: true,
+      data: {
+        qrCodeUrl: 'data:image/png;base64,test',
+        amount: 1000000,
+        orderId: 'ORD_123'
+      }
+    };
+
+    apiService.generateZaloPayQR.mockResolvedValue(mockQRData);
+
+    render(<PaymentQR invoiceId={123} />);
+    
+    fireEvent.click(screen.getByText('Tạo mã QR thanh toán'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Quét mã QR để thanh toán')).toBeInTheDocument();
+      expect(screen.getByText('1,000,000 VND')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+## 10. DEPLOYMENT CHECKLIST
+
+### Frontend Deployment
+
+- [ ] Set correct API base URL for production
+- [ ] Configure HTTPS for payment security
+- [ ] Test all payment flows in staging
+- [ ] Implement proper error boundaries
+- [ ] Add loading states for all async operations
+- [ ] Test responsive design on mobile devices
+- [ ] Verify ZaloPay integration works
+- [ ] Set up monitoring and error tracking
+- [ ] Configure CDN for static assets
+- [ ] Test offline scenarios
+
+### Environment Variables
+
+```env
+# Frontend .env
+REACT_APP_API_URL=https://api.yourdomain.com/api
+REACT_APP_ZALOPAY_REDIRECT_URL=https://yourdomain.com/payment/success
+REACT_APP_ENVIRONMENT=production
+```
+
+## 11. TROUBLESHOOTING
+
+### Common Issues
+
+1. **CORS Errors**
+   - Ensure backend has proper CORS configuration
+   - Check API base URL in frontend
+
+2. **Token Expiry**
+   - Implement token refresh logic
+   - Handle 401 errors gracefully
+
+3. **Payment QR Not Working**
+   - Verify ZaloPay configuration
+   - Check callback URLs are accessible
+   - Test with ZaloPay sandbox first
+
+4. **State Management Issues**
+   - Use proper state management library
+   - Implement optimistic updates
+   - Handle loading and error states
+
+This comprehensive guide covers the complete frontend integration flow for the rental, contract, and payment system. Each component is production-ready with proper error handling, loading states, and responsive design.

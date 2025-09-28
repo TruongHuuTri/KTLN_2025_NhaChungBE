@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GeneratePaymentQRDto } from './dto/generate-payment-qr.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 
-@Controller('api/payments')
+@Controller('payments')
 @UseGuards(JwtAuthGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
@@ -17,6 +17,16 @@ export class PaymentsController {
     const { invoiceId } = generatePaymentQRDto;
     
     return await this.paymentsService.generatePaymentQR(invoiceId);
+  }
+
+  /**
+   * Tạo QR code thanh toán ZaloPay cho hóa đơn
+   */
+  @Post('generate-zalopay-qr')
+  async generateZaloPayQR(@Body() generatePaymentQRDto: GeneratePaymentQRDto) {
+    const { invoiceId } = generatePaymentQRDto;
+    
+    return await this.paymentsService.generateZaloPayQR(invoiceId);
   }
 
   /**

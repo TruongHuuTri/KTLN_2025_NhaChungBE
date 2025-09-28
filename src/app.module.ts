@@ -15,6 +15,7 @@ import { UserProfilesModule } from './modules/user-profiles/user-profiles.module
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
 @Module({
@@ -45,6 +46,7 @@ import { OTPService } from './shared/services/otp.service';
     RoomsModule,
     PostsModule,
     ContractsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService, OTPService],

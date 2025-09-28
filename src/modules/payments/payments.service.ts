@@ -16,7 +16,7 @@ export class PaymentsService {
   ) {}
 
   /**
-   * Tạo QR code thanh toán cho hóa đơn
+   * Tạo QR code thanh toán cho hóa đơn (generic)
    */
   async generatePaymentQR(invoiceId: number): Promise<{
     orderId: string;
@@ -49,11 +49,8 @@ export class PaymentsService {
         landlordId: invoice.landlordId
       };
 
-      // Tạo QR code
-      const qrResult = await this.qrCodeService.generateZaloPayQR({
-        ...paymentData,
-        zalopayOrderId: `ZP_${Date.now()}`
-      });
+      // Tạo QR code generic
+      const qrResult = await this.qrCodeService.generatePaymentQR(paymentData);
 
       // Tạo payment order
       const paymentOrder = new this.paymentOrderModel({
@@ -322,6 +319,75 @@ export class PaymentsService {
       };
     } catch (error) {
       throw new Error(`Failed to regenerate QR code: ${error.message}`);
+    }
+  }
+
+  /**
+   * Tạo QR code thanh toán ZaloPay cho hóa đơn
+   */
+  async generateZaloPayQR(invoiceId: number): Promise<{
+    orderId: string;
+    qrCodeUrl: string;
+    qrCodeData: string;
+    expiryAt: Date;
+    amount: number;
+    zalopayResponse?: any;
+  }> {
+    try {
+      // Lấy thông tin hóa đơn
+      const invoice = await this.invoiceModel.findOne({ invoiceId }).exec();
+      if (!invoice) {
+        throw new NotFoundException('Invoice not found');
+      }
+
+      if (invoice.status === 'paid') {
+        throw new BadRequestException('Invoice already paid');
+      }
+
+      // Tạo order ID
+      const orderId = `ORD_${Date.now()}_${invoiceId}`;
+
+      // Tạo dữ liệu QR code ZaloPay
+      const paymentData = {
+        orderId,
+        amount: invoice.amount,
+        description: `Thanh toán hóa đơn #${invoice.invoiceId}`,
+        zalopayOrderId: `ZP_${Date.now()}`
+      };
+
+      // Tạo QR code ZaloPay
+      const qrResult = await this.qrCodeService.generateZaloPayQR(paymentData);
+
+      // Tạo payment order
+      const paymentOrder = new this.paymentOrderModel({
+        orderId,
+        invoiceId: invoice.invoiceId,
+        tenantId: invoice.tenantId,
+        landlordId: invoice.landlordId,
+        amount: invoice.amount,
+        orderType: invoice.invoiceType,
+        status: 'pending',
+        qrCodeUrl: qrResult.qrCodeUrl,
+        qrCodeData: qrResult.qrCodeData,
+        expiryAt: qrResult.expiryAt,
+        isQrGenerated: true,
+        paymentMethod: 'zalopay',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      await paymentOrder.save();
+
+      return {
+        orderId,
+        qrCodeUrl: qrResult.qrCodeUrl,
+        qrCodeData: qrResult.qrCodeData,
+        expiryAt: qrResult.expiryAt,
+        amount: invoice.amount,
+        zalopayResponse: qrResult.zalopayResponse
+      };
+    } catch (error) {
+      throw new Error(`Failed to generate ZaloPay QR: ${error.message}`);
     }
   }
 }
