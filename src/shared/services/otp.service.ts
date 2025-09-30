@@ -39,7 +39,6 @@ export class OTPService {
   async testEmailService(): Promise<void> {
     try {
       await this.emailService.testConnection();
-      console.log('✅ Email service is working properly');
     } catch (error) {
       console.error('❌ Email service test failed:', error);
       throw error;

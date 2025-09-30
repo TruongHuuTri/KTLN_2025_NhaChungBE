@@ -55,9 +55,16 @@ export class UsersController {
     return this.usersService.getVerificationStatus(req.user.sub);
   }
 
-  @Get(':id')
+  @Get('profile/:id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Get('rooms')
+  @UseGuards(JwtAuthGuard)
+  async getMyRooms(@Request() req) {
+    const userId = req.user.userId;
+    return await this.usersService.getMyRooms(userId);
   }
 
   @Put(':id')
@@ -73,4 +80,11 @@ export class UsersController {
     this.usersService.remove(id);
     return { message: 'Xóa user thành công' };
   }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getUserById(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
 }
+

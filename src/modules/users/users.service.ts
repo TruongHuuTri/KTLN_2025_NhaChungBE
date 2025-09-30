@@ -6,6 +6,9 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserDocument } from './schemas/user.schema';
 import { Verification, VerificationDocument } from '../verifications/schemas/verification.schema';
+import { Room, RoomDocument } from '../rooms/schemas/room.schema';
+import { Building, BuildingDocument } from '../rooms/schemas/building.schema';
+import { RentalContract, RentalContractDocument } from '../contracts/schemas/rental-contract.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,6 +20,9 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
     @InjectModel(UserProfile.name) private userProfileModel: Model<UserProfileDocument>,
+    @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
+    @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
+    @InjectModel(RentalContract.name) private contractModel: Model<RentalContractDocument>,
     private jwtService: JwtService,
   ) {}
 
@@ -54,7 +60,13 @@ export class UsersService {
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.userModel.findOne({ userId: parseInt(id) }).select('-password').exec();
+    const parsedId = parseInt(id);
+    
+    if (isNaN(parsedId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+    
+    const user = await this.userModel.findOne({ userId: parsedId }).select('-password').exec();
     if (!user) {
       throw new NotFoundException('Không tìm thấy user');
     }
@@ -201,6 +213,111 @@ export class UsersService {
       isVerified: user.isVerified,
       verification: verification,
     };
+  }
+
+  /**
+   * Lấy danh sách phòng user đã thuê
+   */
+  async getMyRooms(userId: number): Promise<Array<{
+    roomId: number;
+    roomNumber: string;
+    buildingName: string;
+    buildingId: number;
+    contractId?: number;
+    contractStatus?: string;
+    startDate?: Date;
+    endDate?: Date;
+    monthlyRent: number;
+    deposit: number;
+    area: number;
+    maxOccupancy: number;
+    currentOccupants: number;
+    landlordInfo: {
+      landlordId: number;
+      name: string;
+      phone: string;
+      email: string;
+    };
+  }>> {
+    try {
+      // Tìm tất cả phòng có user trong currentTenants
+      const rooms = await this.roomModel.find({
+        'currentTenants.userId': userId,
+        isActive: true
+      }).exec();
+
+      const userRooms: Array<{
+        roomId: number;
+        roomNumber: string;
+        buildingName: string;
+        buildingId: number;
+        contractId?: number;
+        contractStatus?: string;
+        startDate?: Date;
+        endDate?: Date;
+        monthlyRent: number;
+        deposit: number;
+        area: number;
+        maxOccupancy: number;
+        currentOccupants: number;
+        landlordInfo: {
+          landlordId: number;
+          name: string;
+          phone: string;
+          email: string;
+        };
+      }> = [];
+
+      for (const room of rooms) {
+        // Lấy thông tin tòa nhà
+        let building;
+        try {
+          building = await this.buildingModel.findById(room.buildingId).exec();
+        } catch (error) {
+          building = await this.buildingModel.findOne({ buildingId: room.buildingId }).exec();
+        }
+
+        // Lấy thông tin chủ trọ
+        const landlord = await this.userModel.findOne({ userId: room.landlordId }).exec();
+
+        // Tìm hợp đồng liên quan (nếu có)
+        const contract = await this.contractModel.findOne({
+          roomId: room.roomId,
+          'tenants.tenantId': userId
+        }).exec();
+
+        userRooms.push({
+          roomId: room.roomId,
+          roomNumber: room.roomNumber,
+          buildingName: building ? building.name : 'N/A',
+          buildingId: room.buildingId,
+          contractId: contract ? contract.contractId : undefined,
+          contractStatus: contract ? contract.status : 'unknown',
+          startDate: contract ? contract.startDate : undefined,
+          endDate: contract ? contract.endDate : undefined,
+          monthlyRent: room.price, // Sử dụng price từ room
+          deposit: room.deposit,
+          area: room.area,
+          maxOccupancy: room.maxOccupancy,
+          currentOccupants: room.currentOccupants,
+          landlordInfo: landlord ? {
+            landlordId: landlord.userId,
+            name: landlord.name,
+            phone: landlord.phone || '',
+            email: landlord.email
+          } : {
+            landlordId: 0,
+            name: 'N/A',
+            phone: '',
+            email: 'N/A'
+          }
+        });
+      }
+
+      return userRooms;
+    } catch (error) {
+      throw new Error(`Failed to get user rooms: ${error.message}`);
+    }
   }
 
   private async getNextUserId(): Promise<number> {

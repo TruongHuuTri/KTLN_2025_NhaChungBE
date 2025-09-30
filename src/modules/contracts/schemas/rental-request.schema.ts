@@ -39,6 +39,9 @@ export class RentalRequest {
   respondedAt?: Date;
 
   @Prop()
+  contractId?: number;
+
+  @Prop()
   createdAt: Date;
 
   @Prop()

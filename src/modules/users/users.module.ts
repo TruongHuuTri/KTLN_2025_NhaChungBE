@@ -8,6 +8,9 @@ import { UsersController } from './users.controller';
 import { User, UserSchema } from './schemas/user.schema';
 import { UserProfile, UserProfileSchema } from '../user-profiles/schemas/user-profile.schema';
 import { Verification, VerificationSchema } from '../verifications/schemas/verification.schema';
+import { Room, RoomSchema } from '../rooms/schemas/room.schema';
+import { Building, BuildingSchema } from '../rooms/schemas/building.schema';
+import { RentalContract, RentalContractSchema } from '../contracts/schemas/rental-contract.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -16,6 +19,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       { name: User.name, schema: UserSchema },
       { name: Verification.name, schema: VerificationSchema },
       { name: UserProfile.name, schema: UserProfileSchema },
+      { name: Room.name, schema: RoomSchema },
+      { name: Building.name, schema: BuildingSchema },
+      { name: RentalContract.name, schema: RentalContractSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({

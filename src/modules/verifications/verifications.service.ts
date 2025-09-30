@@ -19,15 +19,12 @@ export class VerificationsService {
   ) {}
 
   async create(userId: string, createVerificationDto: CreateVerificationDto): Promise<Verification> {
-    console.log('UserId from JWT:', userId);
-    
     if (!userId) {
       throw new BadRequestException('Không có thông tin user từ JWT token');
     }
 
     // Try to find user by userId (number) first since our JWT uses userId number
     const userByUserId = await this.userModel.findOne({ userId: parseInt(userId) }).exec();
-    console.log('Found user by userId:', userByUserId ? 'Yes' : 'No');
     
     if (userByUserId) {
       // Use the userId number for verification
@@ -38,17 +35,15 @@ export class VerificationsService {
     // Fallback: try to find by ObjectId
     try {
       const userObjectId = new Types.ObjectId(userId);
-      console.log('UserObjectId:', userObjectId);
 
       const user = await this.userModel.findById(userObjectId).exec();
-      console.log('Found user by ObjectId:', user ? 'Yes' : 'No');
       
       if (user) {
         const verification = await this.createVerificationForUserId((user as any).userId, createVerificationDto);
         return verification;
       }
     } catch (error) {
-      console.log('Invalid ObjectId format');
+      // Invalid ObjectId format
     }
     
     throw new NotFoundException(`Không tìm thấy user với ID: ${userId}`);

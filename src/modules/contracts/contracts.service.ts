@@ -9,7 +9,10 @@ import { ContractUpdate, ContractUpdateDocument } from './schemas/contract-updat
 import { RoommateApplication, RoommateApplicationDocument } from './schemas/roommate-application.schema';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
-import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { Post, PostDocument } from '../posts/schemas/post.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { Room, RoomDocument } from '../rooms/schemas/room.schema';
+import { Building, BuildingDocument } from '../rooms/schemas/building.schema';
 import { CreateRoommateApplicationDto } from './dto/create-roommate-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
@@ -24,6 +27,10 @@ export class ContractsService {
     @InjectModel(Invoice.name) private invoiceModel: Model<InvoiceDocument>,
     @InjectModel(ContractUpdate.name) private contractUpdateModel: Model<ContractUpdateDocument>,
     @InjectModel(RoommateApplication.name) private roommateApplicationModel: Model<RoommateApplicationDocument>,
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
+    @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
   ) {}
 
   // Rental Contract Management
@@ -45,6 +52,27 @@ export class ContractsService {
     if (!contract) {
       throw new NotFoundException('Contract not found');
     }
+    return contract as RentalContract;
+  }
+
+  async getUserContract(userId: number, contractId: number): Promise<RentalContract> {
+    const contract = await this.contractModel.findOne({ contractId }).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+    
+    // Check if user is a tenant in this contract
+    const isTenant = contract.tenants.some(tenant => {
+      // Convert both to numbers to handle string/number mismatch
+      const tenantIdNum = Number(tenant.tenantId);
+      const userIdNum = Number(userId);
+      return tenantIdNum === userIdNum;
+    });
+    
+    if (!isTenant) {
+      throw new BadRequestException('User is not authorized to view this contract');
+    }
+    
     return contract as RentalContract;
   }
 
@@ -155,16 +183,58 @@ export class ContractsService {
 
   // Rental Request Management
   async createRentalRequest(requestData: CreateRentalRequestDto & { tenantId: number }): Promise<RentalRequest> {
+    // Lấy thông tin post để tự động lấy landlordId và roomId
+    const post = await this.postModel.findOne({ postId: requestData.postId }).exec();
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+    
     const requestId = await this.getNextRequestId();
     const request = new this.rentalRequestModel({
       requestId,
-      ...requestData,
+      tenantId: requestData.tenantId,
+      landlordId: post.landlordId,
+      roomId: post.roomId,
+      postId: requestData.postId,
+      requestedMoveInDate: requestData.requestedMoveInDate,
+      requestedDuration: requestData.requestedDuration,
+      message: requestData.message,
     });
     return request.save();
   }
 
-  async getRentalRequestsByLandlord(landlordId: number): Promise<RentalRequest[]> {
-    return this.rentalRequestModel.find({ landlordId }).sort({ createdAt: -1 }).exec();
+  async getRentalRequestsByLandlord(landlordId: number): Promise<any[]> {
+    const requests = await this.rentalRequestModel.find({ landlordId }).sort({ createdAt: -1 }).exec();
+    
+    // Populate tenant and room info for each request
+    const populatedRequests = await Promise.all(
+      requests.map(async (request) => {
+        const tenant = await this.userModel.findOne({ userId: request.tenantId }).exec();
+        const room = await this.roomModel.findOne({ roomId: request.roomId }).exec();
+        const building = room ? await this.buildingModel.findOne({ buildingId: room.buildingId }).exec() : null;
+
+        return {
+          ...request.toObject(),
+          tenantInfo: tenant ? {
+            fullName: tenant.name,
+            email: tenant.email,
+            phone: tenant.phone
+          } : null,
+          roomInfo: room ? {
+            roomType: room.category,
+            roomNumber: room.roomNumber,
+            buildingName: building?.name || 'Unknown',
+            address: building ? `${building.address.street}, ${building.address.wardName}, ${building.address.provinceName}` : 'Unknown'
+          } : null
+        };
+      })
+    );
+
+    return populatedRequests;
+  }
+
+  async getRentalRequestsByTenant(tenantId: number): Promise<RentalRequest[]> {
+    return this.rentalRequestModel.find({ tenantId }).sort({ createdAt: -1 }).exec();
   }
 
   async getRentalRequestById(requestId: number): Promise<RentalRequest> {
@@ -190,17 +260,364 @@ export class ContractsService {
     if (!request) {
       throw new NotFoundException('Rental request not found');
     }
+
+    // Tự động tạo hợp đồng và hóa đơn khi chủ nhà duyệt yêu cầu thuê
+    // Tenant sẽ được thêm vào room sau khi thanh toán thành công
+    if (status === 'approved') {
+      try {
+        const contractId = await this.autoCreateContractFromRequest(request);
+        await this.autoCreateInvoiceFromRequest(request, contractId);
+      } catch (error) {
+        // Log lỗi nhưng vẫn cập nhật status của rental request
+        console.error('Error auto-creating contract/invoice:', error);
+      }
+    }
+
     return request;
   }
 
-  // Invoice Management
-  async createInvoice(invoiceData: CreateInvoiceDto & { landlordId: number }): Promise<Invoice> {
+  private async autoCreateContractFromRequest(request: RentalRequest): Promise<number> {
+    try {
+      // Lấy thông tin phòng từ post
+      const post = await this.postModel.findOne({ postId: request.postId }).exec();
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // Lấy thông tin phòng từ room
+      const room = await this.roomModel.findOne({ roomId: request.roomId }).exec();
+      if (!room) {
+        throw new NotFoundException('Room not found');
+      }
+
+      // Tạo hợp đồng tự động
+      const contractId = await this.getNextContractId();
+      const startDate = new Date(request.requestedMoveInDate);
+      const endDate = new Date(startDate.getTime() + (request.requestedDuration * 30 * 24 * 60 * 60 * 1000));
+
+      const contract = new this.contractModel({
+        contractId,
+        landlordId: request.landlordId,
+        roomId: request.roomId,
+        contractType: 'single', // Mặc định là single
+        status: 'active', // Tự động active khi approve
+        startDate,
+        endDate,
+        monthlyRent: post.roomInfo?.basicInfo?.price || room.price || 0,
+        deposit: post.roomInfo?.basicInfo?.deposit || room.deposit || 0,
+        tenants: [{
+          tenantId: request.tenantId,
+          moveInDate: startDate,
+          monthlyRent: post.roomInfo?.basicInfo?.price || room.price || 0,
+          deposit: post.roomInfo?.basicInfo?.deposit || room.deposit || 0,
+          status: 'active'
+        }],
+        roomInfo: {
+          roomNumber: room.roomNumber,
+          area: room.area,
+          maxOccupancy: room.maxOccupancy,
+          currentOccupancy: 1
+        }
+      });
+
+      await contract.save();
+      
+      // Cập nhật rental request với contractId (nếu schema có field này)
+      await this.rentalRequestModel.findOneAndUpdate(
+        { requestId: request.requestId },
+        { $set: { contractId: contractId } }
+      ).exec();
+
+      return contractId;
+    } catch (error) {
+      // Log lỗi nhưng không throw để không ảnh hưởng đến việc approve request
+      console.error('Error auto-creating contract:', error);
+      throw error; // Throw để updateRentalRequestStatus biết có lỗi
+    }
+  }
+
+  private async autoCreateInvoiceFromRequest(request: RentalRequest, contractId?: number): Promise<void> {
+    try {
+      const contractIdToUse = contractId || request.contractId;
+      const contract = await this.contractModel.findOne({ contractId: contractIdToUse }).exec();
+      if (!contract) {
+        throw new NotFoundException('Contract not found');
+      }
+
+      const invoiceId = await this.getNextInvoiceId();
+      const dueDate = new Date(request.requestedMoveInDate);
+      
+      // Tạo hóa đơn tiền cọc và tiền thuê tháng đầu
+      const invoice = new this.invoiceModel({
+        invoiceId,
+        contractId: contractIdToUse,
+        roomId: request.roomId,
+        tenantId: request.tenantId,
+        landlordId: request.landlordId,
+        invoiceType: 'initial_payment',
+        amount: contract.deposit + contract.monthlyRent, // Tiền cọc + tiền thuê tháng đầu
+        status: 'pending',
+        dueDate,
+        description: `Tiền cọc và tiền thuê tháng đầu - Phòng ${contract.roomInfo.roomNumber}`,
+        items: [
+          {
+            description: 'Tiền cọc',
+            amount: contract.deposit,
+            type: 'deposit'
+          },
+          {
+            description: 'Tiền thuê tháng đầu',
+            amount: contract.monthlyRent,
+            type: 'rent'
+          }
+        ]
+      });
+
+      await invoice.save();
+
+    } catch (error) {
+      console.error('Error auto-creating invoice:', error);
+    }
+  }
+
+  private async autoAddTenantToRoom(request: RentalRequest): Promise<void> {
+    try {
+      // Lấy thông tin user
+      const user = await this.userModel.findOne({ userId: request.tenantId }).exec();
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Tạo tenant data cho room
+      const tenantData = {
+        userId: request.tenantId,
+        fullName: user.name,
+        dateOfBirth: new Date(), // Có thể cần lấy từ user profile
+        gender: 'unknown', // Có thể cần lấy từ user profile
+        occupation: 'unknown', // Có thể cần lấy từ user profile
+        moveInDate: request.requestedMoveInDate,
+        lifestyle: 'unknown', // Có thể cần lấy từ user profile
+        cleanliness: 'unknown' // Có thể cần lấy từ user profile
+      };
+
+      // Lấy thông tin room hiện tại để tính availableSpots
+      const currentRoom = await this.roomModel.findOne({ roomId: request.roomId }).exec();
+      if (!currentRoom) {
+        throw new NotFoundException('Room not found');
+      }
+
+      // Cập nhật room occupancy
+      await this.roomModel.findOneAndUpdate(
+        { roomId: request.roomId },
+        {
+          $push: { currentTenants: tenantData },
+          $inc: { currentOccupants: 1 },
+          $set: { 
+            availableSpots: currentRoom.maxOccupancy - (currentRoom.currentOccupants + 1),
+            updatedAt: new Date()
+          }
+        }
+      ).exec();
+
+    } catch (error) {
+      // Log lỗi nhưng không throw để không ảnh hưởng đến việc approve request
+      console.error('Error auto-adding tenant to room:', error);
+    }
+  }
+
+  // Invoice Management - Removed manual invoice creation
+
+  /**
+   * Tự động tạo hóa đơn hàng tháng cho hợp đồng (bao gồm tiền thuê + các phí)
+   */
+  async createMonthlyRentInvoice(contractId: number, month: number, year: number): Promise<Invoice> {
+    const contract = await this.contractModel.findOne({ contractId }).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+
+    // Lấy thông tin phòng để tính các phí
+    const room = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // Kiểm tra xem hóa đơn tháng này đã tồn tại chưa
+    const existingInvoice = await this.invoiceModel.findOne({
+      contractId,
+      invoiceType: 'monthly_rent',
+      'items.type': 'rent',
+      createdAt: {
+        $gte: new Date(year, month - 1, 1),
+        $lt: new Date(year, month, 1)
+      }
+    }).exec();
+
+    if (existingInvoice) {
+      throw new BadRequestException('Monthly rent invoice already exists for this month');
+    }
+
     const invoiceId = await this.getNextInvoiceId();
+    const dueDate = new Date(year, month - 1, 1); // Ngày 1 của tháng
+    
+    // Tính tổng số tiền và tạo danh sách items
+    const items: Array<{
+      description: string;
+      amount: number;
+      type: string;
+    }> = [];
+    let totalAmount = 0;
+
+    // 1. Tiền thuê phòng
+    items.push({
+      description: `Tiền thuê tháng ${month}/${year}`,
+      amount: contract.monthlyRent,
+      type: 'rent'
+    });
+    totalAmount += contract.monthlyRent;
+
+    // 2. Các phí tiện ích (chỉ tính những phí KHÔNG được bao gồm trong tiền thuê)
+    if (room.utilities) {
+      const utilities = room.utilities;
+      const includedInRent = utilities.includedInRent || {};
+
+      // Phí điện (nếu không bao gồm trong tiền thuê)
+      if (utilities.electricityPricePerKwh > 0 && !includedInRent.electricity) {
+        items.push({
+          description: `Phí điện tháng ${month}/${year}`,
+          amount: utilities.electricityPricePerKwh,
+          type: 'electricity'
+        });
+        totalAmount += utilities.electricityPricePerKwh;
+      }
+
+      // Phí nước (nếu không bao gồm trong tiền thuê)
+      if (utilities.waterPrice > 0 && !includedInRent.water) {
+        items.push({
+          description: `Phí nước tháng ${month}/${year}`,
+          amount: utilities.waterPrice,
+          type: 'water'
+        });
+        totalAmount += utilities.waterPrice;
+      }
+
+      // Phí internet (nếu không bao gồm trong tiền thuê)
+      if (utilities.internetFee > 0 && !includedInRent.internet) {
+        items.push({
+          description: `Phí internet tháng ${month}/${year}`,
+          amount: utilities.internetFee,
+          type: 'internet'
+        });
+        totalAmount += utilities.internetFee;
+      }
+
+      // Phí rác (nếu không bao gồm trong tiền thuê)
+      if (utilities.garbageFee > 0 && !includedInRent.garbage) {
+        items.push({
+          description: `Phí rác tháng ${month}/${year}`,
+          amount: utilities.garbageFee,
+          type: 'garbage'
+        });
+        totalAmount += utilities.garbageFee;
+      }
+
+      // Phí vệ sinh (nếu không bao gồm trong tiền thuê)
+      if (utilities.cleaningFee > 0 && !includedInRent.cleaning) {
+        items.push({
+          description: `Phí vệ sinh tháng ${month}/${year}`,
+          amount: utilities.cleaningFee,
+          type: 'cleaning'
+        });
+        totalAmount += utilities.cleaningFee;
+      }
+
+      // Phí gửi xe máy (nếu không bao gồm trong tiền thuê)
+      if (utilities.parkingMotorbikeFee > 0 && !includedInRent.parkingMotorbike) {
+        items.push({
+          description: `Phí gửi xe máy tháng ${month}/${year}`,
+          amount: utilities.parkingMotorbikeFee,
+          type: 'parking_motorbike'
+        });
+        totalAmount += utilities.parkingMotorbikeFee;
+      }
+
+      // Phí gửi xe ô tô (nếu không bao gồm trong tiền thuê)
+      if (utilities.parkingCarFee > 0 && !includedInRent.parkingCar) {
+        items.push({
+          description: `Phí gửi xe ô tô tháng ${month}/${year}`,
+          amount: utilities.parkingCarFee,
+          type: 'parking_car'
+        });
+        totalAmount += utilities.parkingCarFee;
+      }
+
+      // Phí quản lý (nếu không bao gồm trong tiền thuê)
+      if (utilities.managementFee > 0 && !includedInRent.managementFee) {
+        items.push({
+          description: `Phí quản lý tháng ${month}/${year}`,
+          amount: utilities.managementFee,
+          type: 'management'
+        });
+        totalAmount += utilities.managementFee;
+      }
+    }
+
+    // Tạo description động dựa trên các items
+    const itemDescriptions = items.map(item => item.description).join(', ');
+    
     const invoice = new this.invoiceModel({
       invoiceId,
-      ...invoiceData,
+      contractId,
+      roomId: contract.roomId,
+      tenantId: contract.tenants[0].tenantId, // Lấy tenant đầu tiên
+      landlordId: contract.landlordId,
+      invoiceType: 'monthly_rent',
+      amount: totalAmount,
+      status: 'pending',
+      dueDate,
+      description: `Hóa đơn tháng ${month}/${year} - Phòng ${contract.roomInfo.roomNumber}: ${itemDescriptions}`,
+      items
     });
-    return invoice.save();
+
+    await invoice.save();
+    
+    return invoice;
+  }
+
+  /**
+   * Tạo hóa đơn hàng tháng cho tất cả hợp đồng active
+   */
+  async createMonthlyInvoicesForAllContracts(): Promise<{ created: number; errors: number }> {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    
+    let created = 0;
+    let errors = 0;
+
+    try {
+      // Lấy tất cả hợp đồng active
+      const activeContracts = await this.contractModel.find({ 
+        status: 'active',
+        endDate: { $gte: now } // Chưa hết hạn
+      }).exec();
+
+      for (const contract of activeContracts) {
+        try {
+          await this.createMonthlyRentInvoice(contract.contractId, currentMonth, currentYear);
+          created++;
+        } catch (error) {
+          console.error(`Error creating monthly invoice for contract ${contract.contractId}:`, error.message);
+          errors++;
+        }
+      }
+
+      return { created, errors };
+
+    } catch (error) {
+      console.error('Error in createMonthlyInvoicesForAllContracts:', error);
+      return { created, errors: errors + 1 };
+    }
   }
 
   async getInvoicesByLandlord(landlordId: number): Promise<Invoice[]> {

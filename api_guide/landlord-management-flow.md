@@ -515,10 +515,11 @@ POST   /api/landlord/contracts/:id/remove-tenant // Xóa người ở ghép
 ### **5. Invoice Management:**
 ```javascript
 GET    /api/landlord/invoices           // Lấy danh sách hóa đơn
-POST   /api/landlord/invoices           // Tạo hóa đơn mới
 GET    /api/landlord/invoices/:id       // Lấy chi tiết hóa đơn
 PUT    /api/landlord/invoices/:id       // Cập nhật hóa đơn
 PUT    /api/landlord/invoices/:id/mark-paid // Đánh dấu đã thanh toán
+POST   /api/landlord/invoices/monthly-rent // Tạo hóa đơn hàng tháng
+POST   /api/landlord/invoices/generate-monthly // Tạo hóa đơn hàng tháng cho tất cả (Admin)
 ```
 
 ### **6. Report APIs:**

@@ -44,6 +44,13 @@ export class Invoice {
   @Prop({ type: [String], default: [] })
   attachments: string[];
 
+  @Prop({ type: [Object], default: [] })
+  items: Array<{
+    description: string;
+    amount: number;
+    type: string;
+  }>;
+
   @Prop()
   createdAt: Date;
 

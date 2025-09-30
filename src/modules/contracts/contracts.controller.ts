@@ -1,20 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 import { LandlordGuard } from '../users/guards/landlord.guard';
 import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
 import { ContractsService } from './contracts.service';
+import { PdfService } from '../../shared/services/pdf.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
-import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreateRoommateApplicationDto } from './dto/create-roommate-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { SetCurrentRoomDto } from './dto/set-current-room.dto';
+import { Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 @Controller('landlord')
 @UseGuards(JwtAuthGuard, LandlordGuard)
 export class LandlordContractsController {
-  constructor(private readonly contractsService: ContractsService) {}
+  constructor(
+    private readonly contractsService: ContractsService,
+    private readonly pdfService: PdfService
+  ) {}
 
   // Contract Management
   @Post('contracts')
@@ -78,10 +83,24 @@ export class LandlordContractsController {
     return this.contractsService.getInvoicesByLandlord(landlordId);
   }
 
-  @Post('invoices')
-  async createInvoice(@Request() req, @Body() invoiceData: CreateInvoiceDto) {
+
+  @Post('invoices/monthly-rent')
+  async createMonthlyRentInvoice(@Request() req, @Body() data: { contractId: number; month: number; year: number }) {
     const landlordId = req.user.userId;
-    return this.contractsService.createInvoice({ ...invoiceData, landlordId });
+    
+    // Kiểm tra quyền sở hữu hợp đồng
+    const contract = await this.contractsService.getContractById(data.contractId);
+    if (contract.landlordId !== landlordId) {
+      throw new BadRequestException('You do not own this contract');
+    }
+    
+    return this.contractsService.createMonthlyRentInvoice(data.contractId, data.month, data.year);
+  }
+
+  @Post('invoices/generate-monthly')
+  async generateMonthlyInvoices(@Request() req) {
+    // Chỉ admin mới có quyền chạy batch này
+    return this.contractsService.createMonthlyInvoicesForAllContracts();
   }
 
   @Get('invoices/:id')
@@ -120,7 +139,10 @@ export class LandlordContractsController {
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UserContractsController {
-  constructor(private readonly contractsService: ContractsService) {}
+  constructor(
+    private readonly contractsService: ContractsService,
+    private readonly pdfService: PdfService
+  ) {}
 
   // User Current Room
   @Get('me/current-room')
@@ -146,6 +168,50 @@ export class UserContractsController {
   async createRentalRequest(@Request() req, @Body() requestData: CreateRentalRequestDto) {
     const tenantId = req.user.userId;
     return this.contractsService.createRentalRequest({ ...requestData, tenantId });
+  }
+
+  @Get('rental-requests')
+  async getMyRentalRequests(@Request() req) {
+    const tenantId = req.user.userId;
+    return this.contractsService.getRentalRequestsByTenant(tenantId);
+  }
+
+
+  @Get('contracts/:id')
+  async getMyContract(@Request() req, @Param('id') contractIdParam: string) {
+    const contractId = Number(contractIdParam);
+    const userId = req.user.userId;
+    return this.contractsService.getUserContract(userId, contractId);
+  }
+
+  @Get('contracts/:id/download-pdf')
+  async downloadContractPDF(@Request() req, @Param('id') contractIdParam: string, @Res() res: Response) {
+    try {
+      const userId = req.user.userId;
+      const contractId = Number(contractIdParam);
+      
+      // Lấy thông tin hợp đồng
+      const contract = await this.contractsService.getUserContract(userId, contractId);
+      
+      // Tạo PDF
+      const { filePath, fileName } = await this.pdfService.generateContractPDF(contract);
+      
+      // Trả về file PDF
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.sendFile(filePath);
+      
+      // Xóa file tạm sau 5 giây
+      setTimeout(() => {
+        this.pdfService.deletePDF(filePath);
+      }, 5000);
+      
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Không thể tạo file PDF: ' + error.message
+      });
+    }
   }
 
   // Invoices

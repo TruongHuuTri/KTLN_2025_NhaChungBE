@@ -10,6 +10,12 @@ import { RentalRequest, RentalRequestSchema } from './schemas/rental-request.sch
 import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
 import { ContractUpdate, ContractUpdateSchema } from './schemas/contract-update.schema';
 import { RoommateApplication, RoommateApplicationSchema } from './schemas/roommate-application.schema';
+import { Post, PostSchema } from '../posts/schemas/post.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { Room, RoomSchema } from '../rooms/schemas/room.schema';
+import { Building, BuildingSchema } from '../rooms/schemas/building.schema';
+import { UsersModule } from '../users/users.module';
+import { PdfService } from '../../shared/services/pdf.service';
 
 @Module({
   imports: [
@@ -20,6 +26,10 @@ import { RoommateApplication, RoommateApplicationSchema } from './schemas/roomma
       { name: Invoice.name, schema: InvoiceSchema },
       { name: ContractUpdate.name, schema: ContractUpdateSchema },
       { name: RoommateApplication.name, schema: RoommateApplicationSchema },
+      { name: Post.name, schema: PostSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Room.name, schema: RoomSchema },
+      { name: Building.name, schema: BuildingSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,9 +39,10 @@ import { RoommateApplication, RoommateApplicationSchema } from './schemas/roomma
       }),
       inject: [ConfigService],
     }),
+    UsersModule,
   ],
   controllers: [LandlordContractsController, UserContractsController],
-  providers: [ContractsService],
-  exports: [ContractsService],
+  providers: [ContractsService, PdfService],
+  exports: [ContractsService, PdfService],
 })
 export class ContractsModule {}

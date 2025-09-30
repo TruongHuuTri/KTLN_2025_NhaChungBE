@@ -74,6 +74,7 @@ export class RoomsService {
       landlordId,
       ...roomData,
       category: building.buildingType, // Lấy category từ buildingType
+      canShare: (roomData.currentOccupants || 0) > 0, // canShare = true nếu đã có tenant
       availableSpots: roomData.maxOccupancy - (roomData.currentOccupants || 0),
     });
     return room.save();

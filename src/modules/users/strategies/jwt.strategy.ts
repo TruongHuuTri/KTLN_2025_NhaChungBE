@@ -18,15 +18,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    console.log('JWT Payload:', payload);
+    // Handle both userId and sub fields
+    const userId = payload.userId || payload.sub;
     
-    // Return the payload directly since we need the sub field
     return { 
-      userId: payload.sub, 
+      userId: userId, 
       email: payload.email,
       name: payload.name,
       role: payload.role,
-      sub: payload.sub  // This is what req.user.sub will contain
+      sub: userId  // This is what req.user.sub will contain
     };
   }
 }

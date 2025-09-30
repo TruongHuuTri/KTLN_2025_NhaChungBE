@@ -57,6 +57,42 @@ export class PaymentsController {
   }
 
   /**
+   * Lấy danh sách hóa đơn đã thanh toán của user
+   */
+  @Get('paid-invoices')
+  async getPaidInvoices(@Request() req) {
+    const tenantId = req.user.userId;
+    return await this.paymentsService.getPaidInvoices(tenantId);
+  }
+
+  /**
+   * Lấy lịch sử thanh toán của user (tất cả hóa đơn)
+   */
+  @Get('payment-history')
+  async getPaymentHistory(@Request() req) {
+    const tenantId = req.user.userId;
+    return await this.paymentsService.getPaymentHistory(tenantId);
+  }
+
+  /**
+   * Kiểm tra trạng thái hóa đơn của phòng
+   */
+  @Get('room/:roomId/status')
+  async getRoomPaymentStatus(@Request() req, @Param('roomId') roomId: string) {
+    const tenantId = req.user.userId;
+    return await this.paymentsService.getRoomPaymentStatus(tenantId, Number(roomId));
+  }
+
+  /**
+   * Kiểm tra trạng thái hóa đơn của hợp đồng
+   */
+  @Get('contract/:contractId/status')
+  async getContractPaymentStatus(@Request() req, @Param('contractId') contractId: string) {
+    const tenantId = req.user.userId;
+    return await this.paymentsService.getContractPaymentStatus(tenantId, Number(contractId));
+  }
+
+  /**
    * Lấy thông tin payment order
    */
   @Get('order/:orderId')
@@ -87,5 +123,13 @@ export class PaymentsController {
   @Post('regenerate-qr/:orderId')
   async regenerateQRCode(@Param('orderId') orderId: string) {
     return await this.paymentsService.regenerateQRCode(orderId);
+  }
+
+  /**
+   * Debug: Xem tất cả payment orders
+   */
+  @Get('debug/orders')
+  async getAllPaymentOrders() {
+    return await this.paymentsService.getAllPaymentOrders();
   }
 }

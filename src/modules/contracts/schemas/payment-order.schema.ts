@@ -44,16 +44,16 @@ export class PaymentOrder {
   @Prop({ default: false })
   isQrGenerated: boolean;
 
-  @Prop()
+  @Prop({ default: null })
   zalopayOrderId?: string;
 
-  @Prop()
+  @Prop({ default: null })
   zalopayTransactionId?: string;
 
-  @Prop()
+  @Prop({ default: null })
   zalopayPaymentUrl?: string;
 
-  @Prop()
+  @Prop({ default: null })
   zalopayStatus?: string;
 
   @Prop()

@@ -28,7 +28,6 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`OTP email sent successfully to ${email}`);
     } catch (error) {
       console.error('Error sending OTP email:', error);
       throw new Error('Không thể gửi email OTP');
@@ -48,7 +47,6 @@ export class EmailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`Role change notification sent to ${email}`);
     } catch (error) {
       console.error('Error sending role change notification:', error);
       // Không throw error vì đây chỉ là thông báo
@@ -255,7 +253,6 @@ export class EmailService {
   async testConnection(): Promise<boolean> {
     try {
       await this.transporter.verify();
-      console.log('✅ Email service connection successful');
       return true;
     } catch (error) {
       console.error('❌ Email service connection failed:', error);
