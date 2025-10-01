@@ -7,6 +7,8 @@ import { CreateBuildingDto } from './dto/create-building.dto';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { AddTenantDto } from './dto/add-tenant.dto';
+import { ContractsService } from '../contracts/contracts.service';
+import { CreateRoomSharingRequestDto } from '../contracts/dto/create-room-sharing-request.dto';
 
 @Controller('landlord')
 @UseGuards(JwtAuthGuard, LandlordGuard)
@@ -104,7 +106,10 @@ export class RoomsController {
 
 @Controller('rooms')
 export class PublicRoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly contractsService: ContractsService
+  ) {}
 
   @Get('search')
   async searchRooms(@Query() filters: any) {
@@ -114,5 +119,17 @@ export class PublicRoomsController {
   @Get(':id')
   async getRoomById(@Param('id') roomId: number) {
     return this.roomsService.getRoomById(roomId);
+  }
+
+  // Room Sharing Request
+  @Post(':id/sharing-request')
+  @UseGuards(JwtAuthGuard)
+  async createRoomSharingRequest(
+    @Request() req,
+    @Param('id') roomId: number,
+    @Body() requestData: CreateRoomSharingRequestDto
+  ) {
+    const tenantId = req.user.userId;
+    return this.contractsService.createRoomSharingRequest(roomId, { ...requestData, tenantId });
   }
 }

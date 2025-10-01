@@ -84,6 +84,11 @@ export class UsersController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getUserById(@Param('id') id: string) {
+    // Check if id is numeric, if not, it might be a different route
+    if (isNaN(Number(id))) {
+      // Don't throw error, let other routes handle it
+      throw new BadRequestException('User not found');
+    }
     return this.usersService.findOne(id);
   }
 }

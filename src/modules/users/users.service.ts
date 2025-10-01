@@ -242,8 +242,10 @@ export class UsersService {
     try {
       // Tìm tất cả phòng có user trong currentTenants
       const rooms = await this.roomModel.find({
-        'currentTenants.userId': userId,
-        isActive: true
+        $or: [
+          { 'currentTenants.userId': userId },
+          { 'currentTenants.userId': Number(userId) }
+        ]
       }).exec();
 
       const userRooms: Array<{

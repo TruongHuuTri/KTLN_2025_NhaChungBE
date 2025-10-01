@@ -255,21 +255,18 @@ export class PaymentsService {
       // Tìm rental request từ invoice
       const invoice = await this.invoiceModel.findOne({ invoiceId: paymentOrder.invoiceId }).exec();
       if (!invoice) {
-        console.error('Invoice not found for payment order:', paymentOrder.orderId);
         return;
       }
 
       // Tìm rental request từ contractId trong invoice
       const rentalRequest = await this.rentalRequestModel.findOne({ contractId: invoice.contractId }).exec();
       if (!rentalRequest) {
-        console.error('Rental request not found for contract:', invoice.contractId);
         return;
       }
 
       // Kiểm tra xem tenant đã được thêm vào room chưa
       const room = await this.roomModel.findOne({ roomId: rentalRequest.roomId }).exec();
       if (!room) {
-        console.error('Room not found:', rentalRequest.roomId);
         return;
       }
 
@@ -281,7 +278,6 @@ export class PaymentsService {
       // Lấy thông tin user
       const user = await this.userModel.findOne({ userId: rentalRequest.tenantId }).exec();
       if (!user) {
-        console.error('User not found:', rentalRequest.tenantId);
         return;
       }
 
@@ -312,7 +308,7 @@ export class PaymentsService {
       ).exec();
 
     } catch (error) {
-      console.error('Error auto-adding tenant to room after payment:', error);
+      // Silent error handling
     }
   }
 

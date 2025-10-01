@@ -6,10 +6,10 @@ import { ContractsService } from './contracts.service';
 import { PdfService } from '../../shared/services/pdf.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
-import { CreateRoommateApplicationDto } from './dto/create-roommate-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
-import { SetCurrentRoomDto } from './dto/set-current-room.dto';
+import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
+import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
 import { Res } from '@nestjs/common';
 import type { Response } from 'express';
 
@@ -113,26 +113,24 @@ export class LandlordContractsController {
     return this.contractsService.updateInvoiceStatus(invoiceId, updateData.status, updateData.paymentMethod);
   }
 
-  // Roommate Applications
-  @Get('roommate-applications')
-  async getRoommateApplications(@Request() req) {
+
+  // Room Sharing Requests
+  @Get('room-sharing-requests')
+  async getRoomSharingRequests(@Request() req) {
     const landlordId = req.user.userId;
-    return this.contractsService.getRoommateApplicationsByPoster(landlordId);
+    return this.contractsService.getLandlordRoomSharingRequests(landlordId);
   }
 
-  @Get('roommate-applications/:id')
-  async getRoommateApplicationById(@Param('id') applicationId: number) {
-    return this.contractsService.getRoommateApplicationById(applicationId);
+  @Put('room-sharing-requests/:id/approve')
+  async approveRoomSharingRequest(@Request() req, @Param('id') requestId: number) {
+    const landlordId = req.user.userId;
+    return this.contractsService.approveRoomSharingByLandlord(requestId, landlordId);
   }
 
-  @Put('roommate-applications/:id/approve')
-  async approveRoommateApplication(@Param('id') applicationId: number, @Body() body: { responseMessage?: string }) {
-    return this.contractsService.updateRoommateApplicationStatus(applicationId, 'approved', body.responseMessage);
-  }
-
-  @Put('roommate-applications/:id/reject')
-  async rejectRoommateApplication(@Param('id') applicationId: number, @Body() body: { responseMessage?: string }) {
-    return this.contractsService.updateRoommateApplicationStatus(applicationId, 'rejected', body.responseMessage);
+  @Put('room-sharing-requests/:id/reject')
+  async rejectRoomSharingRequest(@Request() req, @Param('id') requestId: number) {
+    const landlordId = req.user.userId;
+    return this.contractsService.rejectRoomSharingByLandlord(requestId, landlordId);
   }
 }
 
@@ -144,24 +142,6 @@ export class UserContractsController {
     private readonly pdfService: PdfService
   ) {}
 
-  // User Current Room
-  @Get('me/current-room')
-  async getCurrentRoom(@Request() req) {
-    const userId = req.user.userId;
-    return this.contractsService.getUserCurrentRoom(userId);
-  }
-
-  @Post('me/current-room')
-  async setCurrentRoom(@Request() req, @Body() roomData: SetCurrentRoomDto) {
-    const userId = req.user.userId;
-    return this.contractsService.setUserCurrentRoom(userId, roomData);
-  }
-
-  @Put('me/current-room')
-  async updateCurrentRoom(@Request() req, @Body() updateData: any) {
-    const userId = req.user.userId;
-    return this.contractsService.updateUserCurrentRoom(userId, updateData);
-  }
 
   // Rental Requests
   @Post('rental-requests')
@@ -170,11 +150,20 @@ export class UserContractsController {
     return this.contractsService.createRentalRequest({ ...requestData, tenantId });
   }
 
-  @Get('rental-requests')
+  // Use /me/rental-requests to avoid conflicts with users/:id
+  @Get('me/rental-requests')
   async getMyRentalRequests(@Request() req) {
     const tenantId = req.user.userId;
     return this.contractsService.getRentalRequestsByTenant(tenantId);
   }
+
+  // Keep original endpoint for backward compatibility
+  @Get('rental-requests')
+  async getMyRentalRequestsOriginal(@Request() req) {
+    const tenantId = req.user.userId;
+    return this.contractsService.getRentalRequestsByTenant(tenantId);
+  }
+
 
 
   @Get('contracts/:id')
@@ -226,21 +215,43 @@ export class UserContractsController {
     return this.contractsService.updateInvoiceStatus(invoiceId, 'paid', body.paymentMethod);
   }
 
-  // Roommate Applications
-  @Get('me/roommate-applications')
-  async getMyRoommateApplications(@Request() req) {
-    const applicantId = req.user.userId;
-    return this.contractsService.getRoommateApplicationsByApplicant(applicantId);
+
+  // Room Sharing Requests
+  @Get('me/sharing-requests-to-approve')
+  async getRoomSharingRequestsToApprove(@Request() req) {
+    const userId = req.user.userId;
+    return this.contractsService.getRoomSharingRequestsToApprove(userId);
   }
 
-  @Post('roommate-applications')
-  async createRoommateApplication(@Request() req, @Body() applicationData: CreateRoommateApplicationDto) {
-    const applicantId = req.user.userId;
-    return this.contractsService.createRoommateApplication({ ...applicationData, applicantId });
+  // Lấy lịch sử yêu cầu ở ghép mà User A đã xử lý
+  @Get('me/sharing-requests-history')
+  async getMyRoomSharingRequestHistory(@Request() req) {
+    const userId = req.user.userId;
+    return this.contractsService.getMyRoomSharingRequestHistory(userId);
   }
 
-  @Put('roommate-applications/:id/cancel')
-  async cancelRoommateApplication(@Request() req, @Param('id') applicationId: number) {
-    return this.contractsService.updateRoommateApplicationStatus(applicationId, 'cancelled');
+  @Get('my-room-sharing-requests')
+  async getMyRoomSharingRequests(@Request() req) {
+    const tenantId = req.user.userId;
+    return this.contractsService.getMyRoomSharingRequests(tenantId);
+  }
+
+  // Alias for FE compatibility
+  @Get('me/room-sharing-requests')
+  async getMyRoomSharingRequestsMe(@Request() req) {
+    const tenantId = req.user.userId;
+    return this.contractsService.getMyRoomSharingRequests(tenantId);
+  }
+
+  @Put('rental-requests/:id/approve-by-user')
+  async approveRoomSharingByUser(@Request() req, @Param('id') requestId: number) {
+    const userId = req.user.userId;
+    return this.contractsService.approveRoomSharingByUser(requestId, userId);
+  }
+
+  @Put('rental-requests/:id/reject-by-user')
+  async rejectRoomSharingByUser(@Request() req, @Param('id') requestId: number) {
+    const userId = req.user.userId;
+    return this.contractsService.rejectRoomSharingByUser(requestId, userId);
   }
 }

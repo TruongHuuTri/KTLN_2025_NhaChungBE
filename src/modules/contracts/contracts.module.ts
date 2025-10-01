@@ -5,11 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LandlordContractsController, UserContractsController } from './contracts.controller';
 import { ContractsService } from './contracts.service';
 import { RentalContract, RentalContractSchema } from './schemas/rental-contract.schema';
-import { UserCurrentRoom, UserCurrentRoomSchema } from './schemas/user-current-room.schema';
 import { RentalRequest, RentalRequestSchema } from './schemas/rental-request.schema';
 import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
 import { ContractUpdate, ContractUpdateSchema } from './schemas/contract-update.schema';
-import { RoommateApplication, RoommateApplicationSchema } from './schemas/roommate-application.schema';
 import { Post, PostSchema } from '../posts/schemas/post.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Room, RoomSchema } from '../rooms/schemas/room.schema';
@@ -21,11 +19,9 @@ import { PdfService } from '../../shared/services/pdf.service';
   imports: [
     MongooseModule.forFeature([
       { name: RentalContract.name, schema: RentalContractSchema },
-      { name: UserCurrentRoom.name, schema: UserCurrentRoomSchema },
       { name: RentalRequest.name, schema: RentalRequestSchema },
       { name: Invoice.name, schema: InvoiceSchema },
       { name: ContractUpdate.name, schema: ContractUpdateSchema },
-      { name: RoommateApplication.name, schema: RoommateApplicationSchema },
       { name: Post.name, schema: PostSchema },
       { name: User.name, schema: UserSchema },
       { name: Room.name, schema: RoomSchema },

@@ -19,7 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     // Handle both userId and sub fields
-    const userId = payload.userId || payload.sub;
+    const userId = payload.userId ?? payload.sub;
+    
+    if (!userId) {
+      throw new UnauthorizedException('Invalid token payload - missing user ID');
+    }
     
     return { 
       userId: userId, 

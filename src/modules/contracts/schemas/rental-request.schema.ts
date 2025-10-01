@@ -21,10 +21,16 @@ export class RentalRequest {
   postId?: number;
 
   @Prop({ default: 'pending' })
-  status: string; // 'pending', 'approved', 'rejected', 'cancelled'
+  status: string; // 'pending', 'approved', 'rejected', 'cancelled', 'pending_user_approval', 'pending_landlord_approval'
 
   @Prop({ default: '' })
   message: string;
+
+  @Prop({ default: 'rental' })
+  requestType: string; // 'rental', 'room_sharing'
+
+  @Prop()
+  posterId?: number; // ID của người đăng bài (cho room sharing)
 
   @Prop({ required: true })
   requestedMoveInDate: Date;

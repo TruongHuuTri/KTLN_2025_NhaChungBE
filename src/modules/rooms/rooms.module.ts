@@ -6,6 +6,7 @@ import { RoomsController, PublicRoomsController } from './rooms.controller';
 import { RoomsService } from './rooms.service';
 import { Room, RoomSchema } from './schemas/room.schema';
 import { Building, BuildingSchema } from './schemas/building.schema';
+import { ContractsModule } from '../contracts/contracts.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { Building, BuildingSchema } from './schemas/building.schema';
       }),
       inject: [ConfigService],
     }),
+    ContractsModule,
   ],
   controllers: [RoomsController, PublicRoomsController],
   providers: [RoomsService],

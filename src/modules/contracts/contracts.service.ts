@@ -2,31 +2,27 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { RentalContract, RentalContractDocument } from './schemas/rental-contract.schema';
-import { UserCurrentRoom, UserCurrentRoomDocument } from './schemas/user-current-room.schema';
 import { RentalRequest, RentalRequestDocument } from './schemas/rental-request.schema';
 import { Invoice, InvoiceDocument } from './schemas/invoice.schema';
 import { ContractUpdate, ContractUpdateDocument } from './schemas/contract-update.schema';
-import { RoommateApplication, RoommateApplicationDocument } from './schemas/roommate-application.schema';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
 import { Post, PostDocument } from '../posts/schemas/post.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Room, RoomDocument } from '../rooms/schemas/room.schema';
 import { Building, BuildingDocument } from '../rooms/schemas/building.schema';
-import { CreateRoommateApplicationDto } from './dto/create-roommate-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
-import { SetCurrentRoomDto } from './dto/set-current-room.dto';
+import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
+import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
 
 @Injectable()
 export class ContractsService {
   constructor(
     @InjectModel(RentalContract.name) private contractModel: Model<RentalContractDocument>,
-    @InjectModel(UserCurrentRoom.name) private userCurrentRoomModel: Model<UserCurrentRoomDocument>,
     @InjectModel(RentalRequest.name) private rentalRequestModel: Model<RentalRequestDocument>,
     @InjectModel(Invoice.name) private invoiceModel: Model<InvoiceDocument>,
     @InjectModel(ContractUpdate.name) private contractUpdateModel: Model<ContractUpdateDocument>,
-    @InjectModel(RoommateApplication.name) private roommateApplicationModel: Model<RoommateApplicationDocument>,
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
@@ -143,43 +139,6 @@ export class ContractsService {
     return updatedContract as RentalContract;
   }
 
-  // User Current Room Management
-  async setUserCurrentRoom(userId: number, roomData: SetCurrentRoomDto): Promise<UserCurrentRoom> {
-    // Remove existing current room if any
-    await this.userCurrentRoomModel.findOneAndUpdate(
-      { userId },
-      { status: 'terminated', updatedAt: new Date() }
-    ).exec();
-
-    const userCurrentRoom = new this.userCurrentRoomModel({
-      userId,
-      ...roomData,
-    });
-    return userCurrentRoom.save();
-  }
-
-  async getUserCurrentRoom(userId: number): Promise<UserCurrentRoom> {
-    const userCurrentRoom = await this.userCurrentRoomModel.findOne({ 
-      userId, 
-      status: 'active' 
-    }).exec();
-    if (!userCurrentRoom) {
-      throw new NotFoundException('User has no current room');
-    }
-    return userCurrentRoom;
-  }
-
-  async updateUserCurrentRoom(userId: number, updateData: any): Promise<UserCurrentRoom> {
-    const userCurrentRoom = await this.userCurrentRoomModel.findOneAndUpdate(
-      { userId, status: 'active' },
-      { ...updateData, updatedAt: new Date() },
-      { new: true }
-    ).exec();
-    if (!userCurrentRoom) {
-      throw new NotFoundException('User current room not found');
-    }
-    return userCurrentRoom;
-  }
 
   // Rental Request Management
   async createRentalRequest(requestData: CreateRentalRequestDto & { tenantId: number }): Promise<RentalRequest> {
@@ -236,6 +195,7 @@ export class ContractsService {
   async getRentalRequestsByTenant(tenantId: number): Promise<RentalRequest[]> {
     return this.rentalRequestModel.find({ tenantId }).sort({ createdAt: -1 }).exec();
   }
+
 
   async getRentalRequestById(requestId: number): Promise<RentalRequest> {
     const request = await this.rentalRequestModel.findOne({ requestId }).exec();
@@ -656,49 +616,6 @@ export class ContractsService {
     return invoice;
   }
 
-  // Roommate Application Management
-  async createRoommateApplication(applicationData: CreateRoommateApplicationDto & { applicantId: number }): Promise<RoommateApplication> {
-    const applicationId = await this.getNextApplicationId();
-    const application = new this.roommateApplicationModel({
-      applicationId,
-      ...applicationData,
-    });
-    return application.save();
-  }
-
-  async getRoommateApplicationsByPoster(posterId: number): Promise<RoommateApplication[]> {
-    return this.roommateApplicationModel.find({ posterId }).sort({ createdAt: -1 }).exec();
-  }
-
-  async getRoommateApplicationsByApplicant(applicantId: number): Promise<RoommateApplication[]> {
-    return this.roommateApplicationModel.find({ applicantId }).sort({ createdAt: -1 }).exec();
-  }
-
-  async getRoommateApplicationById(applicationId: number): Promise<RoommateApplication> {
-    const application = await this.roommateApplicationModel.findOne({ applicationId }).exec();
-    if (!application) {
-      throw new NotFoundException('Roommate application not found');
-    }
-    return application;
-  }
-
-  async updateRoommateApplicationStatus(applicationId: number, status: string, responseMessage?: string): Promise<RoommateApplication> {
-    const updateData: any = { status, updatedAt: new Date() };
-    if (responseMessage) {
-      updateData.responseMessage = responseMessage;
-      updateData.respondedAt = new Date();
-    }
-
-    const application = await this.roommateApplicationModel.findOneAndUpdate(
-      { applicationId },
-      updateData,
-      { new: true }
-    ).exec();
-    if (!application) {
-      throw new NotFoundException('Roommate application not found');
-    }
-    return application;
-  }
 
   // Helper methods
   private async getNextContractId(): Promise<number> {
@@ -716,10 +633,6 @@ export class ContractsService {
     return lastInvoice ? lastInvoice.invoiceId + 1 : 1;
   }
 
-  private async getNextApplicationId(): Promise<number> {
-    const lastApplication = await this.roommateApplicationModel.findOne().sort({ applicationId: -1 }).exec();
-    return lastApplication ? lastApplication.applicationId + 1 : 1;
-  }
 
   private async logContractUpdate(contractId: number, updateType: string, updateData: any, updatedBy: number): Promise<void> {
     const contractUpdate = new this.contractUpdateModel({
@@ -729,5 +642,305 @@ export class ContractsService {
       updatedBy,
     });
     await contractUpdate.save();
+  }
+
+  // Room Sharing Management
+  async createRoomSharingRequest(roomId: number, requestData: CreateRoomSharingRequestDto & { tenantId: number }): Promise<RentalRequest> {
+    // Lấy thông tin post để lấy posterId
+    const post = await this.postModel.findOne({ postId: requestData.postId }).exec();
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    // Lấy thông tin phòng
+    const room = await this.roomModel.findOne({ roomId }).exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // Kiểm tra phòng có cho phép ở ghép không
+    if (!room.canShare) {
+      throw new BadRequestException('Room does not allow sharing');
+    }
+
+    // Kiểm tra phòng có ít nhất 1 tenant không
+    if (room.currentOccupants < 1) {
+      throw new BadRequestException('Room must have at least one tenant to allow sharing');
+    }
+
+    // Kiểm tra phòng chưa đầy
+    if (room.currentOccupants >= room.maxOccupancy) {
+      throw new BadRequestException('Room is already at maximum capacity');
+    }
+
+    // Kiểm tra user chưa đăng ký ở ghép phòng này
+    const existingRequest = await this.rentalRequestModel.findOne({
+      tenantId: requestData.tenantId,
+      roomId,
+      requestType: 'room_sharing',
+      status: { $in: ['pending', 'pending_user_approval', 'pending_landlord_approval'] }
+    }).exec();
+
+    if (existingRequest) {
+      throw new BadRequestException('You have already requested to share this room');
+    }
+
+    const requestId = await this.getNextRequestId();
+    const request = new this.rentalRequestModel({
+      requestId,
+      tenantId: requestData.tenantId,
+      landlordId: room.landlordId,
+      roomId,
+      postId: requestData.postId,
+      requestType: 'room_sharing',
+      status: 'pending_user_approval',
+      message: requestData.message,
+      requestedMoveInDate: new Date(requestData.requestedMoveInDate),
+      requestedDuration: requestData.requestedDuration,
+      posterId: post.userId, // Người đăng bài (tạo post)
+    });
+    return request.save();
+  }
+
+  async approveRoomSharingByUser(requestId: number, userId: number): Promise<RentalRequest> {
+    const request = await this.rentalRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    // Kiểm tra quyền duyệt
+    if (Number(request.posterId) !== Number(userId)) {
+      throw new BadRequestException('You are not authorized to approve this request');
+    }
+
+    // Kiểm tra status
+    if (request.status !== 'pending_user_approval') {
+      throw new BadRequestException('Request is not in pending user approval status');
+    }
+
+    // Cập nhật status
+    const updatedRequest = await this.rentalRequestModel.findOneAndUpdate(
+      { requestId },
+      { 
+        status: 'pending_landlord_approval',
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+
+    if (!updatedRequest) {
+      throw new NotFoundException('Request not found');
+    }
+
+    return updatedRequest;
+  }
+
+  async rejectRoomSharingByUser(requestId: number, userId: number): Promise<RentalRequest> {
+    const request = await this.rentalRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    // Kiểm tra quyền từ chối
+    if (Number(request.posterId) !== Number(userId)) {
+      throw new BadRequestException('You are not authorized to reject this request');
+    }
+
+    // Kiểm tra status
+    if (request.status !== 'pending_user_approval') {
+      throw new BadRequestException('Request is not in pending user approval status');
+    }
+
+    // Cập nhật status
+    const updatedRequest = await this.rentalRequestModel.findOneAndUpdate(
+      { requestId },
+      { 
+        status: 'rejected',
+        respondedAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+
+    if (!updatedRequest) {
+      throw new NotFoundException('Request not found');
+    }
+
+    return updatedRequest;
+  }
+
+  async approveRoomSharingByLandlord(requestId: number, landlordId: number): Promise<{ request: RentalRequest; contract: RentalContract }> {
+    const request = await this.rentalRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    // Kiểm tra quyền duyệt
+    if (Number(request.landlordId) !== Number(landlordId)) {
+      throw new BadRequestException('You are not authorized to approve this request');
+    }
+
+    // Kiểm tra status
+    if (request.status !== 'pending_landlord_approval') {
+      throw new BadRequestException('Request is not in pending landlord approval status');
+    }
+
+    // Lấy thông tin phòng
+    const room = await this.roomModel.findOne({ roomId: request.roomId }).exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // Kiểm tra phòng vẫn còn chỗ
+    if (room.currentOccupants >= room.maxOccupancy) {
+      throw new BadRequestException('Room is already at maximum capacity');
+    }
+
+    // Tạo contract cho room sharing
+    const contractId = await this.getNextContractId();
+    const startDate = new Date(request.requestedMoveInDate);
+    const endDate = new Date(startDate.getTime() + (request.requestedDuration * 30 * 24 * 60 * 60 * 1000));
+
+    const contract = new this.contractModel({
+      contractId,
+      landlordId: request.landlordId,
+      roomId: request.roomId,
+      contractType: 'shared',
+      status: 'active',
+      startDate,
+      endDate,
+      monthlyRent: 0, // User B không thanh toán hóa đơn
+      deposit: 0, // User B không đóng cọc
+      tenants: [{
+        tenantId: request.tenantId,
+        moveInDate: startDate,
+        monthlyRent: 0,
+        deposit: 0,
+        status: 'active',
+        isPrimaryTenant: false
+      }],
+      roomInfo: {
+        roomNumber: room.roomNumber,
+        area: room.area,
+        maxOccupancy: room.maxOccupancy,
+        currentOccupancy: room.currentOccupants + 1
+      }
+    });
+
+    await contract.save();
+
+    // Cập nhật room - thêm tenant mới
+    const user = await this.userModel.findOne({ userId: request.tenantId }).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const tenantData = {
+      userId: request.tenantId,
+      fullName: user.name,
+      dateOfBirth: new Date(),
+      gender: 'unknown',
+      occupation: 'unknown',
+      moveInDate: startDate,
+      lifestyle: 'unknown',
+      cleanliness: 'unknown'
+    };
+
+    await this.roomModel.findOneAndUpdate(
+      { roomId: request.roomId },
+      {
+        $push: { currentTenants: tenantData },
+        $inc: { currentOccupants: 1 },
+        $set: { 
+          availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
+          canShare: true, // Đảm bảo canShare = true
+          updatedAt: new Date()
+        }
+      }
+    ).exec();
+
+    // Cập nhật request status
+    const updatedRequest = await this.rentalRequestModel.findOneAndUpdate(
+      { requestId },
+      { 
+        status: 'approved',
+        contractId,
+        respondedAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+
+    if (!updatedRequest) {
+      throw new NotFoundException('Request not found');
+    }
+
+    return { request: updatedRequest, contract };
+  }
+
+  async rejectRoomSharingByLandlord(requestId: number, landlordId: number): Promise<RentalRequest> {
+    const request = await this.rentalRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    // Kiểm tra quyền từ chối
+    if (Number(request.landlordId) !== Number(landlordId)) {
+      throw new BadRequestException('You are not authorized to reject this request');
+    }
+
+    // Kiểm tra status
+    if (request.status !== 'pending_landlord_approval') {
+      throw new BadRequestException('Request is not in pending landlord approval status');
+    }
+
+    // Cập nhật status
+    const updatedRequest = await this.rentalRequestModel.findOneAndUpdate(
+      { requestId },
+      { 
+        status: 'rejected',
+        respondedAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+
+    if (!updatedRequest) {
+      throw new NotFoundException('Request not found');
+    }
+
+    return updatedRequest;
+  }
+
+  async getRoomSharingRequestsToApprove(userId: number): Promise<RentalRequest[]> {
+    return this.rentalRequestModel.find({
+      posterId: userId,
+      requestType: 'room_sharing',
+      status: 'pending_user_approval'
+    }).sort({ createdAt: -1 }).exec();
+  }
+
+  // Lấy tất cả yêu cầu ở ghép mà User A đã xử lý (duyệt/từ chối)
+  async getMyRoomSharingRequestHistory(userId: number): Promise<RentalRequest[]> {
+    return this.rentalRequestModel.find({
+      posterId: userId,
+      requestType: 'room_sharing',
+      status: { $in: ['pending_landlord_approval', 'approved', 'rejected'] }
+    }).sort({ createdAt: -1 }).exec();
+  }
+
+  async getLandlordRoomSharingRequests(landlordId: number): Promise<RentalRequest[]> {
+    return this.rentalRequestModel.find({
+      landlordId,
+      requestType: 'room_sharing',
+      status: 'pending_landlord_approval'
+    }).sort({ createdAt: -1 }).exec();
+  }
+
+  async getMyRoomSharingRequests(tenantId: number): Promise<RentalRequest[]> {
+    return this.rentalRequestModel.find({
+      tenantId,
+      requestType: 'room_sharing'
+    }).sort({ createdAt: -1 }).exec();
   }
 }
