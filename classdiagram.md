@@ -226,7 +226,7 @@ direction TB
 	    +landlordId : number
 	    +isManaged : boolean
 	    +source : string
-	    +roomInfo : RoomInfo
+
 	    +personalInfo : PersonalInfo
 	    +requirements : Requirements
 	    +phone : string
@@ -238,7 +238,6 @@ direction TB
 	    +getPosts(filters: SearchPostsDto) : Post[]
 	    +searchPosts(filters: SearchPostsDto) : Post[]
 	    +getPostById(postId: number) : Post
-	    +getPostWithRoomInfo(postId: number) : Post
 	    +getUserRooms(userId: number, postType?: string) : Post[]
 	    +getPostsByUser(userId: number) : Post[]
 	    +updatePost(postId: number, dto: UpdatePostDto) : Post
@@ -246,13 +245,6 @@ direction TB
 	    +updatePostStatus(postId: number, status: string) : Post
 	    +getPostsByLandlord(landlordId: number) : Post[]
 	    +getPostsByRoom(roomId: number) : Post[]
-    }
-    class RoomInfo {
-	    +address : Address
-	    +basicInfo : BasicInfo
-	    +chungCuInfo : ChungCuInfo
-	    +nhaNguyenCanInfo : NhaNguyenCanInfo
-	    +utilities : Utilities
     }
     class BasicInfo {
 	    +area : number
@@ -292,7 +284,6 @@ direction TB
 	    +deposit : number
 	    +contractFile : string
 	    +tenants : Tenant[]
-	    +roomInfo : RoomInfo
 	    +createdAt : Date
 	    +updatedAt : Date
 	    +createContract(dto: CreateContractDto) : RentalContract
@@ -302,6 +293,7 @@ direction TB
 	    +addTenantToContract(contractId: number, tenant: any) : RentalContract
 	    +removeTenantFromContract(contractId: number, tenantId: number) : RentalContract
 	    +getUserContract(userId: number, contractId: number) : RentalContract
+	    +generatePDF() : string
     }
     class RoomSharingRequest {
 	    +requestId : number
@@ -333,7 +325,6 @@ direction TB
 	    +deposit : number
 	    +contractFile : string
 	    +tenants : Tenant[]
-	    +roomInfo : RoomInfo
 	    +createdAt : Date
 	    +updatedAt : Date
 	    +createContract(dto: CreateContractDto) : RoomSharingContract
@@ -512,6 +503,17 @@ direction TB
 	    +createdAt : Date
     }
 
+	class Review {
+	    +reviewId : number
+	    +type : string
+	    +targetId : number
+	    +reviewerId : number
+	    +rating : number
+	    +comment : string
+	    +createdAt : Date
+	    +updatedAt : Date
+	}
+
 
     UserProfile *-- MoneyRange : budgetRange
     UserProfile *-- MoneyRange : priceRange
@@ -527,20 +529,14 @@ direction TB
     User "1" --> "*" EmailVerification
     User "1" --> "*" Favourite : creates
     Building "1" o-- "*" Room : contains
+    Building *-- Address
     Room *-- Address
     Room *-- Utilities
     Utilities *-- IncludedInRent
     Room o-- "*" CurrentTenant
-    Room *-- ChungCuInfo
-    Room *-- NhaNguyenCanInfo
-    Post *-- RoomInfo
+    
     Post *-- PersonalInfo
     Post *-- Requirements
-    RoomInfo *-- Address
-    RoomInfo *-- BasicInfo
-    RoomInfo *-- ChungCuInfo
-    RoomInfo *-- NhaNguyenCanInfo
-    RoomInfo *-- Utilities
     Post "*" --> "1" Room : references
     Post "1" --> "*" RentalRequest : generates
     Post "1" --> "*" RoomSharingRequest : generates
@@ -548,8 +544,7 @@ direction TB
     RoomSharingRequest "1" --> "1" RoomSharingContract : creates
     Room "1" --> "*" RentalContract : has contracts
     Room "1" --> "*" RoomSharingContract : has sharing contracts
-    RentalContract *-- RoomInfo
-    RoomSharingContract *-- RoomInfo
+    
     RentalContract o-- "*" Tenant : includes
     RoomSharingContract o-- "*" Tenant : includes
     RentalContract --> "*" ContractUpdate : updates
@@ -568,6 +563,9 @@ direction TB
     Verification "*" --> "1" Admin : reviewed by
     Favourite "*" --> "1" Post : targets
     Favourite "*" --> "1" User : owner
+	Review "*" --> "1" User : reviewer
+	Review "*" --> "1" User : landlord (when type=LANDLORD)
+	Review "*" --> "1" Building : building (when type=BUILDING)
 
 
 	style MoneyRange fill:#23a7d6,stroke:#1f2937,font-size:12px
@@ -585,7 +583,7 @@ direction TB
 	style ChungCuInfo fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style NhaNguyenCanInfo fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style Post fill:#23a7d6,stroke:#1f2937,font-size:12px
-	style RoomInfo fill:#23a7d6,stroke:#1f2937,font-size:12px
+ 
 	style BasicInfo fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style PersonalInfo fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style Requirements fill:#23a7d6,stroke:#1f2937,font-size:12px
@@ -602,8 +600,49 @@ direction TB
 	style ContractUpdate fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style Verification fill:#23a7d6,stroke:#1f2937,font-size:12px
 	style FaceMatchResult fill:#23a7d6,stroke:#1f2937,font-size:12px
-	style Favourite fill:#23a7d6,stroke:#1f2937,font-size:12px
-	style EmailVerification fill:#23a7d6,stroke:#1f2937,font-size:12px
+    style Favourite fill:#23a7d6,stroke:#1f2937,font-size:12px
+    style EmailVerification fill:#23a7d6,stroke:#1f2937,font-size:12px
+    style Review fill:#23a7d6,stroke:#1f2937,font-size:12px
 
 	classDef Aqua :,stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
 	classDef Class_02 fill:#23a7d6, background-color:#23a7d6
+
+
+%%
+%% Data stores / services overview (adds explicit Admin store)
+%%
+---
+config:
+  layout: elk
+---
+flowchart TB
+    subgraph MongoDB
+        A1["Auth / Users"]
+        A2["Posts"]
+        A3["Rooms"]
+        A4["Buildings"]
+        A5["Rental (Contracts, Invoices, Orders)"]
+        A6["Favourites"]
+        A7["Payments (module)"]
+        A8["Verification (KYC)"]
+        A9["Admin"]
+    end
+
+    subgraph Third_Service["Third Services"]
+        T1["S3"]
+        T2["Geocoding Address"]
+        T3["OCR"]
+        T4["FaceMatch"]
+    end
+
+    style A1 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A2 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A3 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A4 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A5 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A6 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A7 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A8 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+    style A9 fill:#E9D5FF,stroke:#7C3AED,color:#111827
+
+    style Third_Service fill:#F0FDF4,stroke:#16A34A,color:#065F46
