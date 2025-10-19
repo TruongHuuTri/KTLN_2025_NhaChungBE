@@ -5,6 +5,15 @@ import { UtilityType } from '../../../shared/types/utilities.types';
 export type RoomDocument = Room & Document;
 
 @Schema({ _id: false })
+export class GeoLocation {
+  @Prop({ type: String, enum: ['Point'], default: 'Point' })
+  type: 'Point';
+
+  @Prop({ type: [Number], required: true })
+  coordinates: number[]; // [longitude, latitude]
+}
+
+@Schema({ _id: false })
 export class Address {
   @Prop({ required: false, default: '' })
   street: string;
@@ -35,6 +44,10 @@ export class Address {
 
   @Prop({ default: '' })
   additionalInfo: string;
+
+  // GeoJSON lưu ngay trong address để hỗ trợ truy vấn không gian
+  @Prop({ type: GeoLocation, required: false })
+  location?: GeoLocation;
 }
 
 @Schema({ _id: false })
@@ -248,6 +261,11 @@ export class Room {
   @Prop({ type: Address, required: true })
   address: Address;
 
+  @Prop({ type: GeoLocation, required: false })
+  // Lưu ý: Lưu trùng ở cấp root để dễ index/geoNear nếu cần (tuỳ chọn)
+  // Tuy nhiên, ta sẽ sử dụng trường lồng trong address: address.location
+  location?: GeoLocation;
+
   // Thông tin cho ở ghép
   @Prop({ required: true })
   maxOccupancy: number;
@@ -303,3 +321,5 @@ export class Room {
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);
+// 2dsphere index trên GeoJSON location trong address
+RoomSchema.index({ 'address.location': '2dsphere' });
