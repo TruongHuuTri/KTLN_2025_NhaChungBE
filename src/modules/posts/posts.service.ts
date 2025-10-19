@@ -276,13 +276,59 @@ export class PostsService {
 
   // Approve/Reject Post
   async updatePostStatus(postId: number, status: string): Promise<Post> {
-    const validStatuses = ['pending', 'active', 'inactive', 'rejected'];
+    const validStatuses = ['pending', 'approved', 'active', 'inactive', 'rejected'];
     if (!validStatuses.includes(status)) {
       throw new BadRequestException('Invalid status');
     }
 
     return this.updatePost(postId, { status });
   }
+
+  // Admin methods
+  async getAllPostsForAdmin(filters: any = {}): Promise<Post[]> {
+    const query: any = {};
+    
+    if (filters.status) {
+      query.status = filters.status;
+    }
+    if (filters.postType) {
+      query.postType = filters.postType;
+    }
+    if (filters.userId) {
+      query.userId = parseInt(filters.userId);
+    }
+
+    return this.postModel.find(query).sort({ createdAt: -1 }).exec();
+  }
+
+  async getPendingPosts(): Promise<Post[]> {
+    return this.postModel.find({ status: 'pending' }).sort({ createdAt: -1 }).exec();
+  }
+
+  async rejectPost(postId: number, reason?: string): Promise<Post> {
+    const post = await this.postModel.findOne({ postId }).exec();
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    const updateData: any = { status: 'rejected' };
+    if (reason) {
+      updateData.rejectionReason = reason;
+    }
+
+    const updatedPost = await this.postModel.findOneAndUpdate(
+      { postId },
+      updateData,
+      { new: true }
+    ).exec();
+
+    if (!updatedPost) {
+      throw new NotFoundException('Post not found');
+    }
+
+    return updatedPost;
+  }
+
 
   // Helper methods
   private async getNextPostId(): Promise<number> {

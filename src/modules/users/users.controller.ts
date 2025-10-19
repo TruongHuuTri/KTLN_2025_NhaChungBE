@@ -18,6 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
 
 @Controller('users')
 export class UsersController {
@@ -47,6 +48,27 @@ export class UsersController {
   @Get()
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('admin')
+  @UseGuards(AdminJwtGuard)
+  async findAllForAdmin() {
+    // Admin can see all users (including inactive ones)
+    return this.usersService.findAllForAdmin();
+  }
+
+  @Put('admin/:id/status')
+  @UseGuards(AdminJwtGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateUserStatus(@Param('id') userId: string, @Body() body: { isActive: boolean }) {
+    return this.usersService.updateUserStatus(userId, body.isActive);
+  }
+
+  @Post('admin/:id/reset-password')
+  @UseGuards(AdminJwtGuard)
+  @HttpCode(HttpStatus.OK)
+  async resetUserPassword(@Param('id') userId: string) {
+    return this.usersService.resetUserPassword(userId);
   }
 
   @Get('me/verification')

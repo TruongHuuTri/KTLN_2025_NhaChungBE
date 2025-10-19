@@ -50,8 +50,19 @@ export class Verification {
   @Prop({ required: true })
   issuePlace: string;
 
-  // Không lưu ảnh CCCD vào database (chỉ dùng để OCR client-side)
-  // frontImage và backImage chỉ xử lý client-side
+  // Ảnh CCCD và selfie (lưu file path)
+  @Prop({
+    type: {
+      frontImage: { type: String }, // file path
+      backImage: { type: String },
+      faceImage: { type: String }
+    }
+  })
+  images?: {
+    frontImage: string;
+    backImage: string;
+    faceImage: string;
+  };
 
   // Ghi chú từ admin
   @Prop()

@@ -10,12 +10,14 @@ import { Verification, VerificationDocument } from './schemas/verification.schem
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateVerificationDto } from './dto/create-verification.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { FileStorageService } from '../../shared/services/file-storage.service';
 
 @Injectable()
 export class VerificationsService {
   constructor(
     @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private fileStorageService: FileStorageService,
   ) {}
 
   async create(userId: string, createVerificationDto: CreateVerificationDto): Promise<Verification> {
@@ -178,10 +180,24 @@ export class VerificationsService {
       throw new BadRequestException('Họ tên phải có ít nhất 2 từ');
     }
 
-        // Get next verificationId
         const nextVerificationId = await this.getNextVerificationId();
 
-        // Create verification
+        // Lưu ảnh vào file system và lấy file paths
+        let imagePaths: { frontImage: string | null; backImage: string | null; faceImage: string | null } | null = null;
+        if (createVerificationDto.images) {
+          imagePaths = {
+            frontImage: createVerificationDto.images.frontImage 
+              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.frontImage, `verification_${nextVerificationId}_front`)
+              : null,
+            backImage: createVerificationDto.images.backImage 
+              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.backImage, `verification_${nextVerificationId}_back`)
+              : null,
+            faceImage: createVerificationDto.images.faceImage 
+              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.faceImage, `verification_${nextVerificationId}_face`)
+              : null,
+          };
+        }
+
         const verification = new this.verificationModel({
           verificationId: nextVerificationId,
           userId: userId,
@@ -191,17 +207,17 @@ export class VerificationsService {
           gender: createVerificationDto.gender,
           issueDate: issueDate,
           issuePlace: createVerificationDto.issuePlace,
-          status: status,  // Status được xác định bởi AI
+          status: status,
           submittedAt: new Date(),
-          faceMatchResult: createVerificationDto.faceMatchResult,  // Lưu kết quả FaceMatch
+          faceMatchResult: createVerificationDto.faceMatchResult,
+          images: imagePaths,
         });
 
     const savedVerification = await verification.save();
 
-    // Update user's verificationId using userId number
     await this.userModel.findOneAndUpdate(
       { userId: userId },
-      { verificationId: savedVerification.verificationId } // Lưu số tự tăng
+      { verificationId: savedVerification.verificationId }
     ).exec();
 
     // Nếu được auto-approve, cập nhật isVerified của user
@@ -213,6 +229,69 @@ export class VerificationsService {
     }
 
     return savedVerification;
+  }
+
+  async getVerificationById(verificationId: number): Promise<any> {
+    const verification = await this.verificationModel.findOne({ verificationId }).exec();
+    
+    if (!verification) {
+      throw new NotFoundException('Verification not found');
+    }
+
+    return {
+      verificationId: verification.verificationId,
+      userId: verification.userId,
+      idNumber: verification.idNumber,
+      fullName: verification.fullName,
+      dateOfBirth: verification.dateOfBirth,
+      gender: verification.gender,
+      issueDate: verification.issueDate,
+      issuePlace: verification.issuePlace,
+      status: verification.status,
+      submittedAt: verification.submittedAt,
+      reviewedAt: verification.reviewedAt,
+      reviewedBy: verification.reviewedBy,
+      adminNote: verification.adminNote,
+      faceMatchResult: verification.faceMatchResult
+    };
+  }
+
+  async getVerificationImages(verificationId: number): Promise<any> {
+    const verification = await this.verificationModel.findOne({ verificationId }).exec();
+    
+    if (!verification) {
+      throw new NotFoundException('Verification not found');
+    }
+
+    // Convert file paths to full URLs
+    let imageUrls: { frontImage: string | null; backImage: string | null; faceImage: string | null } | null = null;
+    if (verification.images) {
+      const baseUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+      imageUrls = {
+        frontImage: verification.images.frontImage 
+          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.frontImage)}`
+          : null,
+        backImage: verification.images.backImage 
+          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.backImage)}`
+          : null,
+        faceImage: verification.images.faceImage 
+          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.faceImage)}`
+          : null,
+      };
+    }
+
+    return {
+      verificationId: verification.verificationId,
+      userId: verification.userId,
+      fullName: verification.fullName,
+      idNumber: verification.idNumber,
+      status: verification.status,
+      images: imageUrls,
+      faceMatchResult: verification.faceMatchResult,
+      submittedAt: verification.submittedAt,
+      reviewedAt: verification.reviewedAt,
+      adminNote: verification.adminNote
+    };
   }
 
   private async getNextVerificationId(): Promise<number> {

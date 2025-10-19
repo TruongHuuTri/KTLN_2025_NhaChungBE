@@ -7,6 +7,7 @@ import { VerificationsController } from './verifications.controller';
 import { Verification, VerificationSchema } from './schemas/verification.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AdminModule } from '../admin/admin.module';
+import { FileStorageService } from '../../shared/services/file-storage.service';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { AdminModule } from '../admin/admin.module';
     AdminModule,
   ],
   controllers: [VerificationsController],
-  providers: [VerificationsService],
+  providers: [VerificationsService, FileStorageService],
   exports: [VerificationsService],
 })
 export class VerificationsModule {}

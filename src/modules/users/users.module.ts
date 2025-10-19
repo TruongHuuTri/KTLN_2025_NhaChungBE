@@ -12,6 +12,7 @@ import { Room, RoomSchema } from '../rooms/schemas/room.schema';
 import { Building, BuildingSchema } from '../rooms/schemas/building.schema';
 import { RentalContract, RentalContractSchema } from '../contracts/schemas/rental-contract.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { EmailService } from '../../shared/services/email.service';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, JwtStrategy],
+  providers: [UsersService, JwtStrategy, EmailService],
   exports: [UsersService],
 })
 export class UsersModule {}

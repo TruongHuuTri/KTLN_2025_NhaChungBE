@@ -26,6 +26,9 @@ export class User {
   @Prop({ default: 'user' })
   role: string;
 
+  @Prop({ default: true })
+  isActive: boolean;
+
   // Email verification fields
   @Prop({ default: false })
   isEmailVerified: boolean;

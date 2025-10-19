@@ -6,12 +6,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Admin, AdminDocument } from './schemas/admin.schema';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { UpdateAdminDto } from './dto/update-admin.dto';
+import { SchedulerService } from '../../shared/services/scheduler.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(Admin.name) private adminModel: Model<AdminDocument>,
     private jwtService: JwtService,
+    private schedulerService: SchedulerService,
   ) {}
 
   async create(createAdminDto: CreateAdminDto): Promise<Admin> {
@@ -104,8 +107,105 @@ export class AdminService {
     return !!admin;
   }
 
+  async updateAdmin(adminId: number, updateAdminDto: UpdateAdminDto): Promise<{ message: string; admin: any }> {
+    // Find admin by adminId
+    const admin = await this.adminModel.findOne({ adminId }).exec();
+    if (!admin) {
+      throw new NotFoundException('Không tìm thấy admin');
+    }
+
+    // Check if admin is active
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Tài khoản admin đã bị vô hiệu hóa');
+    }
+
+    const updateData: any = {
+      updatedAt: new Date()
+    };
+
+    // Update basic info if provided
+    if (updateAdminDto.name !== undefined) {
+      updateData.name = updateAdminDto.name;
+    }
+    if (updateAdminDto.email !== undefined) {
+      updateData.email = updateAdminDto.email;
+    }
+    if (updateAdminDto.phone !== undefined) {
+      updateData.phone = updateAdminDto.phone;
+    }
+    if (updateAdminDto.isActive !== undefined) {
+      updateData.isActive = updateAdminDto.isActive;
+    }
+
+    // Handle password change if provided
+    if (updateAdminDto.newPassword) {
+      // If new password is provided, current password is required
+      if (!updateAdminDto.currentPassword) {
+        throw new UnauthorizedException('Mật khẩu hiện tại là bắt buộc khi đổi mật khẩu');
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(updateAdminDto.currentPassword, admin.password);
+      if (!isCurrentPasswordValid) {
+        throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(updateAdminDto.newPassword, saltRounds);
+    }
+
+    // Update admin
+    const updatedAdmin = await this.adminModel.findByIdAndUpdate(
+      admin._id, 
+      updateData,
+      { new: true }
+    ).select('-password').exec();
+
+    return { 
+      message: 'Cập nhật thông tin admin thành công',
+      admin: updatedAdmin
+    };
+  }
+
+  async changePassword(adminId: number, currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    // Find admin by adminId
+    const admin = await this.adminModel.findOne({ adminId }).exec();
+    if (!admin) {
+      throw new NotFoundException('Không tìm thấy admin');
+    }
+
+    // Check if admin is active
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Tài khoản admin đã bị vô hiệu hóa');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await this.adminModel.findByIdAndUpdate(admin._id, { 
+      password: hashedNewPassword,
+      updatedAt: new Date()
+    });
+
+    return { message: 'Đổi mật khẩu thành công' };
+  }
+
   private async getNextAdminId(): Promise<number> {
     const lastAdmin = await this.adminModel.findOne().sort({ adminId: -1 }).exec();
     return lastAdmin ? lastAdmin.adminId + 1 : 1;
+  }
+
+  async cleanupOldImages(): Promise<{ message: string }> {
+    await this.schedulerService.manualCleanup();
+    return { message: 'Cleanup hoàn thành thành công' };
   }
 }

@@ -333,7 +333,10 @@ export class Post {
 
   // Trạng thái
   @Prop({ default: 'pending' })
-  status: string; // 'pending', 'active', 'inactive', 'rejected'
+  status: string; // 'pending', 'approved', 'active', 'inactive', 'rejected'
+
+  @Prop()
+  rejectionReason?: string; // Lý do từ chối (chỉ khi status = 'rejected')
 
   @Prop()
   createdAt: Date;

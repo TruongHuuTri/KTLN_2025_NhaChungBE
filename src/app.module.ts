@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
@@ -19,6 +20,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { NlpSearchModule } from './nlp-search/nlp-search.module';
 import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
+import { SchedulerService } from './shared/services/scheduler.service';
+import { FileStorageService } from './shared/services/file-storage.service';
 @Module({
 
   imports: [
@@ -26,6 +29,7 @@ import { OTPService } from './shared/services/otp.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -51,7 +55,7 @@ import { OTPService } from './shared/services/otp.service';
     NlpSearchModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EmailService, OTPService],
+  providers: [AppService, EmailService, OTPService, SchedulerService, FileStorageService],
   
 })
 export class AppModule {}

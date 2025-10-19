@@ -64,6 +64,12 @@ export class CreateVerificationDto {
   @Type(() => FaceMatchResultDto)
   faceMatchResult?: FaceMatchResultDto;
 
-  // Không nhận ảnh CCCD từ client - chỉ nhận thông tin đã extract từ OCR
-  // frontImage và backImage chỉ xử lý client-side, không gửi lên server
+  // Ảnh CCCD và selfie (base64 hoặc URL)
+  @IsOptional()
+  @IsObject({ message: 'Images phải là object' })
+  images?: {
+    frontImage?: string;
+    backImage?: string;
+    faceImage?: string;
+  };
 }

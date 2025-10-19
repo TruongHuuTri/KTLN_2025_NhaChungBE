@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { Admin, AdminSchema } from './schemas/admin.schema';
+import { SchedulerService } from '../../shared/services/scheduler.service';
+import { FileStorageService } from '../../shared/services/file-storage.service';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { Admin, AdminSchema } from './schemas/admin.schema';
     }),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, SchedulerService, FileStorageService],
   exports: [AdminService],
 })
 export class AdminModule {}

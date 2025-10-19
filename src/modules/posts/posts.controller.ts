@@ -68,6 +68,33 @@ export class PostsController {
   }
 }
 
+@Controller('admin/posts')
+@UseGuards(AdminJwtGuard)
+export class AdminPostsController {
+  constructor(private readonly postsService: PostsService) {}
+
+  @Get()
+  async getAllPosts(@Query() filters: any) {
+    return this.postsService.getAllPostsForAdmin(filters);
+  }
+
+  @Get('pending')
+  async getPendingPosts() {
+    return this.postsService.getPendingPosts();
+  }
+
+  @Put(':id/approve')
+  async approvePost(@Param('id') postId: string) {
+    return this.postsService.updatePostStatus(parseInt(postId), 'approved');
+  }
+
+  @Put(':id/reject')
+  async rejectPost(@Param('id') postId: string, @Body() body: { reason?: string } = {}) {
+    return this.postsService.rejectPost(parseInt(postId), body?.reason);
+  }
+
+}
+
 @Controller('landlord/posts')
 @UseGuards(JwtAuthGuard, LandlordGuard)
 export class LandlordPostsController {

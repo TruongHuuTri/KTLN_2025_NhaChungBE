@@ -54,6 +54,25 @@ export class EmailService {
   }
 
   /**
+   * Gửi email đặt lại mật khẩu
+   */
+  async sendPasswordResetEmail(email: string, userName: string, newPassword: string): Promise<void> {
+    const mailOptions = {
+      from: `${process.env.FROM_NAME || 'Nhà Chung'} <${process.env.FROM_EMAIL || process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Mật khẩu mới - Nhà Chung',
+      html: this.getPasswordResetEmailTemplate(userName, newPassword),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      throw new Error('Không thể gửi email đặt lại mật khẩu');
+    }
+  }
+
+  /**
    * Template email OTP
    */
   private getOTPEmailTemplate(userName: string, otp: string): string {
@@ -141,6 +160,127 @@ export class EmailService {
           </div>
           
           <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.</p>
+          
+          <p>Trân trọng,<br>
+          <strong>Đội ngũ Nhà Chung</strong></p>
+        </div>
+        
+        <div class="footer">
+          <p>📧 Email này được gửi tự động, vui lòng không trả lời</p>
+          <p>🏠 Nhà Chung - Kết nối người tìm nhà và chủ trọ</p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Template email đặt lại mật khẩu
+   */
+  private getPasswordResetEmailTemplate(userName: string, newPassword: string): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mật khẩu mới - Nhà Chung</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+          }
+          .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+          }
+          .password-box {
+            background: #fff;
+            border: 2px dashed #667eea;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+          }
+          .password-box h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+          }
+          .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .security-tips {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🏠 Nhà Chung</h1>
+          <p>Thông báo mật khẩu mới</p>
+        </div>
+        
+        <div class="content">
+          <h2>Xin chào ${userName}!</h2>
+          
+          <p>Admin đã đặt lại mật khẩu cho tài khoản của bạn. Dưới đây là mật khẩu mới:</p>
+          
+          <div class="password-box">
+            <h2>${newPassword}</h2>
+            <p><em>Mật khẩu mới của bạn</em></p>
+          </div>
+          
+          <div class="warning">
+            <strong>⚠️ Lưu ý quan trọng:</strong>
+            <ul>
+              <li>Vui lòng đăng nhập và đổi mật khẩu này ngay lập tức</li>
+              <li>Không chia sẻ mật khẩu này với bất kỳ ai</li>
+              <li>Nên sử dụng mật khẩu mạnh và dễ nhớ</li>
+            </ul>
+          </div>
+          
+          <div class="security-tips">
+            <strong>🔒 Mẹo bảo mật:</strong>
+            <ul>
+              <li>Sử dụng ít nhất 8 ký tự</li>
+              <li>Kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt</li>
+              <li>Tránh sử dụng thông tin cá nhân</li>
+              <li>Đổi mật khẩu định kỳ</li>
+            </ul>
+          </div>
+          
+          <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ với admin ngay lập tức.</p>
           
           <p>Trân trọng,<br>
           <strong>Đội ngũ Nhà Chung</strong></p>

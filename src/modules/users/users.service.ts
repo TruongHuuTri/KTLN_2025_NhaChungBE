@@ -13,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { EmailService } from '../../shared/services/email.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,7 @@ export class UsersService {
     @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
     @InjectModel(RentalContract.name) private contractModel: Model<RentalContractDocument>,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -56,6 +58,11 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
+    return this.userModel.find({ isActive: true }).select('-password').exec();
+  }
+
+  async findAllForAdmin(): Promise<User[]> {
+    // Admin can see all users (including inactive ones)
     return this.userModel.find().select('-password').exec();
   }
 
@@ -74,7 +81,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userModel.findOne({ email, isActive: true }).exec();
     if (!user) {
       throw new NotFoundException('Không tìm thấy user với email này');
     }
@@ -104,15 +111,97 @@ export class UsersService {
     return updatedUser;
   }
 
-  async remove(id: string): Promise<void> {
+  async updateUserStatus(id: string, isActive: boolean): Promise<{ message: string; user: any }> {
     const numericUserId = parseInt(id);
-    const result = await this.userModel.deleteOne({ userId: numericUserId }).exec();
-    if (result.deletedCount === 0) {
+    const user = await this.userModel.findOne({ userId: numericUserId }).exec();
+    
+    if (!user) {
       throw new NotFoundException('Không tìm thấy user');
     }
 
-    // Cascade delete related user profile to avoid orphan profile blocking future registrations
-    await this.userProfileModel.deleteOne({ userId: numericUserId }).exec();
+    // Update user status
+    const updatedUser = await this.userModel.findOneAndUpdate(
+      { userId: numericUserId },
+      { isActive, updatedAt: new Date() },
+      { new: true }
+    ).select('-password').exec();
+
+    const statusText = isActive ? 'kích hoạt' : 'vô hiệu hóa';
+    return { 
+      message: `${statusText} user thành công`,
+      user: updatedUser
+    };
+  }
+
+  async resetUserPassword(id: string): Promise<{ message: string; newPassword: string }> {
+    const numericUserId = parseInt(id);
+    const user = await this.userModel.findOne({ userId: numericUserId }).exec();
+    
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy user');
+    }
+
+    // Generate new random password
+    const newPassword = this.generateRandomPassword();
+    
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update user password
+    await this.userModel.updateOne(
+      { userId: numericUserId },
+      { 
+        password: hashedPassword,
+        updatedAt: new Date()
+      }
+    ).exec();
+
+    // Send new password via email
+    try {
+      await this.emailService.sendPasswordResetEmail(user.email, user.name, newPassword);
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      // Don't throw error here, just log it
+    }
+
+    return { 
+      message: 'Đặt lại mật khẩu thành công. Mật khẩu mới đã được gửi qua email.',
+      newPassword: newPassword // Return for admin reference, but email is primary
+    };
+  }
+
+  private generateRandomPassword(): string {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    
+    return password;
+  }
+
+  async remove(id: string): Promise<{ message: string }> {
+    const numericUserId = parseInt(id);
+    const user = await this.userModel.findOne({ userId: numericUserId }).exec();
+    
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy user');
+    }
+
+    if (!user.isActive) {
+      throw new BadRequestException('User đã bị xóa');
+    }
+
+    // Soft delete - set isActive to false
+    await this.userModel.updateOne(
+      { userId: numericUserId },
+      { isActive: false, updatedAt: new Date() }
+    ).exec();
+
+    return { message: 'Xóa user thành công' };
   }
 
   async login(loginDto: LoginDto) {
@@ -120,6 +209,11 @@ export class UsersService {
     const user = await this.userModel.findOne({ email: loginDto.email }).exec();
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
 
     // Check password

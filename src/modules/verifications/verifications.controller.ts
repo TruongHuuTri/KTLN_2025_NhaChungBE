@@ -62,6 +62,18 @@ export class VerificationsController {
     return this.verificationsService.findByUserId(userId);
   }
 
+  @Get('admin/:id')
+  @UseGuards(AdminJwtGuard)
+  async getVerificationById(@Param('id') verificationId: string) {
+    return this.verificationsService.getVerificationById(parseInt(verificationId));
+  }
+
+  @Get('admin/:id/images')
+  @UseGuards(AdminJwtGuard)
+  async getVerificationImages(@Param('id') verificationId: string) {
+    return this.verificationsService.getVerificationImages(parseInt(verificationId));
+  }
+
   @Put('admin/:id')
   @UseGuards(AdminJwtGuard)
   async updateStatus(

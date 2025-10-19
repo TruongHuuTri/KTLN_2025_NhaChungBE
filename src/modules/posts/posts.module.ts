@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PostsController, LandlordPostsController } from './posts.controller';
+import { PostsController, LandlordPostsController, AdminPostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { Post, PostSchema } from './schemas/post.schema';
 import { Room, RoomSchema } from '../rooms/schemas/room.schema';
@@ -22,7 +22,7 @@ import { Room, RoomSchema } from '../rooms/schemas/room.schema';
       inject: [ConfigService],
     }),
   ],
-  controllers: [PostsController, LandlordPostsController],
+  controllers: [PostsController, LandlordPostsController, AdminPostsController],
   providers: [PostsService],
   exports: [PostsService],
 })
