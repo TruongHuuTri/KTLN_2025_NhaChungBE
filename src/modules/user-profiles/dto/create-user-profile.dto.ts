@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, IsEnum, Min, Max, ValidateNested, IsUrl, IsDateString } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsArray, IsBoolean, Min, Max, ValidateNested, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BudgetRangeDto {
@@ -11,27 +11,6 @@ export class BudgetRangeDto {
   @IsNumber()
   @Min(0)
   max?: number;
-}
-
-export class PriceRangeDto {
-  @IsNumber()
-  @Min(0)
-  min: number;
-
-  @IsNumber()
-  @Min(0)
-  max: number;
-}
-
-export class BankAccountDto {
-  @IsString()
-  bankName: string;
-
-  @IsString()
-  accountNumber: string;
-
-  @IsString()
-  accountHolder: string;
 }
 
 export class AvailableTimeDto {
@@ -81,6 +60,16 @@ export class CreateUserProfileDto {
   preferredWards?: string[];
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferredWardCodes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferredDistricts?: string[];
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => BudgetRangeDto)
   budgetRange?: BudgetRangeDto;
@@ -120,68 +109,7 @@ export class CreateUserProfileDto {
   @Max(5)
   socialLevel?: number;
 
-  // Landlord specific
-  @IsOptional()
-  @IsString()
-  businessType?: string;
-
-  @IsOptional()
-  @IsString()
-  experience?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  propertiesCount?: number;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  propertyTypes?: string[];
-
-  @IsOptional()
-  @IsString()
-  targetCity?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  targetWards?: string[];
-
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PriceRangeDto)
-  priceRange?: PriceRangeDto;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  targetTenants?: string[];
-
-  @IsOptional()
-  @IsString()
-  managementStyle?: string;
-
-  @IsOptional()
-  @IsString()
-  responseTime?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  additionalServices?: string[];
-
-  // Business info
-  @IsOptional()
-  @IsUrl()
-  businessLicense?: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => BankAccountDto)
-  bankAccount?: BankAccountDto;
-
+  // Contact info
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

@@ -82,6 +82,10 @@ export class Verification {
     confidence: 'high' | 'low';
   };
 
+  // Giấy phép kinh doanh (chỉ cho chủ nhà)
+  @Prop()
+  businessLicense?: string; // S3 URL
+
   @Prop()
   createdAt: Date;
 

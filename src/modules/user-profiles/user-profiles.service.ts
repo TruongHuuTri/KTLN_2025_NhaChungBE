@@ -46,7 +46,6 @@ export class UserProfilesService {
       profileId,
       isBasicInfoComplete: false,
       isPreferencesComplete: false,
-      isLandlordInfoComplete: false,
       completionPercentage: 0,
     });
 
@@ -89,7 +88,8 @@ export class UserProfilesService {
     Object.assign(profile, updateUserProfileDto);
     const updatedProfile = await profile.save();
 
-    // Cập nhật completion percentage
+    // Cập nhật completion percentage (CHỈ dành cho user thường)
+    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
     await this.updateCompletionPercentage((updatedProfile._id as any).toString());
 
     return updatedProfile;
@@ -129,11 +129,6 @@ export class UserProfilesService {
     if (!profile) return;
 
     let completion = 0;
-    // Dùng lại ở nhiều nơi: xác định đã có khu vực mục tiêu (landlord)
-    const hasTargetArea = !!(profile['targetWards'] && (profile['targetWards'] as any[]).length)
-      || !!(profile['targetDistricts'] && (profile['targetDistricts'] as any[]).length)
-      || !!(profile['targetWardCodes'] && (profile['targetWardCodes'] as any[]).length)
-      || !!profile['targetCityCode'] || !!profile['targetCityName'];
 
     // Basic info fields (30%)
     const basicFields = ['dateOfBirth', 'gender', 'occupation', 'income', 'currentLocation'];
@@ -148,27 +143,17 @@ export class UserProfilesService {
     const totalPreferenceFields = preferenceCoreFields.length + 1; // +1 nhóm preferred area
     completion += (completedPreferenceFields / totalPreferenceFields) * 40;
 
-    // Role-specific fields
-    if (profile.businessType) {
-      // Landlord fields (30%) - yêu cầu targetCity + targetWards
-      const landlordFields = ['experience', 'propertyTypes', 'priceRange'];
-      const baseCompleted = landlordFields.filter(field => profile[field] !== undefined).length;
-      const landlordHasTarget = !!profile['targetCity'] && !!(profile['targetWards'] && (profile['targetWards'] as any[]).length);
-      const completedLandlordFields = baseCompleted + (landlordHasTarget ? 1 : 0);
-      const totalLandlordFields = landlordFields.length + 1; // +1 nhóm target
-      completion += (completedLandlordFields / totalLandlordFields) * 30;
-    } else {
-      // User fields (30%)
-      const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
-      const completedUserFields = userFields.filter(field => profile[field] !== undefined).length;
-      completion += (completedUserFields / userFields.length) * 30;
-    }
+    // Role-specific fields (CHỈ tính cho user thường)
+    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
+    // User fields (30%)
+    const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
+    const completedUserFields = userFields.filter(field => profile[field] !== undefined).length;
+    completion += (completedUserFields / userFields.length) * 30;
 
-    // Cập nhật completion status
+    // Cập nhật completion status (CHỈ dành cho user thường)
+    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
     profile.isBasicInfoComplete = completedBasicFields === basicFields.length;
     profile.isPreferencesComplete = completedPreferenceFields === totalPreferenceFields;
-    profile.isLandlordInfoComplete = profile.businessType ? 
-      !!(profile.experience && profile.propertyTypes && profile.priceRange && profile['targetCity'] && profile['targetWards'] && (profile['targetWards'] as any[]).length) : true;
     profile.completionPercentage = Math.round(completion);
 
     await profile.save();
@@ -185,12 +170,10 @@ export class UserProfilesService {
 
   /**
    * Lấy profiles theo role
+   * LƯU Ý: Chỉ còn user profile, không còn landlord profile
    */
   async findByRole(role: string): Promise<UserProfile[]> {
-    const query = role === 'landlord' ? 
-      { businessType: { $exists: true } } : 
-      { businessType: { $exists: false } };
-    
-    return this.userProfileModel.find(query).exec();
+    // Tất cả profiles đều là user profiles
+    return this.userProfileModel.find().exec();
   }
 }

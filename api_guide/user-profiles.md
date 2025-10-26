@@ -26,74 +26,58 @@ User Profiles API cho phép quản lý thông tin chi tiết của người dùn
 
 ## 📊 Schema
 
+> **⚠️ LƯU Ý QUAN TRỌNG:**
+> - `user_profiles` collection **CHỈ DÀNH CHO USER THƯỜNG** (role = 'user')
+> - Chủ nhà (landlord) **KHÔNG CẦN** hoàn thiện profile
+> - Chủ nhà chỉ cần **xác thực** (verification) để được duyệt
+> - Giấy phép kinh doanh lưu trong `verification` collection, không phải `user_profiles`
+
 ```typescript
 interface UserProfile {
   profileId: number;
   userId: number;
   
-  // Basic Info
-  dateOfBirth?: Date;  // Dùng dateOfBirth (không dùng age)
-  gender?: 'male' | 'female' | 'other';
+  // Basic Info (dành cho user thường)
+  dateOfBirth?: Date;
+  gender?: string;
   occupation?: string;
   income?: number;
   currentLocation?: string;
   
-  // Preferences
-  // Ưu tiên dùng wards (tương thích preferredDistricts trong giai đoạn chuyển đổi)
+  // Preferences (dành cho user thường)
+  preferredCity?: string;
   preferredWards?: string[];
   preferredWardCodes?: string[];
   preferredDistricts?: string[];
   budgetRange?: { min: number; max: number };
   roomType?: string[];
   amenities?: string[];
-  lifestyle?: 'quiet' | 'social' | 'party' | 'study';
+  lifestyle?: string;
   
-  // Roommate specific
+  // Roommate specific (dành cho user thường)
   smoking?: boolean;
   pets?: boolean;
   cleanliness?: number; // 1-5
   socialLevel?: number; // 1-5
   
-  // Landlord specific
-  businessType?: 'individual' | 'company' | 'agency';
-  experience?: 'new' | '1-2_years' | '3-5_years' | '5+_years';
-  propertiesCount?: number;
-  propertyTypes?: string[];
-  // Ưu tiên dùng wards/city (tương thích targetDistricts trong giai đoạn chuyển đổi)
-  targetCityCode?: string;
-  targetCityName?: string;
-  targetWards?: string[];
-  targetWardCodes?: string[];
-  targetDistricts?: string[];
-  priceRange?: { min: number; max: number };
-  // Chấp nhận cả bộ key mới và cũ
-  targetTenants?: (
-    'student' | 'office_worker' | 'family' | 'couple' | 'group_friends' |
-    'sinh_vien' | 'nhan_vien_vp' | 'gia_dinh' | 'cap_doi' | 'nhom_ban'
-  )[];
-  managementStyle?: 'strict' | 'flexible' | 'friendly';
-  responseTime?: 'immediate' | 'within_hour' | 'within_day';
-  additionalServices?: string[];
-  
-  // Business info
-  businessLicense?: string;
-  bankAccount?: {
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  };
+  // Contact info (dùng chung)
   contactMethod?: string[];
   availableTime?: {
-    weekdays: string;
-    weekends: string;
+    weekdays?: string;
+    weekends?: string;
   };
   
   // Completion status
   isBasicInfoComplete: boolean;
   isPreferencesComplete: boolean;
-  isLandlordInfoComplete: boolean;
   completionPercentage: number;
 }
+
+// CÁC TRƯỜNG SAU ĐÂY KHÔNG CÒN DÙNG (đã deprecated):
+// - Landlord specific fields (businessType, experience, propertyTypes, targetCity, targetWards, etc.)
+// - bankAccount (chuyển sang verification hoặc thông tin khác)
+// - isLandlordInfoComplete (không còn cần)
+// - businessLicense (đã chuyển sang verification collection)
 ```
 
 ## 🔗 API Endpoints
@@ -121,7 +105,8 @@ PATCH /api/user-profiles/me
 Authorization: Bearer <token>
 Content-Type: application/json
 
-// Form Người Thuê (role=user)
+// Form User Thường (role=user)
+// Lưu ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile, chỉ cần xác thực
 {
   "dateOfBirth": "2000-05-10",
   "gender": "male",
@@ -138,24 +123,6 @@ Content-Type: application/json
   "socialLevel": 3,
   "contactMethod": ["Zalo", "Điện thoại"],
   "availableTime": { "weekdays": "Sau 18:00", "weekends": "Cả ngày" }
-}
-
-// Form Chủ Nhà (role=landlord)
-{
-  "businessType": "individual",
-  "experience": "1-2_years",
-  "propertiesCount": 5,
-  "propertyTypes": ["phong_tro", "chung_cu"],
-  "priceRange": { "min": 2500000, "max": 10000000 },
-  "targetDistricts": ["Phường 7", "Phường 10"],
-  "targetTenants": ["student", "office_worker"],
-  "managementStyle": "friendly",
-  "responseTime": "within_day",
-  "additionalServices": ["bao_ve_24_7", "ve_sinh_khu_chung"],
-  "businessLicense": "https://cdn.example.com/licenses/abc.jpg",
-  "bankAccount": { "bankName": "Vietcombank", "accountNumber": "0123456789", "accountHolder": "Nguyen Van A" },
-  "contactMethod": ["Điện thoại"],
-  "availableTime": { "weekdays": "9:00-17:00", "weekends": "linh hoạt" }
 }
 ```
 
@@ -186,13 +153,13 @@ Authorization: Bearer <token>
 
 ## 🎯 Completion Percentage
 
-Hệ thống tự động tính toán % hoàn thiện profile (theo nhóm field phù hợp với role):
+Hệ thống tự động tính toán % hoàn thiện profile **chỉ dành cho user thường**:
 
 - **Basic Info (30%)**: dateOfBirth, gender, occupation, income, currentLocation
 - **Preferences (40%)**: preferredWards (hoặc preferredDistricts), budgetRange, roomType, amenities, lifestyle
-- **Role-specific (30%)**:
-  - User: smoking, pets, cleanliness, socialLevel
-  - Landlord: experience, propertyTypes, targetWards (hoặc targetDistricts), priceRange
+- **Roommate specific (30%)**: smoking, pets, cleanliness, socialLevel
+
+> **Lưu ý:** Chủ nhà (landlord) **KHÔNG CẦN** hoàn thiện profile, chỉ cần xác thực.
 
 ## 🔄 Flow Integration
 
@@ -214,22 +181,13 @@ Khi user đăng ký thành công, hệ thống tự động tạo profile với:
 - `completionPercentage: 0`
 - Tất cả fields khác = undefined
 
-### 3. Khi upgrade role
+### 3. Khi upgrade role sang landlord
 
-Khi user chuyển từ `user` → `landlord`, cần cập nhật thêm (tối thiểu các trường chính):
-- `businessType`
-- `experience`
-- `propertyTypes`
-- `targetCityCode/Name` và/hoặc `targetWards/targetWardCodes` (tương thích `targetDistricts`)
-- `priceRange`
-- `targetTenants`
-- `managementStyle`
-- `responseTime`
-- `additionalServices`
-- `businessLicense`
-- `bankAccount`
-- `contactMethod`
-- `availableTime`
+> **⚠️ THAY ĐỔI QUAN TRỌNG:**
+> - Chủ nhà (landlord) **KHÔNG CẦN** hoàn thiện profile
+> - Khi upgrade role sang landlord, user **CHỈ CẦN XÁC THỰC** (submit verification)
+> - Giấy phép kinh doanh lưu trong `verification` collection (không phải `user_profiles`)
+> - Xem chi tiết luồng xác thực tại `landlord-verification-flow.md`
 
 ## 🎨 Frontend Integration
 
@@ -273,14 +231,11 @@ const preferenceFields = [
   'preferredWards', 'budgetRange', 'roomType', 'amenities', 'lifestyle'
 ];
 
-// Step 3: Role-specific
-const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
-const landlordFields = [
-  'businessType', 'experience', 'propertyTypes', 'priceRange',
-  'targetWards', 'targetWardCodes', 'targetCityCode', 'targetCityName',
-  'targetTenants', 'managementStyle', 'responseTime', 'additionalServices',
-  'businessLicense', 'bankAccount', 'contactMethod', 'availableTime'
-];
+// Step 3: Roommate specific
+const roommateFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
+
+// LƯU Ý: Chủ nhà (landlord) KHÔNG CẦN hoàn thiện profile
+// Landlord chỉ cần xác thực (verification) - xem landlord-verification-flow.md
 ```
 
 ### 3. Progress Tracking

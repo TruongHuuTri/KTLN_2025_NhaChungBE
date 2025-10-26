@@ -34,6 +34,12 @@ export class UserProfile {
   @Prop({ type: [String] })
   preferredWards?: string[];
 
+  @Prop({ type: [String] })
+  preferredWardCodes?: string[];
+
+  @Prop({ type: [String] })
+  preferredDistricts?: string[];
+
   @Prop({
     type: {
       min: { type: Number },
@@ -64,66 +70,7 @@ export class UserProfile {
   @Prop({ min: 1, max: 5 })
   socialLevel?: number;
 
-  // Landlord specific
-  @Prop()
-  businessType?: string;
-
-  @Prop()
-  experience?: string;
-
-  @Prop()
-  propertiesCount?: number;
-
-  @Prop({ type: [String] })
-  propertyTypes?: string[];
-
-  @Prop()
-  targetCity?: string;
-
-  @Prop({ type: [String] })
-  targetWards?: string[];
-
-  
-
-  @Prop({
-    type: {
-      _id: false,
-      min: { type: Number },
-      max: { type: Number }
-    }
-  })
-  priceRange?: { min: number; max: number };
-
-  @Prop({ type: [String] })
-  targetTenants?: string[];
-
-  @Prop()
-  managementStyle?: string;
-
-  @Prop()
-  responseTime?: string;
-
-  @Prop({ type: [String] })
-  additionalServices?: string[];
-
-  // Business info (when upgrade to landlord)
-  @Prop()
-  businessLicense?: string;
-
-  @Prop({
-    type: {
-      _id: false,
-      bankName: { type: String },
-      accountNumber: { type: String },
-      accountHolder: { type: String }
-    }
-  })
-  bankAccount?: {
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-  };
-
+  // Contact info
   @Prop({ type: [String] })
   contactMethod?: string[];
 
@@ -145,9 +92,6 @@ export class UserProfile {
 
   @Prop({ default: false })
   isPreferencesComplete: boolean;
-
-  @Prop({ default: false })
-  isLandlordInfoComplete: boolean;
 
   @Prop({ default: 0 })
   completionPercentage: number;

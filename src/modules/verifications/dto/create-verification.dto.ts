@@ -72,4 +72,9 @@ export class CreateVerificationDto {
     backImage?: string;
     faceImage?: string;
   };
+
+  // Giấy phép kinh doanh (chỉ cho chủ nhà)
+  @IsOptional()
+  @IsString({ message: 'Business license phải là chuỗi Base64' })
+  businessLicense?: string;
 }

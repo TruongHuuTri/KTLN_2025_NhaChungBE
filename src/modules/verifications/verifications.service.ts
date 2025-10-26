@@ -214,6 +214,17 @@ export class VerificationsService {
           };
         }
 
+        // Lưu giấy phép kinh doanh lên S3 (nếu có)
+        let businessLicenseUrl: string | null = null;
+        if (createVerificationDto.businessLicense) {
+          businessLicenseUrl = await this.s3Service.uploadFileToS3(
+            createVerificationDto.businessLicense,
+            `business_license`,
+            userId,
+            UploadFolder.documents
+          );
+        }
+
         const verification = new this.verificationModel({
           verificationId: nextVerificationId,
           userId: userId,
@@ -227,6 +238,7 @@ export class VerificationsService {
           submittedAt: new Date(),
           faceMatchResult: createVerificationDto.faceMatchResult,
           images: imageUrls,
+          businessLicense: businessLicenseUrl, // ← Lưu vào verification
         });
 
     const savedVerification = await verification.save();
@@ -287,6 +299,7 @@ export class VerificationsService {
       idNumber: verification.idNumber,
       status: verification.status,
       images: verification.images, // Đã là URLs từ S3
+      businessLicense: verification.businessLicense, // ← Giấy phép kinh doanh
       faceMatchResult: verification.faceMatchResult,
       submittedAt: verification.submittedAt,
       reviewedAt: verification.reviewedAt,
