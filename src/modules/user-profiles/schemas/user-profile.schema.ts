@@ -11,22 +11,6 @@ export class UserProfile {
   @Prop({ required: true, unique: true })
   userId: number;
 
-  // Basic Info
-  @Prop()
-  dateOfBirth?: Date;
-
-  @Prop()
-  gender?: string;
-
-  @Prop()
-  occupation?: string;
-
-  @Prop()
-  income?: number;
-
-  @Prop()
-  currentLocation?: string;
-
   // Preferences
   @Prop()
   preferredCity?: string;
@@ -35,56 +19,22 @@ export class UserProfile {
   preferredWards?: string[];
 
   @Prop({ type: [String] })
-  preferredWardCodes?: string[];
-
-  @Prop({ type: [String] })
-  preferredDistricts?: string[];
-
-  @Prop({
-    type: {
-      min: { type: Number },
-      max: { type: Number }
-    }
-  })
-  budgetRange?: { min?: number; max?: number };
-
-  @Prop({ type: [String] })
   roomType?: string[];
 
-  @Prop({ type: [String] })
-  amenities?: string[];
-
+  // Basic Info
   @Prop()
-  lifestyle?: string;
-
-  // Roommate specific
-  @Prop()
-  smoking?: boolean;
+  occupation?: string;
 
   @Prop()
   pets?: boolean;
-
-  @Prop({ min: 1, max: 5 })
-  cleanliness?: number;
-
-  @Prop({ min: 1, max: 5 })
-  socialLevel?: number;
 
   // Contact info
   @Prop({ type: [String] })
   contactMethod?: string[];
 
-  @Prop({
-    type: {
-      _id: false,
-      weekdays: { type: String },
-      weekends: { type: String }
-    }
-  })
-  availableTime?: {
-    weekdays?: string;
-    weekends?: string;
-  };
+  // Media (reference to Media collection if exists)
+  // @Prop()
+  // media?: string;
 
   // Profile completion status
   @Prop({ default: false })

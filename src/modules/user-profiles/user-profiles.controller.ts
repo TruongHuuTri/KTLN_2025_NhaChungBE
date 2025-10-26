@@ -34,9 +34,10 @@ export class UserProfilesController {
    */
   @Post('me')
   @UseGuards(JwtAuthGuard)
-  createMyProfile(@Request() req) {
+  createMyProfile(@Request() req, @Body() createUserProfileDto: CreateUserProfileDto) {
     const userId = req.user.sub;
-    return this.userProfilesService.create({ userId });
+    // Ghi đè userId từ token để đảm bảo user không thể tạo profile cho user khác
+    return this.userProfilesService.create({ ...createUserProfileDto, userId });
   }
 
   /**

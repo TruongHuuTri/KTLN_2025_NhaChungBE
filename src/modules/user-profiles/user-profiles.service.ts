@@ -30,13 +30,6 @@ export class UserProfilesService {
       throw new ConflictException('User đã có profile');
     }
 
-    // Validate dateOfBirth nếu có
-    if (createUserProfileDto.dateOfBirth) {
-      if (!AgeUtils.validateAge(createUserProfileDto.dateOfBirth)) {
-        throw new BadRequestException('Tuổi phải từ 18-100');
-      }
-    }
-
     // Tạo profileId
     const profileId = await this.generateProfileId();
 
@@ -77,19 +70,11 @@ export class UserProfilesService {
       throw new NotFoundException('Profile không tồn tại');
     }
 
-    // Validate dateOfBirth nếu có
-    if (updateUserProfileDto.dateOfBirth) {
-      if (!AgeUtils.validateAge(updateUserProfileDto.dateOfBirth)) {
-        throw new BadRequestException('Tuổi phải từ 18-100');
-      }
-    }
-
     // Cập nhật thông tin (giữ nguyên dữ liệu FE gửi)
     Object.assign(profile, updateUserProfileDto);
     const updatedProfile = await profile.save();
 
-    // Cập nhật completion percentage (CHỈ dành cho user thường)
-    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
+    // Cập nhật completion percentage
     await this.updateCompletionPercentage((updatedProfile._id as any).toString());
 
     return updatedProfile;
@@ -130,30 +115,19 @@ export class UserProfilesService {
 
     let completion = 0;
 
-    // Basic info fields (30%)
-    const basicFields = ['dateOfBirth', 'gender', 'occupation', 'income', 'currentLocation'];
+    // Basic info fields (50%)
+    const basicFields = ['occupation', 'pets'];
     const completedBasicFields = basicFields.filter(field => profile[field] !== undefined).length;
-    completion += (completedBasicFields / basicFields.length) * 30;
+    completion += (completedBasicFields / basicFields.length) * 50;
 
-    // Preferences fields (40%) - user: preferredCity + preferredWards
-    const preferenceCoreFields = ['budgetRange', 'roomType', 'amenities', 'lifestyle'];
-    const completedCorePref = preferenceCoreFields.filter(field => profile[field] !== undefined).length;
-    const hasPreferredArea = !!profile['preferredCity'] && !!(profile['preferredWards'] && (profile['preferredWards'] as any[]).length);
-    const completedPreferenceFields = completedCorePref + (hasPreferredArea ? 1 : 0);
-    const totalPreferenceFields = preferenceCoreFields.length + 1; // +1 nhóm preferred area
-    completion += (completedPreferenceFields / totalPreferenceFields) * 40;
+    // Preferences fields (50%) - preferredCity + preferredWards + roomType
+    const preferenceFields = ['preferredCity', 'preferredWards', 'roomType'];
+    const completedPreferenceFields = preferenceFields.filter(field => profile[field] !== undefined).length;
+    completion += (completedPreferenceFields / preferenceFields.length) * 50;
 
-    // Role-specific fields (CHỈ tính cho user thường)
-    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
-    // User fields (30%)
-    const userFields = ['smoking', 'pets', 'cleanliness', 'socialLevel'];
-    const completedUserFields = userFields.filter(field => profile[field] !== undefined).length;
-    completion += (completedUserFields / userFields.length) * 30;
-
-    // Cập nhật completion status (CHỈ dành cho user thường)
-    // LƯU Ý: Chủ nhà (landlord) KHÔNG cần hoàn thiện profile
+    // Cập nhật completion status
     profile.isBasicInfoComplete = completedBasicFields === basicFields.length;
-    profile.isPreferencesComplete = completedPreferenceFields === totalPreferenceFields;
+    profile.isPreferencesComplete = completedPreferenceFields === preferenceFields.length;
     profile.completionPercentage = Math.round(completion);
 
     await profile.save();
