@@ -85,9 +85,9 @@ GET /api/verifications/admin/1/images
   "idNumber": "123456789012",
   "status": "pending",
   "images": {
-    "frontImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_front_1705123456789.jpg",
-    "backImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_back_1705123456789.jpg",
-    "faceImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_face_1705123456789.jpg"
+    "frontImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-abc123.jpg",
+    "backImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456790-def456.jpg",
+    "faceImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456791-ghi789.jpg"
   },
   "faceMatchResult": {
     "match": false,
@@ -813,3 +813,77 @@ function AdminVerificationManagement() {
 - ✅ **Từ chối verification** chuyển status thành 'rejected' và lưu lý do
 - ✅ **Face match result** được hiển thị để admin tham khảo
 - ✅ **Audit trail** cho việc quản lý verification
+
+---
+
+## 📸 Image Storage (S3)
+
+### Overview
+Ảnh verification được lưu trữ trên **AWS S3** với CloudFront CDN để tối ưu tốc độ truy cập.
+
+### Image URLs
+Tất cả ảnh verification (CCCD mặt trước, mặt sau, và selfie) được trả về dưới dạng CloudFront URLs:
+
+```json
+{
+  "images": {
+    "frontImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-abc123.jpg",
+    "backImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456790-def456.jpg",
+    "faceImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456791-ghi789.jpg"
+  }
+}
+```
+
+### S3 Structure
+```
+📦 my-bucket/
+└── 📁 uploads/
+    └── 📁 {userId}/
+        └── 📁 verifications/
+            ├── 🖼️ 1705123456789-{uuid}.jpg  (Front ID)
+            ├── 🖼️ 1705123456790-{uuid}.jpg  (Back ID)
+            └── 🖼️ 1705123456791-{uuid}.jpg  (Face Image)
+```
+
+### Frontend Integration
+```javascript
+// Admin có thể hiển thị ảnh trực tiếp từ S3 URLs
+const displayImages = (images) => {
+  return (
+    <div className="verification-images">
+      <h3>Ảnh CCCD mặt trước</h3>
+      <img 
+        src={images.frontImage} 
+        alt="Front ID" 
+        className="max-w-md"
+      />
+      
+      <h3>Ảnh CCCD mặt sau</h3>
+      <img 
+        src={images.backImage} 
+        alt="Back ID" 
+        className="max-w-md"
+      />
+      
+      <h3>Ảnh selfie</h3>
+      <img 
+        src={images.faceImage} 
+        alt="Face" 
+        className="max-w-md"
+      />
+    </div>
+  );
+};
+```
+
+### Benefits
+- ✅ **CloudFront CDN**: Tải ảnh nhanh từ edge locations
+- ✅ **Unlimited storage**: Không giới hạn dung lượng
+- ✅ **High availability**: 99.99% uptime SLA
+- ✅ **Auto backup**: S3 versioning tự động
+- ✅ **Scalable**: Tự động scale theo nhu cầu
+
+### Notes
+- ⚠️ Ảnh được lưu trực tiếp lên S3 khi user submit verification
+- ⚠️ URL có thể truy cập public (không cần authen)
+- ⚠️ Không cần cleanup thủ công như File System storage

@@ -10,14 +10,15 @@ import { Verification, VerificationDocument } from './schemas/verification.schem
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateVerificationDto } from './dto/create-verification.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
-import { FileStorageService } from '../../shared/services/file-storage.service';
+import { S3Service } from '../../s3/s3.service';
+import { UploadFolder } from '../../s3/dto/presign.dto';
 
 @Injectable()
 export class VerificationsService {
   constructor(
     @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private fileStorageService: FileStorageService,
+    private s3Service: S3Service,
   ) {}
 
   async create(userId: string, createVerificationDto: CreateVerificationDto): Promise<Verification> {
@@ -182,18 +183,33 @@ export class VerificationsService {
 
         const nextVerificationId = await this.getNextVerificationId();
 
-        // Lưu ảnh vào file system và lấy file paths
-        let imagePaths: { frontImage: string | null; backImage: string | null; faceImage: string | null } | null = null;
+        // Lưu ảnh lên S3 và lấy URLs
+        let imageUrls: { frontImage: string | null; backImage: string | null; faceImage: string | null } | null = null;
         if (createVerificationDto.images) {
-          imagePaths = {
+          imageUrls = {
             frontImage: createVerificationDto.images.frontImage 
-              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.frontImage, `verification_${nextVerificationId}_front`)
+              ? await this.s3Service.uploadBase64ToS3(
+                  createVerificationDto.images.frontImage,
+                  `verification_${nextVerificationId}_front`,
+                  userId,
+                  UploadFolder.verifications
+                )
               : null,
             backImage: createVerificationDto.images.backImage 
-              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.backImage, `verification_${nextVerificationId}_back`)
+              ? await this.s3Service.uploadBase64ToS3(
+                  createVerificationDto.images.backImage,
+                  `verification_${nextVerificationId}_back`,
+                  userId,
+                  UploadFolder.verifications
+                )
               : null,
             faceImage: createVerificationDto.images.faceImage 
-              ? await this.fileStorageService.saveImageFromBase64(createVerificationDto.images.faceImage, `verification_${nextVerificationId}_face`)
+              ? await this.s3Service.uploadBase64ToS3(
+                  createVerificationDto.images.faceImage,
+                  `verification_${nextVerificationId}_face`,
+                  userId,
+                  UploadFolder.verifications
+                )
               : null,
           };
         }
@@ -210,7 +226,7 @@ export class VerificationsService {
           status: status,
           submittedAt: new Date(),
           faceMatchResult: createVerificationDto.faceMatchResult,
-          images: imagePaths,
+          images: imageUrls,
         });
 
     const savedVerification = await verification.save();
@@ -263,30 +279,14 @@ export class VerificationsService {
       throw new NotFoundException('Verification not found');
     }
 
-    // Convert file paths to full URLs
-    let imageUrls: { frontImage: string | null; backImage: string | null; faceImage: string | null } | null = null;
-    if (verification.images) {
-      const baseUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-      imageUrls = {
-        frontImage: verification.images.frontImage 
-          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.frontImage)}`
-          : null,
-        backImage: verification.images.backImage 
-          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.backImage)}`
-          : null,
-        faceImage: verification.images.faceImage 
-          ? `${baseUrl}${this.fileStorageService.getImageUrl(verification.images.faceImage)}`
-          : null,
-      };
-    }
-
+    // Ảnh đã là URLs từ S3, không cần convert
     return {
       verificationId: verification.verificationId,
       userId: verification.userId,
       fullName: verification.fullName,
       idNumber: verification.idNumber,
       status: verification.status,
-      images: imageUrls,
+      images: verification.images, // Đã là URLs từ S3
       faceMatchResult: verification.faceMatchResult,
       submittedAt: verification.submittedAt,
       reviewedAt: verification.reviewedAt,

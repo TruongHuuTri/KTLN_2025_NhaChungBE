@@ -91,10 +91,11 @@ export class AdminController {
     return this.adminService.changePassword(adminId, body.currentPassword, body.newPassword);
   }
 
-  @Post('cleanup-images')
-  @UseGuards(AdminJwtGuard)
-  @HttpCode(HttpStatus.OK)
-  async cleanupImages() {
-    return this.adminService.cleanupOldImages();
-  }
+  // Đã bỏ vì chuyển sang S3 (không cần cleanup file system)
+  // @Post('cleanup-images')
+  // @UseGuards(AdminJwtGuard)
+  // @HttpCode(HttpStatus.OK)
+  // async cleanupImages() {
+  //   return this.adminService.cleanupOldImages();
+  // }
 }

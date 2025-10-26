@@ -20,8 +20,6 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { NlpSearchModule } from './nlp-search/nlp-search.module';
 import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
-import { SchedulerService } from './shared/services/scheduler.service';
-import { FileStorageService } from './shared/services/file-storage.service';
 @Module({
 
   imports: [
@@ -55,7 +53,7 @@ import { FileStorageService } from './shared/services/file-storage.service';
     NlpSearchModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EmailService, OTPService, SchedulerService, FileStorageService],
+  providers: [AppService, EmailService, OTPService],
   
 })
 export class AppModule {}

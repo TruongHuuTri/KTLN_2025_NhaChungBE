@@ -33,9 +33,9 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
   
-  // Serve static files
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
+  // Serve static files (chỉ contracts, verifications đã chuyển sang S3)
+  app.useStaticAssets(join(__dirname, '..', 'uploads', 'contracts'), {
+    prefix: '/uploads/contracts',
   });
   
   const port = configService.get<number>('PORT') || 3001;

@@ -7,7 +7,7 @@ import { VerificationsController } from './verifications.controller';
 import { Verification, VerificationSchema } from './schemas/verification.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AdminModule } from '../admin/admin.module';
-import { FileStorageService } from '../../shared/services/file-storage.service';
+import { S3Module } from '../../s3/s3.module';
 
 @Module({
   imports: [
@@ -24,9 +24,10 @@ import { FileStorageService } from '../../shared/services/file-storage.service';
       inject: [ConfigService],
     }),
     AdminModule,
+    S3Module,
   ],
   controllers: [VerificationsController],
-  providers: [VerificationsService, FileStorageService],
+  providers: [VerificationsService],
   exports: [VerificationsService],
 })
 export class VerificationsModule {}

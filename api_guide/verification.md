@@ -35,14 +35,13 @@ Authorization: Bearer <token>
 > - **Admin có thể override** bất kỳ quyết định nào
 > - Nếu không có `faceMatchResult`: Status PENDING
 
-> **📸 Image Storage (NEW - File System):** 
-> - Ảnh CCCD và selfie được lưu vào **File System** (thư mục `uploads/verifications/`)
+> **📸 Image Storage (S3 - AWS):** 
+> - Ảnh CCCD và selfie được lưu vào **AWS S3** (folder `uploads/{userId}/verifications/`)
 > - **Frontend gửi**: Base64 string trong JSON
-> - **Backend xử lý**: Convert Base64 → File system + lưu file path vào MongoDB
-> - **Cấu trúc thư mục**: `uploads/verifications/YYYY/MM/DD/verification_{id}_{type}_{timestamp}.jpg`
-> - **Static serving**: Ảnh có thể truy cập qua URL `/uploads/verifications/...`
-> - **Admin xem**: Nhận URLs thay vì Base64 để load ảnh nhanh
-> - **Tự động xóa** sau khi admin xử lý xong (30 ngày)
+> - **Backend xử lý**: Convert Base64 → Upload S3 → Lưu S3 URL vào MongoDB
+> - **Cấu trúc S3**: `uploads/{userId}/verifications/{timestamp}-{uuid}.jpg`
+> - **Public URL**: Ảnh có thể truy cập qua CloudFront URL
+> - **Admin xem**: Nhận S3 URLs để load ảnh nhanh từ CDN
 
 **Response (201) - Auto Approved (similarity >= 50%):**
 ```json
@@ -255,9 +254,9 @@ GET /api/verifications/admin/1/images
   "idNumber": "123456789012",
   "status": "pending",
   "images": {
-    "frontImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_front_1705123456789.jpg",
-    "backImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_back_1705123456789.jpg",
-    "faceImage": "http://localhost:3001/uploads/verifications/2024/01/15/verification_1_face_1705123456789.jpg"
+    "frontImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-abc123.jpg",
+    "backImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456790-def456.jpg",
+    "faceImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456791-ghi789.jpg"
   },
   "faceMatchResult": {
     "match": false,
@@ -434,10 +433,10 @@ const verificationData = {
 - ✅ **Backward compatible**: API cũ vẫn hoạt động bình thường
 - ✅ **Admin control**: Admin có thể override mọi quyết định
 
-## 📁 File System Storage Flow
+## 📁 S3 Storage Flow
 
 ### Tổng quan
-Backend đã chuyển từ lưu ảnh Base64 trong MongoDB sang lưu file trong File System để tối ưu hiệu suất.
+Backend sử dụng AWS S3 để lưu trữ ảnh verification, kết hợp với CloudFront CDN để tối ưu tốc độ truy cập.
 
 ### Luồng xử lý ảnh
 
@@ -454,18 +453,20 @@ Backend đã chuyển từ lưu ảnh Base64 trong MongoDB sang lưu file trong 
 
 #### 2. **Backend xử lý**
 ```typescript
-// 1. Convert Base64 → File
-const frontImagePath = await fileStorageService.saveImageFromBase64(
+// 1. Upload Base64 → S3
+const frontImageUrl = await s3Service.uploadBase64ToS3(
   base64String, 
-  `verification_${verificationId}_front`
+  `verification_${verificationId}_front`,
+  userId,
+  UploadFolder.verifications
 );
 
-// 2. Lưu file path vào MongoDB (không lưu Base64)
+// 2. Lưu S3 URL vào MongoDB
 const verification = {
   images: {
-    frontImage: "verifications/2024/01/15/verification_1_front_1705123456789.jpg",
-    backImage: "verifications/2024/01/15/verification_1_back_1705123456789.jpg",
-    faceImage: "verifications/2024/01/15/verification_1_face_1705123456789.jpg"
+    frontImage: "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-abc123.jpg",
+    backImage: "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456790-def456.jpg",
+    faceImage: "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456791-ghi789.jpg"
   }
 };
 ```
@@ -474,50 +475,37 @@ const verification = {
 ```json
 {
   "images": {
-    "frontImage": "/uploads/verifications/2024/01/15/verification_1_front_1705123456789.jpg",
-    "backImage": "/uploads/verifications/2024/01/15/verification_1_back_1705123456789.jpg",
-    "faceImage": "/uploads/verifications/2024/01/15/verification_1_face_1705123456789.jpg"
+    "frontImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-abc123.jpg",
+    "backImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456790-def456.jpg",
+    "faceImage": "https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456791-ghi789.jpg"
   }
 }
 ```
 
-### Cấu trúc thư mục
+### Cấu trúc S3 Bucket
 ```
-📁 uploads/verifications/
-├── 📁 2024/
-│   ├── 📁 01/
-│   │   ├── 📁 15/
-│   │   │   ├── 🖼️ verification_1_front_1705123456789.jpg
-│   │   │   ├── 🖼️ verification_1_back_1705123456790.jpg
-│   │   │   └── 🖼️ verification_1_face_1705123456791.jpg
-│   │   └── 📁 16/
-│   │       └── 🖼️ verification_2_front_1705123456792.jpg
-│   └── 📁 02/
-└── 📁 2025/
+📦 my-bucket/
+└── 📁 uploads/
+    └── 📁 {userId}/
+        └── 📁 verifications/
+            ├── 🖼️ 1705123456789-{uuid}.jpg
+            ├── 🖼️ 1705123456790-{uuid}.jpg
+            └── 🖼️ 1705123456791-{uuid}.jpg
 ```
 
-### Static File Serving
-```typescript
-// main.ts
-app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-  prefix: '/uploads/',
-});
-```
+### S3 URL và CloudFront
+- **S3 URL**: `https://my-bucket.s3.amazonaws.com/uploads/11/verifications/1705123456789-{uuid}.jpg`
+- **CloudFront URL**: `https://dxxxx.cloudfront.net/uploads/11/verifications/1705123456789-{uuid}.jpg` (được dùng)
 
-**URL truy cập ảnh:**
-```
-http://localhost:3001/uploads/verifications/2024/01/15/verification_1_front_1705123456789.jpg
-```
+### Lợi ích S3 Storage
 
-### Lợi ích File System Storage
-
-| **MongoDB Base64** | **File System** |
-|-------------------|-----------------|
-| ❌ Database nặng | ✅ Database nhẹ |
-| ❌ Query chậm | ✅ Query nhanh |
-| ❌ Memory cao | ✅ Memory thấp |
-| ❌ Khó backup | ✅ Dễ backup |
-| ❌ Không cache được | ✅ Cache được |
+| **File System** | **S3 Storage** |
+|----------------|----------------|
+| ❌ Cần server storage | ✅ Unlimited storage |
+| ❌ Phụ thuộc server | ✅ Distributed globally |
+| ❌ Backup thủ công | ✅ Auto backup với versioning |
+| ❌ Tốn băng thông server | ✅ CDN CloudFront cache |
+| ❌ Khó scale | ✅ Scale tự động |
 
 ### Frontend Integration
 ```typescript
@@ -532,7 +520,7 @@ const verificationData = {
   }
 };
 
-// Backend tự động convert và lưu file system
+// Backend tự động upload S3 và trả về URLs
 ```
 
 ### ⚠️ Tối ưu ảnh cho Frontend
@@ -560,46 +548,19 @@ const compressImage = (file: File, maxWidth = 800, quality = 0.8): Promise<strin
 
 ### Admin Panel
 ```typescript
-// Admin nhận full URLs để hiển thị ảnh
+// Admin nhận S3 URLs để hiển thị ảnh
 const response = await fetch('/api/verifications/admin/1/images');
 const data = await response.json();
 
-// Hiển thị ảnh trực tiếp (backend đã trả về full URL)
+// Hiển thị ảnh trực tiếp từ S3/CDN
 <img src={data.images.frontImage} alt="Front ID" />
 <img src={data.images.backImage} alt="Back ID" />
 <img src={data.images.faceImage} alt="Face" />
 ```
 
 ### File Management
-- **Tự động tạo thư mục** theo ngày (YYYY/MM/DD)
-- **Tên file unique** với timestamp
-- **Auto-cleanup** sau 30 ngày (tự động chạy mỗi ngày lúc 2:00 AM)
-- **Manual cleanup** qua API admin
-- **Backup friendly** - dễ backup file system
-
-### 🗑️ Auto Cleanup System
-
-#### **Tự động xóa:**
-- ✅ **Cron job**: Chạy mỗi ngày lúc 2:00 AM
-- ✅ **Thời gian**: Xóa ảnh cũ hơn 30 ngày
-- ✅ **Log**: Ghi log các file đã xóa
-
-#### **Manual cleanup:**
-```http
-POST /api/admin/cleanup-images
-Authorization: Bearer <admin-token>
-```
-
-**Response:**
-```json
-{
-  "message": "Cleanup hoàn thành thành công"
-}
-```
-
-#### **Cleanup logic:**
-```typescript
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-// Xóa file cũ hơn 30 ngày và thư mục rỗng
-```
+- **Tự động upload** lên S3 khi nhận Base64
+- **Tên file unique** với timestamp và UUID
+- **CloudFront CDN** để cache ảnh globally
+- **S3 versioning** để backup tự động
+- **S3 lifecycle policy** có thể setup để auto-delete files cũ

@@ -7,14 +7,12 @@ import { Admin, AdminDocument } from './schemas/admin.schema';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { SchedulerService } from '../../shared/services/scheduler.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(Admin.name) private adminModel: Model<AdminDocument>,
     private jwtService: JwtService,
-    private schedulerService: SchedulerService,
   ) {}
 
   async create(createAdminDto: CreateAdminDto): Promise<Admin> {
@@ -204,8 +202,9 @@ export class AdminService {
     return lastAdmin ? lastAdmin.adminId + 1 : 1;
   }
 
-  async cleanupOldImages(): Promise<{ message: string }> {
-    await this.schedulerService.manualCleanup();
-    return { message: 'Cleanup hoàn thành thành công' };
-  }
+  // Đã bỏ cleanup vì chuyển sang S3 (không cần cleanup file system)
+  // async cleanupOldImages(): Promise<{ message: string }> {
+  //   await this.schedulerService.manualCleanup();
+  //   return { message: 'Cleanup hoàn thành thành công' };
+  // }
 }

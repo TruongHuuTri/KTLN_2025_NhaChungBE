@@ -50,12 +50,12 @@ export class Verification {
   @Prop({ required: true })
   issuePlace: string;
 
-  // Ảnh CCCD và selfie (lưu file path)
+  // Ảnh CCCD và selfie (lưu S3 URLs)
   @Prop({
     type: {
-      frontImage: { type: String }, // file path
-      backImage: { type: String },
-      faceImage: { type: String }
+      frontImage: { type: String }, // S3 URL
+      backImage: { type: String },  // S3 URL
+      faceImage: { type: String }   // S3 URL
     }
   })
   images?: {
