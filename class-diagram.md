@@ -131,7 +131,6 @@ classDiagram
         +UtilityType[] availableUtilities
         +Address address
         +number maxOccupancy
-        +boolean canShare
         +number sharePrice
         +number currentOccupants
         +number availableSpots

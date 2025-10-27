@@ -3,7 +3,7 @@
 ## Tổng quan luồng
 
 ```
-User B → Tìm phòng có canShare: true → Đăng ký ở ghép → User A duyệt → Landlord duyệt → Tạo contract → Hoàn tất
+User B → Tìm phòng có availableSpots > 0 → Đăng ký ở ghép → User A duyệt → Landlord duyệt → Tạo contract → Hoàn tất
 ```
 
 ## 1. LUỒNG ĐĂNG KÝ Ở GHÉP
@@ -16,7 +16,7 @@ User B → Tìm phòng có canShare: true → Đăng ký ở ghép → User A du
 // Frontend: RoomSearch.tsx
 interface Room {
   roomId: number;
-  canShare: boolean;
+  availableSpots: number;
   currentOccupants: number;
   maxOccupancy: number;
   roomNumber: string;
@@ -36,10 +36,9 @@ const searchRoomsForSharing = async (filters: any): Promise<Room[]> => {
   return response.json();
 };
 
-// Filter rooms có canShare: true
+// Filter rooms có availableSpots > 0 và đã có người ở
 const filteredRooms = rooms.filter((room: Room) => 
-  room.canShare && 
-  room.currentOccupants < room.maxOccupancy &&
+  room.availableSpots > 0 &&
   room.currentOccupants >= 1
 );
 ```
@@ -1223,7 +1222,7 @@ Authorization: Bearer <jwt_token>
 
 ```
 User B Flow:
-1. Tìm phòng có canShare: true → 2. Đăng ký ở ghép → 3. Chờ User A duyệt
+1. Tìm phòng có availableSpots > 0 → 2. Đăng ký ở ghép → 3. Chờ User A duyệt
 
 User A Flow:
 4. Nhận thông báo → 5. Xem yêu cầu ở ghép → 6. Duyệt/Từ chối
@@ -1254,12 +1253,12 @@ Khi landlord duyệt yêu cầu ở ghép (`status = 'approved'`), hệ thống 
 - ✅ Thêm User B vào `room.currentTenants[]`
 - ✅ Tăng `room.currentOccupants++`
 - ✅ Cập nhật `room.availableSpots--`
-- ✅ Đảm bảo `room.canShare = true`
+- ✅ Đảm bảo `room.availableSpots > 0`
 
 ## 7. VALIDATION RULES
 
 ### Room Validation
-- Phòng phải có `canShare: true`
+- Phòng phải có `availableSpots > 0`
 - Phòng phải có ít nhất 1 tenant (`currentOccupants >= 1`)
 - Phòng chưa đầy (`currentOccupants < maxOccupancy`)
 
@@ -1558,7 +1557,7 @@ Tạo file `Room_Sharing_API.postman_collection.json`:
    - `userToken`: Token của user muốn ở ghép (User B)
    - `posterToken`: Token của user đã ở trong phòng (User A)
    - `landlordToken`: Token của chủ nhà
-   - `roomId`: ID của phòng có `canShare: true`
+   - `roomId`: ID của phòng có `availableSpots > 0`
 3. **Chạy theo thứ tự**:
    - Tạo request → User A duyệt → Landlord duyệt
    - Hoặc tạo request → User A từ chối
@@ -1566,7 +1565,7 @@ Tạo file `Room_Sharing_API.postman_collection.json`:
 
 ### Manual Testing
 
-1. **Tạo phòng với canShare: true**
+1. **Tạo phòng với availableSpots > 0**
 2. **Thêm 1 tenant vào phòng**
 3. **Tạo room sharing request**
 4. **User A duyệt request**
@@ -1615,7 +1614,7 @@ PORT=3001
    - Handle 401 errors gracefully
 
 3. **Room Validation Errors**
-   - Check room has `canShare: true`
+   - Check room has `availableSpots > 0`
    - Verify room has at least 1 tenant
    - Ensure room is not at maximum capacity
 

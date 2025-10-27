@@ -95,7 +95,6 @@ Hệ thống hỗ trợ chủ trọ quản lý phòng trọ và người dùng t
 
   // Thông tin cho ở ghép
   maxOccupancy: Number,     // Số người tối đa
-  canShare: Boolean,        // Có thể ở ghép không
   sharePrice: Number,       // Giá mỗi người khi ở ghép
   currentOccupants: Number, // Số người hiện tại
   availableSpots: Number,   // Số chỗ trống (maxOccupancy - currentOccupants)

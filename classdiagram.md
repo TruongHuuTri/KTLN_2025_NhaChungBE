@@ -125,9 +125,8 @@ direction TB
 	    +furniture : string
 	    +availableUtilities : string[]
 	    +address : Address
-	    +maxOccupancy : number
-	    +canShare : boolean
-	    +sharePrice : number
+	+maxOccupancy : number
+	+sharePrice : number
 	    +currentOccupants : number
 	    +availableSpots : number
 	    +shareMethod : string

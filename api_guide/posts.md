@@ -12,7 +12,7 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
 1. **Chọn loại post**: `cho-thue` hoặc `tim-o-ghep`
 2. **Chọn phòng**: từ danh sách phòng được filter theo loại post
    - **Cho thuê**: Chỉ hiển thị phòng trống hoàn toàn (`currentOccupants = 0`)
-   - **Tìm ở ghép**: Chỉ hiển thị phòng có chỗ trống (`availableSpots > 0`) và cho phép ở ghép (`canShare = true`)
+   - **Tìm ở ghép**: Chỉ hiển thị phòng có chỗ trống (`availableSpots > 0`)
 3. **Nhập thông tin**: tiêu đề, mô tả
 4. **System tự động**:
    - Validate phòng có phù hợp với loại post không
@@ -38,7 +38,6 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
   - Phòng phải active và available
 - **Tìm ở ghép (`tim-o-ghep`)**:
   - Phòng phải có chỗ trống (`availableSpots > 0`)
-  - Phòng phải cho phép ở ghép (`canShare = true`)
   - Phòng phải active và available
 
 ## 🏗️ Data Structure
@@ -238,7 +237,6 @@ Lấy bài đăng với thông tin phòng đầy đủ (cho managed posts)
     "area": 25,
     "price": 3000000,
     "maxOccupancy": 2,
-    "canShare": true,
     "sharePrice": 1500000,
     "currentOccupants": 1,
     "availableSpots": 1,
@@ -301,7 +299,6 @@ GET /api/posts/user/rooms?postType=tim-o-ghep
     "area": 25,
     "price": 3000000,
     "maxOccupancy": 2,
-    "canShare": true,
     "sharePrice": 1500000,
     "currentOccupants": 0,
     "availableSpots": 2,
@@ -315,7 +312,7 @@ Tạo bài đăng mới
 
 **Validation:**
 - **Cho thuê**: Phòng phải trống hoàn toàn (`currentOccupants = 0`)
-- **Tìm ở ghép**: Phòng phải có chỗ trống (`availableSpots > 0`) và cho phép ở ghép (`canShare = true`)
+- **Tìm ở ghép**: Phòng phải có chỗ trống (`availableSpots > 0`)
 - **Tự động duyệt**: `status = 'active'` (hiển thị ngay lập tức)
 
 **Request Body:**
@@ -812,7 +809,6 @@ export default {
   "direction": "dong",
   "legalStatus": "co-so-hong",
   "maxOccupancy": 2,
-  "canShare": true,
   "sharePrice": 1500000,
   "currentOccupants": 0,
   "availableSpots": 2,
@@ -983,7 +979,7 @@ export default {
 - **GET /posts/user/rooms?postType=tim-o-ghep**: Chỉ phòng có chỗ trống + cho phép ở ghép
 - **Validation Rules**: 
   - Cho thuê: `currentOccupants = 0`
-  - Tìm ở ghép: `availableSpots > 0` AND `canShare = true`
+  - Tìm ở ghép: `availableSpots > 0`
 - **Auto Status**: `status = 'active'` (hiển thị ngay lập tức)
 
 ---

@@ -658,11 +658,6 @@ export class ContractsService {
       throw new NotFoundException('Room not found');
     }
 
-    // Kiểm tra phòng có cho phép ở ghép không
-    if (!room.canShare) {
-      throw new BadRequestException('Room does not allow sharing');
-    }
-
     // Kiểm tra phòng có ít nhất 1 tenant không
     if (room.currentOccupants < 1) {
       throw new BadRequestException('Room must have at least one tenant to allow sharing');
@@ -853,7 +848,6 @@ export class ContractsService {
         $inc: { currentOccupants: 1 },
         $set: { 
           availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
-          canShare: true, // Đảm bảo canShare = true
           updatedAt: new Date()
         }
       }

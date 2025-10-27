@@ -301,7 +301,6 @@ export class PaymentsService {
           $inc: { currentOccupants: 1 },
           $set: { 
             availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
-            canShare: true, // Cho phép ở ghép khi có tenant
             updatedAt: new Date()
           }
         }

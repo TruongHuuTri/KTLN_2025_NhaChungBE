@@ -288,9 +288,6 @@ export class CreateRoomDto {
   @IsNumber()
   maxOccupancy: number;
 
-  @IsBoolean()
-  canShare: boolean;
-
   @IsOptional()
   @IsNumber()
   sharePrice?: number;

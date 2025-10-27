@@ -128,7 +128,6 @@ export class RoomsService {
       landlordId,
       ...roomData,
       category: building.buildingType, // Lấy category từ buildingType
-      canShare: (roomData.currentOccupants || 0) > 0, // canShare = true nếu đã có tenant
       availableSpots: roomData.maxOccupancy - (roomData.currentOccupants || 0),
     };
 
@@ -322,10 +321,6 @@ export class RoomsService {
       query.area = {};
       if (filters.minArea) query.area.$gte = filters.minArea;
       if (filters.maxArea) query.area.$lte = filters.maxArea;
-    }
-
-    if (filters.canShare !== undefined) {
-      query.canShare = filters.canShare;
     }
 
     if (filters.availableSpots) {

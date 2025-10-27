@@ -54,10 +54,7 @@ export class PostsService {
         throw new BadRequestException('Room must be completely empty to rent out');
       }
     } else if (postType === 'tim-o-ghep') {
-      // Tìm ở ghép: Phòng phải có chỗ trống và cho phép ở ghép
-      if (!room.canShare) {
-        throw new BadRequestException('Room does not allow sharing');
-      }
+      // Tìm ở ghép: Phòng phải có chỗ trống
       if (room.availableSpots <= 0) {
         throw new BadRequestException('Room is full, no available spots');
       }
@@ -87,8 +84,7 @@ export class PostsService {
       // Cho thuê: Chỉ hiển thị phòng trống hoàn toàn
       query.currentOccupants = 0;
     } else if (postType === 'tim-o-ghep') {
-      // Tìm ở ghép: Chỉ hiển thị phòng có chỗ trống và cho phép ở ghép
-      query.canShare = true;
+      // Tìm ở ghép: Chỉ hiển thị phòng có chỗ trống
       query.availableSpots = { $gt: 0 };
     }
 

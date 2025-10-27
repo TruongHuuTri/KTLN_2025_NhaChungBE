@@ -270,9 +270,6 @@ export class Room {
   @Prop({ required: true })
   maxOccupancy: number;
 
-  @Prop({ required: true })
-  canShare: boolean;
-
   @Prop({ default: 0 })
   sharePrice: number;
 

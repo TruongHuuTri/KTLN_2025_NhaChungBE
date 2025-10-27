@@ -87,7 +87,6 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
 
   // Thông tin cho ở ghép
   maxOccupancy: Number,     // Số người tối đa
-  canShare: Boolean,        // Có thể ở ghép không
   sharePrice: Number,       // Giá mỗi người khi ở ghép
   currentOccupants: Number, // Số người hiện tại
   availableSpots: Number,   // Số chỗ trống (maxOccupancy - currentOccupants)
@@ -438,7 +437,6 @@ export default {
     "wardName": "Phường Bến Nghé"
   },
   "maxOccupancy": 2,
-  "canShare": true,
   "sharePrice": 1500000,
   "currentOccupants": 0,
   "shareMethod": "equal",
@@ -491,7 +489,6 @@ export default {
     "wardName": "Phường Bến Nghé"
   },
   "maxOccupancy": 2,
-  "canShare": true,
   "sharePrice": 1500000,
   "currentOccupants": 0,
   "shareMethod": "equal",
@@ -559,7 +556,6 @@ export default {
     "wardName": "Phường Bến Nghé"
   },
   "maxOccupancy": 4,
-  "canShare": true,
   "sharePrice": 4000000,
   "currentOccupants": 0,
   "shareMethod": "equal",
@@ -599,7 +595,6 @@ GET /api/landlord/rooms?buildingId=1
     "chungCuInfo": null,
     "nhaNguyenCanInfo": null,
     "maxOccupancy": 2,
-    "canShare": true,
     "sharePrice": 1500000,
     "currentOccupants": 0,
     "availableSpots": 2,
@@ -663,7 +658,6 @@ GET /api/landlord/rooms?buildingId=1
     "wardName": "Phường Bến Nghé"
   },
   "maxOccupancy": 2,
-  "canShare": true,
   "sharePrice": 1500000,
   "currentOccupants": 0,
   "availableSpots": 2,
@@ -714,7 +708,6 @@ GET /api/landlord/rooms?buildingId=1
     "chungCuInfo": null,
     "nhaNguyenCanInfo": null,
     "maxOccupancy": 2,
-    "canShare": true,
     "sharePrice": 1500000,
     "currentOccupants": 0,
     "availableSpots": 2,
