@@ -225,7 +225,7 @@ export class UtilitiesDto {
 
   @IsOptional()
   @IsString()
-  waterBillingType?: string;
+  // removed: waterBillingType
 
   @IsOptional()
   @IsNumber()
@@ -241,11 +241,11 @@ export class UtilitiesDto {
 
   @IsOptional()
   @IsNumber()
-  parkingMotorbikeFee?: number;
+  parkingFee?: number;
 
   @IsOptional()
   @IsNumber()
-  parkingCarFee?: number;
+  // removed: parkingCarFee
 
   @IsOptional()
   @IsNumber()
@@ -253,7 +253,7 @@ export class UtilitiesDto {
 
   @IsOptional()
   @IsString()
-  managementFeeUnit?: string;
+  // removed: managementFeeUnit
 
   @IsOptional()
   @IsNumber()

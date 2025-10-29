@@ -55,6 +55,23 @@ export class FavouritesService {
     return this.favouriteModel.findOne({ userId, postType, postId }).exec();
   }
 
+  async toggle(userId: number, postType: string, postId: number): Promise<{ action: 'added' | 'removed'; favourite?: Favourite }> {
+    const existing = await this.findByUserAndPost(userId, postType, postId);
+    if (existing) {
+      await this.removeByUserAndPost(userId, postType, postId);
+      return { action: 'removed' };
+    }
+    const nextFavouriteId = await this.getNextFavouriteId();
+    const createdFavourite = new this.favouriteModel({
+      favouriteId: nextFavouriteId,
+      userId,
+      postType,
+      postId,
+    });
+    const favourite = await createdFavourite.save();
+    return { action: 'added', favourite };
+  }
+
   async update(id: string, updateFavouriteDto: UpdateFavouriteDto): Promise<Favourite> {
     const updatedFavourite = await this.favouriteModel
       .findOneAndUpdate(

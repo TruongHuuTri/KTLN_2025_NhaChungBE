@@ -31,9 +31,6 @@ export class RoomInfoDto {
   area: number;
 
   @IsNumber()
-  maxOccupancy: number;
-
-  @IsNumber()
   currentOccupancy: number;
 }
 

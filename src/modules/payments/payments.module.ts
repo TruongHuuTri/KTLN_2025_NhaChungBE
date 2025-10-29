@@ -11,6 +11,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { Room, RoomSchema } from '../rooms/schemas/room.schema';
 import { Building, BuildingSchema } from '../rooms/schemas/building.schema';
 import { QrCodeService } from '../../shared/services/qr-code.service';
+import { Post, PostSchema } from '../posts/schemas/post.schema';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { QrCodeService } from '../../shared/services/qr-code.service';
       { name: RentalRequest.name, schema: RentalRequestSchema },
       { name: User.name, schema: UserSchema },
       { name: Room.name, schema: RoomSchema },
-      { name: Building.name, schema: BuildingSchema }
+      { name: Building.name, schema: BuildingSchema },
+      { name: Post.name, schema: PostSchema }
     ]),
     ConfigModule
   ],

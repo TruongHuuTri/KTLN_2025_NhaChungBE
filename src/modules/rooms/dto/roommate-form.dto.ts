@@ -131,7 +131,7 @@ export class RoommateFormDto {
 
   @IsOptional()
   @IsEnum(['per_m3', 'per_person'])
-  waterBillingType?: string;
+  // removed: waterBillingType
 
   @IsOptional()
   @IsNumber()

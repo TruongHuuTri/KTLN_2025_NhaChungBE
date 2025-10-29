@@ -173,10 +173,6 @@ export class UtilitiesDto {
   waterPrice?: number;
 
   @IsOptional()
-  @IsString()
-  waterBillingType?: string;
-
-  @IsOptional()
   @IsNumber()
   internetFee?: number;
 
@@ -190,24 +186,14 @@ export class UtilitiesDto {
 
   @IsOptional()
   @IsNumber()
-  parkingMotorbikeFee?: number;
-
-  @IsOptional()
-  @IsNumber()
-  parkingCarFee?: number;
+  parkingFee?: number;
 
   @IsOptional()
   @IsNumber()
   managementFee?: number;
 
-  @IsOptional()
-  @IsString()
-  managementFeeUnit?: string;
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => IncludedInRentDto)
-  includedInRent?: IncludedInRentDto;
+
 }
 
 export class CurrentTenantDto {
@@ -285,32 +271,11 @@ export class CreateRoomDto {
   address: AddressDto;
 
   // Thông tin cho ở ghép
-  @IsNumber()
-  maxOccupancy: number;
-
   @IsOptional()
   @IsNumber()
-  sharePrice?: number;
+  maxOccupancy?: number;
 
-  @IsOptional()
-  @IsNumber()
-  currentOccupants?: number;
-
-  @IsOptional()
-  @IsNumber()
-  availableSpots?: number;
-
-  @IsOptional()
-  @IsString()
-  shareMethod?: string;
-
-  @IsOptional()
-  @IsNumber()
-  estimatedMonthlyUtilities?: number;
-
-  @IsOptional()
-  @IsNumber()
-  capIncludedAmount?: number;
+  // Bỏ các trường share/occupancy/cap/ước tính tiện ích
 
   // Thông tin người ở hiện tại
   @IsOptional()

@@ -47,28 +47,15 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
     features: [String]      // Đặc điểm nhà/đất
   },
 
-  // Utilities
+  // Utilities (đã đơn giản hóa)
   utilities: {
     electricityPricePerKwh: Number,
     waterPrice: Number,
-    waterBillingType: String,    // 'per_m3' | 'per_person'
     internetFee: Number,
     garbageFee: Number,
     cleaningFee: Number,
-    parkingMotorbikeFee: Number,
-    parkingCarFee: Number,
-    managementFee: Number,
-    managementFeeUnit: String,   // 'per_month' | 'per_m2_per_month'
-    includedInRent: {
-      electricity: Boolean,
-      water: Boolean,
-      internet: Boolean,
-      garbage: Boolean,
-      cleaning: Boolean,
-      parkingMotorbike: Boolean,
-      parkingCar: Boolean,
-      managementFee: Boolean
-    }
+    parkingFee: Number,      // <— PHÍ GỬI XE (đã gộp từ motorbike/car)
+    managementFee: Number
   },
 
   // Address
@@ -85,16 +72,7 @@ Hệ thống quản lý phòng trọ cho landlord, bao gồm quản lý dãy nh�
     additionalInfo: String
   },
 
-  // Thông tin cho ở ghép
-  maxOccupancy: Number,     // Số người tối đa
-  sharePrice: Number,       // Giá mỗi người khi ở ghép
-  currentOccupants: Number, // Số người hiện tại
-  availableSpots: Number,   // Số chỗ trống (maxOccupancy - currentOccupants)
-  
-  // Thông tin chia sẻ tiện ích
-  shareMethod: String,      // 'split_evenly' | 'by_usage' | 'included'
-  estimatedMonthlyUtilities: Number, // Ước tính tổng phí tiện ích
-  capIncludedAmount: Number, // Mức free tối đa, vượt thì chia thêm
+  // Occupancy: đã bỏ các trường đếm/cách chia chi phí
   
   // Thông tin người ở hiện tại
   currentTenants: [{
@@ -408,24 +386,11 @@ export default {
   "utilities": {
     "electricityPricePerKwh": 3500,
     "waterPrice": 25000,
-    "waterBillingType": "per-person",
     "internetFee": 200000,
     "garbageFee": 50000,
     "cleaningFee": 100000,
-    "parkingMotorbikeFee": 100000,
-    "parkingCarFee": 500000,
-    "managementFee": 200000,
-    "managementFeeUnit": "per-room",
-    "includedInRent": {
-      "electricity": false,
-      "water": false,
-      "internet": true,
-      "garbage": true,
-      "cleaning": false,
-      "parkingMotorbike": true,
-      "parkingCar": false,
-      "managementFee": false
-    }
+    "parkingFee": 100000,
+    "managementFee": 200000
   },
   "address": {
     "street": "123 Đường ABC",
@@ -436,12 +401,7 @@ export default {
     "wardCode": "26734",
     "wardName": "Phường Bến Nghé"
   },
-  "maxOccupancy": 2,
-  "sharePrice": 1500000,
-  "currentOccupants": 0,
-  "shareMethod": "equal",
-  "estimatedMonthlyUtilities": 500000,
-  "capIncludedAmount": 200000,
+  // occupancy fields removed
   "images": ["url1", "url2"],
   "videos": ["video1"],
   "description": "Căn hộ chung cư cao cấp, view thành phố đẹp"
@@ -460,24 +420,11 @@ export default {
   "utilities": {
     "electricityPricePerKwh": 3500,
     "waterPrice": 25000,
-    "waterBillingType": "per-person",
     "internetFee": 200000,
     "garbageFee": 50000,
     "cleaningFee": 100000,
-    "parkingMotorbikeFee": 100000,
-    "parkingCarFee": 500000,
-    "managementFee": 200000,
-    "managementFeeUnit": "per-room",
-    "includedInRent": {
-      "electricity": false,
-      "water": false,
-      "internet": true,
-      "garbage": true,
-      "cleaning": false,
-      "parkingMotorbike": true,
-      "parkingCar": false,
-      "managementFee": false
-    }
+    "parkingFee": 100000,
+    "managementFee": 200000
   },
   "address": {
     "street": "123 Đường ABC",
@@ -488,12 +435,7 @@ export default {
     "wardCode": "26734",
     "wardName": "Phường Bến Nghé"
   },
-  "maxOccupancy": 2,
-  "sharePrice": 1500000,
-  "currentOccupants": 0,
-  "shareMethod": "equal",
-  "estimatedMonthlyUtilities": 500000,
-  "capIncludedAmount": 200000,
+  // occupancy fields removed
   "images": ["url1", "url2"],
   "videos": ["video1"],
   "description": "Phòng trọ đẹp, gần trung tâm"
@@ -527,24 +469,11 @@ export default {
   "utilities": {
     "electricityPricePerKwh": 3500,
     "waterPrice": 25000,
-    "waterBillingType": "per-person",
     "internetFee": 200000,
     "garbageFee": 50000,
     "cleaningFee": 100000,
-    "parkingMotorbikeFee": 100000,
-    "parkingCarFee": 500000,
-    "managementFee": 200000,
-    "managementFeeUnit": "per-room",
-    "includedInRent": {
-      "electricity": false,
-      "water": false,
-      "internet": true,
-      "garbage": true,
-      "cleaning": false,
-      "parkingMotorbike": true,
-      "parkingCar": false,
-      "managementFee": false
-    }
+    "parkingFee": 300000,
+    "managementFee": 200000
   },
   "address": {
     "street": "123 Đường ABC",
@@ -555,12 +484,7 @@ export default {
     "wardCode": "26734",
     "wardName": "Phường Bến Nghé"
   },
-  "maxOccupancy": 4,
-  "sharePrice": 4000000,
-  "currentOccupants": 0,
-  "shareMethod": "equal",
-  "estimatedMonthlyUtilities": 1000000,
-  "capIncludedAmount": 500000,
+  // occupancy fields removed
   "images": ["url1", "url2"],
   "videos": ["video1"],
   "description": "Nhà phố 3 tầng, đầy đủ tiện nghi, gần trung tâm"

@@ -87,9 +87,7 @@ export class ContractsService {
   async addTenantToContract(contractId: number, tenantData: any): Promise<RentalContract> {
     const contract = await this.getContractById(contractId);
     
-    if (contract.roomInfo.currentOccupancy >= contract.roomInfo.maxOccupancy) {
-      throw new BadRequestException('Room is full');
-    }
+    // Không giới hạn sức chứa: bỏ kiểm tra maxOccupancy
 
     const updatedContract = await this.contractModel.findOneAndUpdate(
       { contractId },
@@ -275,12 +273,50 @@ export class ContractsService {
         roomInfo: {
           roomNumber: room.roomNumber,
           area: room.area,
-          maxOccupancy: room.maxOccupancy,
           currentOccupancy: 1
         }
       });
 
       await contract.save();
+      
+      // Thêm tenant vào room.currentTenants ngay khi tạo hợp đồng
+      const tenant = await this.userModel.findOne({ userId: request.tenantId }).exec();
+      if (tenant) {
+        const existingTenant = room.currentTenants?.find(t => t.userId === request.tenantId);
+        if (!existingTenant) {
+          const tenantData = {
+            userId: request.tenantId,
+            fullName: tenant.name,
+            dateOfBirth: new Date(),
+            gender: 'unknown',
+            occupation: 'unknown',
+            moveInDate: startDate,
+            lifestyle: 'unknown',
+            cleanliness: 'unknown'
+          };
+
+          await this.roomModel.findOneAndUpdate(
+            { roomId: request.roomId },
+            {
+              $push: { currentTenants: tenantData },
+              status: 'occupied',
+              updatedAt: new Date()
+            }
+          ).exec();
+        } else {
+          // Tenant đã tồn tại, chỉ cập nhật status
+          await this.roomModel.findOneAndUpdate(
+            { roomId: request.roomId },
+            { status: 'occupied', updatedAt: new Date() }
+          ).exec();
+        }
+      } else {
+        // Nếu không tìm thấy user, vẫn cập nhật status
+        await this.roomModel.findOneAndUpdate(
+          { roomId: request.roomId },
+          { status: 'occupied', updatedAt: new Date() }
+        ).exec();
+      }
       
       // Cập nhật rental request với contractId (nếu schema có field này)
       await this.rentalRequestModel.findOneAndUpdate(
@@ -372,10 +408,7 @@ export class ContractsService {
         {
           $push: { currentTenants: tenantData },
           $inc: { currentOccupants: 1 },
-          $set: { 
-            availableSpots: currentRoom.maxOccupancy - (currentRoom.currentOccupants + 1),
-            updatedAt: new Date()
-          }
+          $set: { updatedAt: new Date() }
         }
       ).exec();
 
@@ -439,10 +472,9 @@ export class ContractsService {
     // 2. Các phí tiện ích (chỉ tính những phí KHÔNG được bao gồm trong tiền thuê)
     if (room.utilities) {
       const utilities = room.utilities;
-      const includedInRent = utilities.includedInRent || {};
 
-      // Phí điện (nếu không bao gồm trong tiền thuê)
-      if (utilities.electricityPricePerKwh > 0 && !includedInRent.electricity) {
+      // Phí điện
+      if (utilities.electricityPricePerKwh > 0) {
         items.push({
           description: `Phí điện tháng ${month}/${year}`,
           amount: utilities.electricityPricePerKwh,
@@ -451,8 +483,8 @@ export class ContractsService {
         totalAmount += utilities.electricityPricePerKwh;
       }
 
-      // Phí nước (nếu không bao gồm trong tiền thuê)
-      if (utilities.waterPrice > 0 && !includedInRent.water) {
+      // Phí nước
+      if (utilities.waterPrice > 0) {
         items.push({
           description: `Phí nước tháng ${month}/${year}`,
           amount: utilities.waterPrice,
@@ -461,8 +493,8 @@ export class ContractsService {
         totalAmount += utilities.waterPrice;
       }
 
-      // Phí internet (nếu không bao gồm trong tiền thuê)
-      if (utilities.internetFee > 0 && !includedInRent.internet) {
+      // Phí internet
+      if (utilities.internetFee > 0) {
         items.push({
           description: `Phí internet tháng ${month}/${year}`,
           amount: utilities.internetFee,
@@ -471,8 +503,8 @@ export class ContractsService {
         totalAmount += utilities.internetFee;
       }
 
-      // Phí rác (nếu không bao gồm trong tiền thuê)
-      if (utilities.garbageFee > 0 && !includedInRent.garbage) {
+      // Phí rác
+      if (utilities.garbageFee > 0) {
         items.push({
           description: `Phí rác tháng ${month}/${year}`,
           amount: utilities.garbageFee,
@@ -481,8 +513,8 @@ export class ContractsService {
         totalAmount += utilities.garbageFee;
       }
 
-      // Phí vệ sinh (nếu không bao gồm trong tiền thuê)
-      if (utilities.cleaningFee > 0 && !includedInRent.cleaning) {
+      // Phí vệ sinh
+      if (utilities.cleaningFee > 0) {
         items.push({
           description: `Phí vệ sinh tháng ${month}/${year}`,
           amount: utilities.cleaningFee,
@@ -491,28 +523,18 @@ export class ContractsService {
         totalAmount += utilities.cleaningFee;
       }
 
-      // Phí gửi xe máy (nếu không bao gồm trong tiền thuê)
-      if (utilities.parkingMotorbikeFee > 0 && !includedInRent.parkingMotorbike) {
+      // Phí gửi xe
+      if (utilities.parkingFee > 0) {
         items.push({
-          description: `Phí gửi xe máy tháng ${month}/${year}`,
-          amount: utilities.parkingMotorbikeFee,
-          type: 'parking_motorbike'
+          description: `Phí gửi xe tháng ${month}/${year}`,
+          amount: utilities.parkingFee,
+          type: 'parking'
         });
-        totalAmount += utilities.parkingMotorbikeFee;
+        totalAmount += utilities.parkingFee;
       }
 
-      // Phí gửi xe ô tô (nếu không bao gồm trong tiền thuê)
-      if (utilities.parkingCarFee > 0 && !includedInRent.parkingCar) {
-        items.push({
-          description: `Phí gửi xe ô tô tháng ${month}/${year}`,
-          amount: utilities.parkingCarFee,
-          type: 'parking_car'
-        });
-        totalAmount += utilities.parkingCarFee;
-      }
-
-      // Phí quản lý (nếu không bao gồm trong tiền thuê)
-      if (utilities.managementFee > 0 && !includedInRent.managementFee) {
+      // Phí quản lý
+      if (utilities.managementFee > 0) {
         items.push({
           description: `Phí quản lý tháng ${month}/${year}`,
           amount: utilities.managementFee,
@@ -658,15 +680,7 @@ export class ContractsService {
       throw new NotFoundException('Room not found');
     }
 
-    // Kiểm tra phòng có ít nhất 1 tenant không
-    if (room.currentOccupants < 1) {
-      throw new BadRequestException('Room must have at least one tenant to allow sharing');
-    }
-
-    // Kiểm tra phòng chưa đầy
-    if (room.currentOccupants >= room.maxOccupancy) {
-      throw new BadRequestException('Room is already at maximum capacity');
-    }
+    // Bỏ kiểm tra số lượng người ở (không giới hạn sức chứa)
 
     // Kiểm tra user chưa đăng ký ở ghép phòng này
     const existingRequest = await this.rentalRequestModel.findOne({
@@ -786,10 +800,7 @@ export class ContractsService {
       throw new NotFoundException('Room not found');
     }
 
-    // Kiểm tra phòng vẫn còn chỗ
-    if (room.currentOccupants >= room.maxOccupancy) {
-      throw new BadRequestException('Room is already at maximum capacity');
-    }
+    // Không giới hạn sức chứa
 
     // Tạo contract cho room sharing
     const contractId = await this.getNextContractId();
@@ -817,8 +828,7 @@ export class ContractsService {
       roomInfo: {
         roomNumber: room.roomNumber,
         area: room.area,
-        maxOccupancy: room.maxOccupancy,
-        currentOccupancy: room.currentOccupants + 1
+        currentOccupancy: (room.currentTenants?.length || 0) + 1
       }
     });
 
@@ -845,11 +855,7 @@ export class ContractsService {
       { roomId: request.roomId },
       {
         $push: { currentTenants: tenantData },
-        $inc: { currentOccupants: 1 },
-        $set: { 
-          availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
-          updatedAt: new Date()
-        }
+        $set: { updatedAt: new Date() }
       }
     ).exec();
 

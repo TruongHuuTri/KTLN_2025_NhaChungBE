@@ -214,12 +214,15 @@ export class MonthlyInvoiceService {
       // Tính phí nước
       if (roomInfo.utilities?.waterPrice > 0) {
         let waterFee = 0;
-        if (roomInfo.utilities.waterBillingType === 'per_m3' && usageData?.waterM3) {
+        if (usageData?.waterM3) {
           waterFee = roomInfo.utilities.waterPrice * usageData.waterM3;
           description += `Nước: ${usageData.waterM3}m³ x ${roomInfo.utilities.waterPrice} = ${waterFee.toLocaleString()} VNĐ\n`;
-        } else if (roomInfo.utilities.waterBillingType === 'per_person' && usageData?.waterPersons) {
+        } else if (usageData?.waterPersons) {
           waterFee = roomInfo.utilities.waterPrice * usageData.waterPersons;
           description += `Nước: ${usageData.waterPersons} người x ${roomInfo.utilities.waterPrice} = ${waterFee.toLocaleString()} VNĐ\n`;
+        } else {
+          // Nếu không có dữ liệu sử dụng, không tính nước
+          waterFee = 0;
         }
         totalAmount += waterFee;
       }
@@ -243,23 +246,15 @@ export class MonthlyInvoiceService {
       }
 
       // Tính phí gửi xe máy
-      if (roomInfo.utilities?.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) {
-        totalAmount += roomInfo.utilities.parkingMotorbikeFee;
-        description += `Gửi xe máy: ${roomInfo.utilities.parkingMotorbikeFee.toLocaleString()} VNĐ\n`;
-      }
-
-      // Tính phí gửi xe ô tô
-      if (roomInfo.utilities?.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) {
-        totalAmount += roomInfo.utilities.parkingCarFee;
-        description += `Gửi xe ô tô: ${roomInfo.utilities.parkingCarFee.toLocaleString()} VNĐ\n`;
+      // Tính phí gửi xe (gộp)
+      if (roomInfo.utilities?.parkingFee > 0) {
+        totalAmount += roomInfo.utilities.parkingFee;
+        description += `Gửi xe: ${roomInfo.utilities.parkingFee.toLocaleString()} VNĐ\n`;
       }
 
       // Tính phí quản lý
       if (roomInfo.utilities?.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee) {
-        let managementFee = roomInfo.utilities.managementFee;
-        if (roomInfo.utilities.managementFeeUnit === 'per_m2_per_month') {
-          managementFee = roomInfo.utilities.managementFee * roomInfo.area;
-        }
+        const managementFee = roomInfo.utilities.managementFee;
         totalAmount += managementFee;
         description += `Quản lý: ${managementFee.toLocaleString()} VNĐ\n`;
       }
@@ -312,12 +307,11 @@ export class MonthlyInvoiceService {
       const hasUtilities = roomInfo.utilities && (
         (roomInfo.utilities.electricityPricePerKwh > 0 && usageData?.electricityKwh) ||
         (roomInfo.utilities.waterPrice > 0 && (usageData?.waterM3 || usageData?.waterPersons)) ||
-        (roomInfo.utilities.internetFee > 0 && !roomInfo.utilities.includedInRent?.internet) ||
-        (roomInfo.utilities.garbageFee > 0 && !roomInfo.utilities.includedInRent?.garbage) ||
-        (roomInfo.utilities.cleaningFee > 0 && !roomInfo.utilities.includedInRent?.cleaning) ||
-        (roomInfo.utilities.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) ||
-        (roomInfo.utilities.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) ||
-        (roomInfo.utilities.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee)
+        (roomInfo.utilities.internetFee > 0) ||
+        (roomInfo.utilities.garbageFee > 0) ||
+        (roomInfo.utilities.cleaningFee > 0) ||
+        (roomInfo.utilities.parkingFee > 0) ||
+        (roomInfo.utilities.managementFee > 0)
       );
 
       if (!hasUtilities) {
@@ -410,10 +404,10 @@ export class MonthlyInvoiceService {
 
           case UtilityType.WATER:
             if (roomInfo.utilities?.waterPrice > 0) {
-              if (roomInfo.utilities.waterBillingType === 'per_m3' && usageData?.waterM3) {
+              if (usageData?.waterM3) {
                 utilityFee = roomInfo.utilities.waterPrice * usageData.waterM3;
                 utilityDescription = `Nước: ${usageData.waterM3}m³ x ${roomInfo.utilities.waterPrice} = ${utilityFee.toLocaleString()} VNĐ`;
-              } else if (roomInfo.utilities.waterBillingType === 'per_person' && usageData?.waterPersons) {
+              } else if (usageData?.waterPersons) {
                 utilityFee = roomInfo.utilities.waterPrice * usageData.waterPersons;
                 utilityDescription = `Nước: ${usageData.waterPersons} người x ${roomInfo.utilities.waterPrice} = ${utilityFee.toLocaleString()} VNĐ`;
               }
@@ -442,25 +436,16 @@ export class MonthlyInvoiceService {
             break;
 
           case UtilityType.PARKING_MOTORBIKE:
-            if (roomInfo.utilities?.parkingMotorbikeFee > 0 && !roomInfo.utilities.includedInRent?.parkingMotorbike) {
-              utilityFee = roomInfo.utilities.parkingMotorbikeFee;
-              utilityDescription = `Gửi xe máy: ${utilityFee.toLocaleString()} VNĐ`;
-            }
-            break;
-
           case UtilityType.PARKING_CAR:
-            if (roomInfo.utilities?.parkingCarFee > 0 && !roomInfo.utilities.includedInRent?.parkingCar) {
-              utilityFee = roomInfo.utilities.parkingCarFee;
-              utilityDescription = `Gửi xe ô tô: ${utilityFee.toLocaleString()} VNĐ`;
+            if (roomInfo.utilities?.parkingFee > 0) {
+              utilityFee = roomInfo.utilities.parkingFee;
+              utilityDescription = `Gửi xe: ${utilityFee.toLocaleString()} VNĐ`;
             }
             break;
 
           case UtilityType.MANAGEMENT:
-            if (roomInfo.utilities?.managementFee > 0 && !roomInfo.utilities.includedInRent?.managementFee) {
+            if (roomInfo.utilities?.managementFee > 0) {
               utilityFee = roomInfo.utilities.managementFee;
-              if (roomInfo.utilities.managementFeeUnit === 'per_m2_per_month') {
-                utilityFee = roomInfo.utilities.managementFee * roomInfo.area;
-              }
               utilityDescription = `Quản lý: ${utilityFee.toLocaleString()} VNĐ`;
             }
             break;

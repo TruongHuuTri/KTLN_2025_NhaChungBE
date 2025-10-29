@@ -10,9 +10,7 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
 
 ### **🔄 Luồng tạo Post mới:**
 1. **Chọn loại post**: `cho-thue` hoặc `tim-o-ghep`
-2. **Chọn phòng**: từ danh sách phòng được filter theo loại post
-   - **Cho thuê**: Chỉ hiển thị phòng trống hoàn toàn (`currentOccupants = 0`)
-   - **Tìm ở ghép**: Chỉ hiển thị phòng có chỗ trống (`availableSpots > 0`)
+2. **Chọn phòng**: từ danh sách tất cả phòng active của landlord (FE tự lọc nếu cần)
 3. **Nhập thông tin**: tiêu đề, mô tả
 4. **System tự động**:
    - Validate phòng có phù hợp với loại post không
@@ -33,12 +31,7 @@ Hệ thống Posts thống nhất gộp **rent-posts** và **roommate-posts** th
 - ✅ **Fallback logic**: Post media > Room media
 
 ### **✅ Validation Rules:**
-- **Cho thuê (`cho-thue`)**:
-  - Phòng phải trống hoàn toàn (`currentOccupants = 0`)
-  - Phòng phải active và available
-- **Tìm ở ghép (`tim-o-ghep`)**:
-  - Phòng phải có chỗ trống (`availableSpots > 0`)
-  - Phòng phải active và available
+- BE không còn ràng buộc theo sức chứa; chỉ yêu cầu phòng `isActive = true`.
 
 ## 🏗️ Data Structure
 
@@ -261,7 +254,7 @@ Lấy bài đăng với thông tin phòng đầy đủ (cho managed posts)
 ### **2. Protected Endpoints (Require Authentication)**
 
 #### **GET /api/posts/user/rooms**
-Lấy danh sách phòng của user để tạo post
+Lấy danh sách phòng active-available của user để tạo post (không lọc theo sức chứa)
 
 **Headers:**
 ```javascript
@@ -271,10 +264,7 @@ Lấy danh sách phòng của user để tạo post
 ```
 
 **Query Parameters:**
-- `postType` (optional): `cho-thue` | `tim-o-ghep`
-  - **Cho thuê**: Chỉ trả về phòng trống hoàn toàn
-  - **Tìm ở ghép**: Chỉ trả về phòng có chỗ trống và cho phép ở ghép
-  - **Không có**: Trả về tất cả phòng available
+- `postType` (optional): phục vụ UI, không ảnh hưởng lọc phía BE
 
 **Examples:**
 ```javascript
@@ -298,11 +288,8 @@ GET /api/posts/user/rooms?postType=tim-o-ghep
     "floor": 1,
     "area": 25,
     "price": 3000000,
-    "maxOccupancy": 2,
-    "sharePrice": 1500000,
-    "currentOccupants": 0,
-    "availableSpots": 2,
-    "status": "available"
+// occupancy fields removed,
+"status": "available" // chỉ trả về phòng available
   }
 ]
 ```
@@ -311,9 +298,7 @@ GET /api/posts/user/rooms?postType=tim-o-ghep
 Tạo bài đăng mới
 
 **Validation:**
-- **Cho thuê**: Phòng phải trống hoàn toàn (`currentOccupants = 0`)
-- **Tìm ở ghép**: Phòng phải có chỗ trống (`availableSpots > 0`)
-- **Tự động duyệt**: `status = 'active'` (hiển thị ngay lập tức)
+- Không ràng buộc theo sức chứa; bài đăng tự động `status = 'active'`.
 
 **Request Body:**
 ```javascript

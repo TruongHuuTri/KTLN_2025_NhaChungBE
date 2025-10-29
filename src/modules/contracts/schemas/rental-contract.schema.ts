@@ -33,9 +33,6 @@ export class RoomInfo {
   area: number;
 
   @Prop({ required: true })
-  maxOccupancy: number;
-
-  @Prop({ required: true })
   currentOccupancy: number;
 }
 

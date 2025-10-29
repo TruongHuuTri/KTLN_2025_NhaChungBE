@@ -324,8 +324,6 @@ export class UsersService {
     monthlyRent: number;
     deposit: number;
     area: number;
-    maxOccupancy: number;
-    currentOccupants: number;
     landlordInfo: {
       landlordId: number;
       name: string;
@@ -334,13 +332,8 @@ export class UsersService {
     };
   }>> {
     try {
-      // Tìm tất cả phòng có user trong currentTenants
-      const rooms = await this.roomModel.find({
-        $or: [
-          { 'currentTenants.userId': userId },
-          { 'currentTenants.userId': Number(userId) }
-        ]
-      }).exec();
+      // Lấy các hợp đồng mà user là tenant
+      const contracts = await this.contractModel.find({ 'tenants.tenantId': userId }).exec();
 
       const userRooms: Array<{
         roomId: number;
@@ -354,8 +347,6 @@ export class UsersService {
         monthlyRent: number;
         deposit: number;
         area: number;
-        maxOccupancy: number;
-        currentOccupants: number;
         landlordInfo: {
           landlordId: number;
           name: string;
@@ -364,7 +355,11 @@ export class UsersService {
         };
       }> = [];
 
-      for (const room of rooms) {
+      for (const contract of contracts) {
+        // Lấy thông tin phòng
+        const room = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
+        if (!room) continue;
+
         // Lấy thông tin tòa nhà
         let building;
         try {
@@ -376,26 +371,18 @@ export class UsersService {
         // Lấy thông tin chủ trọ
         const landlord = await this.userModel.findOne({ userId: room.landlordId }).exec();
 
-        // Tìm hợp đồng liên quan (nếu có)
-        const contract = await this.contractModel.findOne({
-          roomId: room.roomId,
-          'tenants.tenantId': userId
-        }).exec();
-
         userRooms.push({
           roomId: room.roomId,
           roomNumber: room.roomNumber,
           buildingName: building ? building.name : 'N/A',
           buildingId: room.buildingId,
-          contractId: contract ? contract.contractId : undefined,
-          contractStatus: contract ? contract.status : 'unknown',
-          startDate: contract ? contract.startDate : undefined,
-          endDate: contract ? contract.endDate : undefined,
-          monthlyRent: room.price, // Sử dụng price từ room
-          deposit: room.deposit,
+          contractId: contract.contractId,
+          contractStatus: contract.status,
+          startDate: contract.startDate,
+          endDate: contract.endDate,
+          monthlyRent: contract.monthlyRent ?? room.price,
+          deposit: contract.deposit ?? room.deposit,
           area: room.area,
-          maxOccupancy: room.maxOccupancy,
-          currentOccupants: room.currentOccupants,
           landlordInfo: landlord ? {
             landlordId: landlord.userId,
             name: landlord.name,

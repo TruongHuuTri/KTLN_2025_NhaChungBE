@@ -82,10 +82,10 @@ export class NlpSearchService {
       The data schema you will query against combines room and post information:
       {
         "postStatus": String, "postType": String, "category": String, "area": Number,
-        "price": Number, "deposit": Number, "furniture": String, "maxOccupancy": Number,
-        "availableSpots": Number, "status": String,
+        "price": Number, "deposit": Number, "furniture": String,
+        "status": String,
         "address": { "street": String, "wardName": String, "provinceName": String },
-        "utilities": { "includedInRent": { "electricity": Boolean, "water": Boolean, "internet": Boolean } }
+        "utilities": { "electricityPricePerKwh": Number, "waterPrice": Number, "internetFee": Number }
       }
 
       User query: "${query}"
@@ -95,8 +95,8 @@ export class NlpSearchService {
       2.  **Location:** If the query mentions a location (e.g., "quận 1"), create a preliminary stage: { "$addFields": { "locationName": "tên địa điểm đó" } }.
       3.  **Price:** For "giá dưới 3 triệu", use { "$match": { "price": { "$lt": 3000000 } } }. For ranges, use $gte and $lte.
       4.  **Area:** For "diện tích trên 20m2", use { "$match": { "area": { "$gt": 20 } } }.
-      5.  **Occupancy:** For "phòng cho 3 người", use { "$match": { "maxOccupancy": { "$gte": 3 } } }.
-      6.  **Utilities:** For "bao điện nước", use { "$match": { "utilities.includedInRent.electricity": true, "utilities.includedInRent.water": true } }.
+      5.  Ignore occupancy fields (no max occupancy constraint in schema).
+      6.  **Utilities:** For "bao điện nước", prefer matching price fields equals 0 if provided by UI.
       7.  **Output:** Your response MUST BE ONLY the raw JSON array. No explanations, no markdown.
     `;
 

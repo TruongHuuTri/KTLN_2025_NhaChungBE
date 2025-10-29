@@ -38,6 +38,43 @@ POST /api/favourites
 **Validation:**
 - `postType`: Required, enum: ["rent", "roommate"]
 
+## 🔁 Toggle Favourite (Thêm/Xóa tự động)
+```http
+POST /api/favourites/toggle
+```
+
+Yêu cầu JWT. Nếu bản ghi yêu thích đã tồn tại với `userId` + `postType` + `postId` thì xóa; nếu chưa tồn tại thì tạo mới.
+
+**Request Body:**
+```json
+{
+  "userId": 1,
+  "postType": "rent",
+  "postId": 1
+}
+```
+
+**Response (added):**
+```json
+{
+  "action": "added",
+  "favourite": {
+    "favouriteId": 12,
+    "userId": 1,
+    "postType": "rent",
+    "postId": 1,
+    "createdAt": "2025-10-29T10:00:00.000Z"
+  }
+}
+```
+
+**Response (removed):**
+```json
+{
+  "action": "removed"
+}
+```
+
 ## 🗑️ Remove from Favourites
 ```http
 DELETE /api/favourites/user/:userId/post/:postType/:postId

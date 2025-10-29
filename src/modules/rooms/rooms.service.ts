@@ -128,7 +128,6 @@ export class RoomsService {
       landlordId,
       ...roomData,
       category: building.buildingType, // Lấy category từ buildingType
-      availableSpots: roomData.maxOccupancy - (roomData.currentOccupants || 0),
     };
 
     // Geocode và lưu GeoJSON
@@ -175,13 +174,7 @@ export class RoomsService {
   }
 
   async updateRoom(roomId: number, updateData: UpdateRoomDto, landlordId?: number): Promise<Room> {
-    // Recalculate availableSpots if maxOccupancy or currentOccupants changed
-    if (updateData.maxOccupancy !== undefined || updateData.currentOccupants !== undefined) {
-      const currentRoom = await this.getRoomById(roomId, landlordId);
-      const maxOccupancy = updateData.maxOccupancy ?? currentRoom.maxOccupancy;
-      const currentOccupants = updateData.currentOccupants ?? currentRoom.currentOccupants;
-      updateData.availableSpots = maxOccupancy - currentOccupants;
-    }
+    // Nếu chỉ thay đổi currentOccupants, hiện không tính lại availableSpots (không còn maxOccupancy)
 
     const query: any = { roomId };
     if (landlordId) {
@@ -189,6 +182,17 @@ export class RoomsService {
     }
 
     let updatePayload: any = { ...updateData, updatedAt: new Date() };
+
+    // Nếu cập nhật utilities, merge theo key thay vì overwrite toàn bộ object
+    if (updateData.utilities) {
+      const util = updateData.utilities as any;
+      // Xóa utilities gốc khỏi payload để tránh overwrite toàn bộ
+      delete updatePayload.utilities;
+      updatePayload.$set = { ...(updatePayload.$set || {}) };
+      for (const [k, v] of Object.entries(util)) {
+        updatePayload.$set[`utilities.${k}`] = v as any;
+      }
+    }
 
     // Nếu có thay đổi địa chỉ thì geocode lại
     if (updateData.address) {
@@ -236,9 +240,7 @@ export class RoomsService {
   async addTenantToRoom(roomId: number, tenantData: AddTenantDto, landlordId?: number): Promise<Room> {
     const room = await this.getRoomById(roomId, landlordId);
     
-    if (room.currentOccupants >= room.maxOccupancy) {
-      throw new BadRequestException('Room is full');
-    }
+    // Không còn maxOccupancy: chỉ kiểm tra tối thiểu theo business khác nếu cần
 
     const query: any = { roomId };
     if (landlordId) {
@@ -249,11 +251,7 @@ export class RoomsService {
       query,
       {
         $push: { currentTenants: tenantData },
-        $inc: { currentOccupants: 1 },
-        $set: { 
-          availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
-          updatedAt: new Date()
-        }
+        $set: { updatedAt: new Date() }
       },
       { new: true }
     ).exec();
@@ -278,11 +276,7 @@ export class RoomsService {
       query,
       {
         $pull: { currentTenants: { userId } },
-        $inc: { currentOccupants: -1 },
-        $set: { 
-          availableSpots: room.maxOccupancy - (room.currentOccupants - 1),
-          updatedAt: new Date()
-        }
+        $set: { updatedAt: new Date() }
       },
       { new: true }
     ).exec();
@@ -323,9 +317,7 @@ export class RoomsService {
       if (filters.maxArea) query.area.$lte = filters.maxArea;
     }
 
-    if (filters.availableSpots) {
-      query.availableSpots = { $gte: filters.availableSpots };
-    }
+    // availableSpots đã bỏ khỏi schema
 
     return this.roomModel.find(query).exec();
   }

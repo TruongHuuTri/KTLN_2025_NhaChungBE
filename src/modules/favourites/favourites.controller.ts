@@ -69,4 +69,16 @@ export class FavouritesController {
     );
     return { message: 'Xóa yêu thích thành công' };
   }
+
+  @Post('toggle')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async toggle(@Body() body: { userId: number | string; postType: string; postId: number | string }) {
+    const result = await this.favouritesService.toggle(
+      Number(body.userId),
+      body.postType,
+      Number(body.postId)
+    );
+    return result;
+  }
 }

@@ -6,6 +6,7 @@ import { PaymentOrder, PaymentOrderDocument } from '../contracts/schemas/payment
 import { Invoice, InvoiceDocument } from '../contracts/schemas/invoice.schema';
 import { RentalRequest, RentalRequestDocument } from '../contracts/schemas/rental-request.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { Post, PostDocument } from '../posts/schemas/post.schema';
 import { Room, RoomDocument } from '../rooms/schemas/room.schema';
 import { Building, BuildingDocument } from '../rooms/schemas/building.schema';
 import { QrCodeService } from '../../shared/services/qr-code.service';
@@ -19,6 +20,7 @@ export class PaymentsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
     @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
+    @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private qrCodeService: QrCodeService,
     private configService: ConfigService,
   ) {}
@@ -236,6 +238,19 @@ export class PaymentsService {
       // Nếu là thanh toán đặt cọc hoặc tiền thuê đầu tiên, thêm tenant vào room
       if (paymentOrder.orderType === 'initial_payment' || paymentOrder.orderType === 'deposit') {
         await this.autoAddTenantToRoomAfterPayment(paymentOrder);
+        // Đánh dấu phòng đã được thuê (hợp đồng đơn): không hiển thị khi đăng bài
+        const paidInvoice = await this.invoiceModel.findOne({ invoiceId: paymentOrder.invoiceId }).exec();
+        if (paidInvoice?.roomId) {
+          await this.roomModel.findOneAndUpdate(
+            { roomId: paidInvoice.roomId },
+            { status: 'occupied', updatedAt: new Date() }
+          ).exec();
+          // Ẩn các bài đăng liên quan đến phòng đã thuê
+          await this.postModel.updateMany(
+            { roomId: paidInvoice.roomId, status: 'active' },
+            { $set: { status: 'inactive', updatedAt: new Date() } }
+          ).exec();
+        }
       }
 
       return {
@@ -252,62 +267,80 @@ export class PaymentsService {
    */
   private async autoAddTenantToRoomAfterPayment(paymentOrder: PaymentOrder): Promise<void> {
     try {
-      // Tìm rental request từ invoice
+      // Tìm invoice
       const invoice = await this.invoiceModel.findOne({ invoiceId: paymentOrder.invoiceId }).exec();
       if (!invoice) {
+        console.error(`[autoAddTenantToRoomAfterPayment] Invoice not found: ${paymentOrder.invoiceId}`);
         return;
       }
 
-      // Tìm rental request từ contractId trong invoice
-      const rentalRequest = await this.rentalRequestModel.findOne({ contractId: invoice.contractId }).exec();
-      if (!rentalRequest) {
+      // Lấy roomId trực tiếp từ invoice nếu có
+      let roomId = invoice.roomId;
+
+      // Nếu không có roomId trong invoice, tìm từ rental request
+      if (!roomId && invoice.contractId) {
+        const rentalRequest = await this.rentalRequestModel.findOne({ contractId: invoice.contractId }).exec();
+        if (rentalRequest) {
+          roomId = rentalRequest.roomId;
+        }
+      }
+
+      if (!roomId) {
+        console.error(`[autoAddTenantToRoomAfterPayment] RoomId not found for invoice: ${paymentOrder.invoiceId}`);
         return;
       }
 
       // Kiểm tra xem tenant đã được thêm vào room chưa
-      const room = await this.roomModel.findOne({ roomId: rentalRequest.roomId }).exec();
+      const room = await this.roomModel.findOne({ roomId }).exec();
       if (!room) {
+        console.error(`[autoAddTenantToRoomAfterPayment] Room not found: ${roomId}`);
         return;
       }
 
-      const existingTenant = room.currentTenants.find(t => t.userId === rentalRequest.tenantId);
+      const tenantId = paymentOrder.tenantId;
+      const existingTenant = room.currentTenants?.find(t => t.userId === tenantId);
       if (existingTenant) {
+        console.log(`[autoAddTenantToRoomAfterPayment] Tenant ${tenantId} already exists in room ${roomId}`);
         return;
       }
 
       // Lấy thông tin user
-      const user = await this.userModel.findOne({ userId: rentalRequest.tenantId }).exec();
+      const user = await this.userModel.findOne({ userId: tenantId }).exec();
       if (!user) {
+        console.error(`[autoAddTenantToRoomAfterPayment] User not found: ${tenantId}`);
         return;
       }
 
       // Tạo tenant data cho room
       const tenantData = {
-        userId: rentalRequest.tenantId,
+        userId: tenantId,
         fullName: user.name,
         dateOfBirth: new Date(), // Có thể cần lấy từ user profile
         gender: 'unknown', // Có thể cần lấy từ user profile
         occupation: 'unknown', // Có thể cần lấy từ user profile
-        moveInDate: rentalRequest.requestedMoveInDate,
+        moveInDate: new Date(),
         lifestyle: 'unknown', // Có thể cần lấy từ user profile
         cleanliness: 'unknown' // Có thể cần lấy từ user profile
       };
 
-      // Cập nhật room occupancy
-      await this.roomModel.findOneAndUpdate(
-        { roomId: rentalRequest.roomId },
+      // Cập nhật room - thêm tenant vào currentTenants
+      const updateResult = await this.roomModel.findOneAndUpdate(
+        { roomId },
         {
           $push: { currentTenants: tenantData },
-          $inc: { currentOccupants: 1 },
-          $set: { 
-            availableSpots: room.maxOccupancy - (room.currentOccupants + 1),
-            updatedAt: new Date()
-          }
-        }
+          $set: { updatedAt: new Date() }
+        },
+        { new: true }
       ).exec();
 
+      if (updateResult) {
+        console.log(`[autoAddTenantToRoomAfterPayment] Successfully added tenant ${tenantId} to room ${roomId}`);
+      } else {
+        console.error(`[autoAddTenantToRoomAfterPayment] Failed to update room ${roomId}`);
+      }
+
     } catch (error) {
-      // Silent error handling
+      console.error(`[autoAddTenantToRoomAfterPayment] Error:`, error);
     }
   }
 

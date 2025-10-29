@@ -18,8 +18,7 @@ export class PostsService {
     const postId = await this.getNextPostId();
     const room = await this.validateAndGetRoom(postData.roomId);
     
-    // Kiểm tra logic phòng trống dựa trên loại post
-    this.validateRoomAvailability(room, postData.postType);
+    // Bỏ kiểm tra phòng trống theo occupancy; chỉ kiểm tra isActive/status bên dưới nếu cần
     
     const enrichedPostData = this.enrichPostData(postData, room);
     
@@ -42,22 +41,8 @@ export class PostsService {
   }
 
   private validateRoomAvailability(room: Room, postType: string): void {
-    // Kiểm tra phòng có active không
     if (!room.isActive || room.status !== 'available') {
       throw new BadRequestException('Room is not available for posting');
-    }
-
-    // Logic khác nhau cho từng loại post
-    if (postType === 'cho-thue') {
-      // Cho thuê: Phòng phải trống hoàn toàn
-      if (room.currentOccupants > 0) {
-        throw new BadRequestException('Room must be completely empty to rent out');
-      }
-    } else if (postType === 'tim-o-ghep') {
-      // Tìm ở ghép: Phòng phải có chỗ trống
-      if (room.availableSpots <= 0) {
-        throw new BadRequestException('Room is full, no available spots');
-      }
     }
   }
 
@@ -73,22 +58,35 @@ export class PostsService {
   }
 
   async getUserRooms(userId: number, postType?: string): Promise<Room[]> {
-    const query: any = { 
-      landlordId: userId, 
-      isActive: true,
-      status: 'available'
-    };
-
-    // Filter theo loại post
+    // Landlord đăng cho thuê: phòng thuộc landlord và còn available
     if (postType === 'cho-thue') {
-      // Cho thuê: Chỉ hiển thị phòng trống hoàn toàn
-      query.currentOccupants = 0;
-    } else if (postType === 'tim-o-ghep') {
-      // Tìm ở ghép: Chỉ hiển thị phòng có chỗ trống
-      query.availableSpots = { $gt: 0 };
+      return this.roomModel.find({
+        landlordId: userId,
+        isActive: true,
+        status: 'available'
+      }).exec();
     }
 
-    return this.roomModel.find(query).exec();
+    // Tenant đăng tìm ở ghép: phòng mà user đang ở (currentTenants)
+    if (postType === 'tim-o-ghep') {
+      return this.roomModel.find({
+        isActive: true,
+        $or: [
+          { 'currentTenants.userId': userId },
+          { 'currentTenants.userId': Number(userId) }
+        ]
+      }).exec();
+    }
+
+    // Mặc định: kết hợp cả hai trường hợp
+    return this.roomModel.find({
+      isActive: true,
+      $or: [
+        { landlordId: userId, status: 'available' },
+        { 'currentTenants.userId': userId },
+        { 'currentTenants.userId': Number(userId) }
+      ]
+    }).exec();
   }
 
   async getPostWithRoomMedia(postId: number): Promise<any> {

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { UtilityType } from '../../../shared/types/utilities.types';
 
 export type RoomDocument = Room & Document;
 
@@ -123,6 +122,31 @@ export class NhaNguyenCanInfo {
 }
 
 @Schema({ _id: false })
+export class Utilities {
+  @Prop({ default: 0 })
+  electricityPricePerKwh: number;
+
+  @Prop({ default: 0 })
+  waterPrice: number;
+
+  @Prop({ default: 0 })
+  internetFee: number;
+
+  @Prop({ default: 0 })
+  garbageFee: number;
+
+  @Prop({ default: 0 })
+  cleaningFee: number;
+
+  @Prop({ default: 0 })
+  parkingFee: number;
+
+  @Prop({ default: 0 })
+  managementFee: number;
+
+}
+
+@Schema({ _id: false })
 export class IncludedInRent {
   @Prop({ default: false })
   electricity: boolean;
@@ -149,68 +173,12 @@ export class IncludedInRent {
   managementFee: boolean;
 }
 
-@Schema({ _id: false })
-export class Utilities {
-  @Prop({ default: 0 })
-  electricityPricePerKwh: number;
+// Extend Utilities to include includedInRent if schema expects it
+// (kept optional to not break existing docs)
+// Note: In original version, includedInRent existed under Utilities
+// Re-introduce field for backward compatibility
+(Utilities as any).prototype.includedInRent = undefined;
 
-  @Prop({ default: 0 })
-  waterPrice: number;
-
-  @Prop({ default: '' })
-  waterBillingType: string;
-
-  @Prop({ default: 0 })
-  internetFee: number;
-
-  @Prop({ default: 0 })
-  garbageFee: number;
-
-  @Prop({ default: 0 })
-  cleaningFee: number;
-
-  @Prop({ default: 0 })
-  parkingMotorbikeFee: number;
-
-  @Prop({ default: 0 })
-  parkingCarFee: number;
-
-  @Prop({ default: 0 })
-  managementFee: number;
-
-  @Prop({ default: '' })
-  managementFeeUnit: string;
-
-  @Prop({ type: IncludedInRent, default: {} })
-  includedInRent: IncludedInRent;
-}
-
-@Schema({ _id: false })
-export class CurrentTenant {
-  @Prop({ required: true })
-  userId: number;
-
-  @Prop({ required: true })
-  fullName: string;
-
-  @Prop({ required: true })
-  dateOfBirth: Date;
-
-  @Prop({ required: true })
-  gender: string;
-
-  @Prop({ required: true })
-  occupation: string;
-
-  @Prop({ required: true })
-  moveInDate: Date;
-
-  @Prop({ required: true })
-  lifestyle: string;
-
-  @Prop({ required: true })
-  cleanliness: string;
-}
 
 @Schema({ timestamps: true, collection: 'rooms' })
 export class Room {
@@ -253,10 +221,6 @@ export class Room {
   @Prop({ type: Utilities })
   utilities?: Utilities;
 
-  // Danh sách tiện ích có sẵn
-  @Prop({ type: [String], enum: Object.values(UtilityType), default: [] })
-  availableUtilities: UtilityType[];
-
   // Address
   @Prop({ type: Address, required: true })
   address: Address;
@@ -266,32 +230,20 @@ export class Room {
   // Tuy nhiên, ta sẽ sử dụng trường lồng trong address: address.location
   location?: GeoLocation;
 
-  // Thông tin cho ở ghép
-  @Prop({ required: true })
-  maxOccupancy: number;
-
-  @Prop({ default: 0 })
-  sharePrice: number;
-
-  @Prop({ default: 0 })
-  currentOccupants: number;
-
-  @Prop({ default: 0 })
-  availableSpots: number;
-
-  // Thông tin chia sẻ tiện ích
-  @Prop({ default: 'split_evenly' })
-  shareMethod: string;
-
-  @Prop({ default: 0 })
-  estimatedMonthlyUtilities: number;
-
-  @Prop({ default: 0 })
-  capIncludedAmount: number;
+  // Thông tin cho ở ghép (đã bỏ các trường tỷ lệ/chỗ trống/số lượng)
 
   // Thông tin người ở hiện tại
-  @Prop({ type: [CurrentTenant], default: [] })
-  currentTenants: CurrentTenant[];
+  @Prop({ type: [{
+    userId: { type: Number, required: true },
+    fullName: { type: String, required: true },
+    dateOfBirth: { type: Date, required: true },
+    gender: { type: String, required: true },
+    occupation: { type: String, required: true },
+    moveInDate: { type: Date, required: true },
+    lifestyle: { type: String, required: true },
+    cleanliness: { type: String, required: true }
+  }], default: [] })
+  currentTenants: any[];
 
   // Media & mô tả
   @Prop({ type: [String], default: [] })

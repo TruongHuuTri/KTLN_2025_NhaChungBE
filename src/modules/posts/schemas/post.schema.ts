@@ -177,7 +177,7 @@ export class Utilities {
   waterPrice: number;
 
   @Prop({ default: '' })
-  waterBillingType: string;
+  // removed: waterBillingType
 
   @Prop({ default: 0 })
   internetFee: number;
@@ -189,16 +189,16 @@ export class Utilities {
   cleaningFee: number;
 
   @Prop({ default: 0 })
-  parkingMotorbikeFee: number;
+  parkingFee: number;
 
   @Prop({ default: 0 })
-  parkingCarFee: number;
+  // removed: parkingCarFee
 
   @Prop({ default: 0 })
   managementFee: number;
 
   @Prop({ default: '' })
-  managementFeeUnit: string;
+  // removed: managementFeeUnit
 
   @Prop({ default: 0 })
   gardeningFee: number;
@@ -239,7 +239,7 @@ export class PersonalInfo {
   @Prop({ required: true })
   gender: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   occupation: string;
 
   @Prop({ type: [String], default: [] })
@@ -288,7 +288,7 @@ export class Post {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   description: string;
 
   @Prop({ type: [String], default: [] })
