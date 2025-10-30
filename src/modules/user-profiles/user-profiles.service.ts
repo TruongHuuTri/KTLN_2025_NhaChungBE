@@ -62,6 +62,13 @@ export class UserProfilesService {
   }
 
   /**
+   * Lấy profile theo profileId
+   */
+  async findByProfileId(profileId: number): Promise<UserProfile | null> {
+    return this.userProfileModel.findOne({ profileId });
+  }
+
+  /**
    * Cập nhật profile
    */
   async update(userId: number, updateUserProfileDto: UpdateUserProfileDto): Promise<UserProfile> {

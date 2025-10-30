@@ -77,6 +77,14 @@ export class UsersController {
     return this.usersService.getVerificationStatus(req.user.sub);
   }
 
+  /**
+   * Lấy trạng thái và chi tiết xác thực theo userId (public)
+   */
+  @Get(':id/verification')
+  async getVerificationById(@Param('id') id: string) {
+    return this.usersService.getVerificationStatus(id);
+  }
+
   @Get('profile/:id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

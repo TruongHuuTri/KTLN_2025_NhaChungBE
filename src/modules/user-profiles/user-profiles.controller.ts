@@ -77,6 +77,25 @@ export class UserProfilesController {
   }
 
   /**
+   * Lấy profile theo id (userId hoặc profileId, public không check quyền)
+   */
+  @Get(':id')
+  async getProfileById(@Param('id') id: string) {
+    let profile: any = null;
+    if (!isNaN(Number(id))) {
+      try {
+        profile = await this.userProfilesService.findByUserId(Number(id));
+      } catch (e) {
+        profile = await this.userProfilesService.findByProfileId(Number(id));
+      }
+    }
+    if (!profile) {
+      throw new ForbiddenException('Không tìm thấy profile');
+    }
+    return profile;
+  }
+
+  /**
    * Cập nhật profile theo userId
    */
   @Patch('user/:userId')
