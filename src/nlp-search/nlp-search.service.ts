@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Redis from 'ioredis';
@@ -9,6 +9,7 @@ import { Room } from '../modules/rooms/schemas/room.schema';
 
 @Injectable()
 export class NlpSearchService {
+  private readonly logger = new Logger(NlpSearchService.name);
   private genAI: GoogleGenerativeAI;
   private redisClient: Redis;
   private geocoder: NodeGeocoder.Geocoder;
@@ -49,7 +50,10 @@ export class NlpSearchService {
 
     const aggregationPipeline = await this.getTextToAggregation(query);
     if (!aggregationPipeline || aggregationPipeline.length === 0) {
-      throw new Error('Failed to generate aggregation pipeline from Gemini.');
+      this.logger.warn('Received empty pipeline from Gemini, using fallback');
+      // Fallback đã được trả về từ getTextToAggregation nếu có lỗi
+      // Nếu vẫn rỗng, throw error
+      throw new Error('Failed to generate aggregation pipeline from Gemini. Please check GEMINI_API_KEY and try again.');
     }
 
     const userId = 'user:123:prefs';
@@ -77,37 +81,83 @@ export class NlpSearchService {
   private async getTextToAggregation(query: string): Promise<any[]> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `
-      You are a master real estate search assistant for a rental platform in Vietnam. Your task is to convert a user's natural language query into a precise MongoDB aggregation pipeline JSON array.
+You are a master real estate search assistant for a rental platform in Vietnam. Your task is to convert a user's natural language query into a precise MongoDB aggregation pipeline JSON array.
 
-      The data schema you will query against combines room and post information:
-      {
-        "postStatus": String, "postType": String, "category": String, "area": Number,
-        "price": Number, "deposit": Number, "furniture": String,
-        "status": String,
-        "address": { "street": String, "wardName": String, "provinceName": String },
-        "utilities": { "electricityPricePerKwh": Number, "waterPrice": Number, "internetFee": Number }
-      }
+The data schema you will query against combines room and post information:
+{
+  "postStatus": String, "postType": String, "category": String, "area": Number,
+  "price": Number, "deposit": Number, "furniture": String,
+  "status": String,
+  "address": { "street": String, "wardName": String, "provinceName": String },
+  "utilities": { "electricityPricePerKwh": Number, "waterPrice": Number, "internetFee": Number }
+}
 
-      User query: "${query}"
+User query: "${query}"
 
-      RULES:
-      1.  **Default Filter:** ALWAYS include a stage at the beginning to match only active posts and available rooms: { "$match": { "postStatus": "active", "status": "available" } }.
-      2.  **Location:** If the query mentions a location (e.g., "quận 1"), create a preliminary stage: { "$addFields": { "locationName": "tên địa điểm đó" } }.
-      3.  **Price:** For "giá dưới 3 triệu", use { "$match": { "price": { "$lt": 3000000 } } }. For ranges, use $gte and $lte.
-      4.  **Area:** For "diện tích trên 20m2", use { "$match": { "area": { "$gt": 20 } } }.
-      5.  Ignore occupancy fields (no max occupancy constraint in schema).
-      6.  **Utilities:** For "bao điện nước", prefer matching price fields equals 0 if provided by UI.
-      7.  **Output:** Your response MUST BE ONLY the raw JSON array. No explanations, no markdown.
-    `;
+RULES:
+1. **Default Filter:** ALWAYS include a stage at the beginning to match only active posts and available rooms: { "$match": { "status": "available", "isActive": true } }.
+2. **Location:** If the query mentions a location (e.g., "quận 1", "Thủ Đức", "Hai Bà Trưng"), create a preliminary stage: { "$addFields": { "locationName": "tên địa điểm đó" } }. Extract location name from query.
+3. **Price:** For "giá dưới 3 triệu" or "dưới 3 triệu", use { "$match": { "price": { "$lt": 3000000 } } }. For "dưới 6 triệu", use { "$match": { "price": { "$lt": 6000000 } } }. For ranges, use $gte and $lte.
+4. **Area:** For "diện tích trên 20m2", use { "$match": { "area": { "$gt": 20 } } }.
+5. **Category:** If query mentions "chung cư", set { "$match": { "category": "chung-cu" } }. For "phòng trọ", use "phong-tro".
+6. Ignore occupancy fields (no max occupancy constraint in schema).
+7. **Utilities:** For "bao điện nước", prefer matching price fields equals 0 if provided by UI.
+8. **Output:** Your response MUST BE ONLY a valid JSON array. No explanations, no markdown code blocks, no text before or after. Start with [ and end with ].
+    `.trim();
 
     try {
+      this.logger.debug(`Calling Gemini with query: "${query}"`);
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text().replace(/```json|```/g, '').trim();
-      return JSON.parse(text);
-    } catch (error) {
-      console.error('Error calling Gemini AI or parsing its response:', error);
-      return [];
+      let text = response.text();
+      
+      // Log raw response for debugging
+      this.logger.debug(`Gemini raw response: ${text.substring(0, 200)}...`);
+      
+      // Clean up markdown code blocks and extra whitespace
+      text = text
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .replace(/^[\s\n]*\[/, '[') // Remove text before [
+        .replace(/\]\s*$/, ']') // Remove text after ]
+        .trim();
+      
+      // Try to extract JSON array if there's text around it
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        text = jsonMatch[0];
+      }
+      
+      this.logger.debug(`Cleaned JSON text: ${text.substring(0, 100)}...`);
+      
+      const parsed = JSON.parse(text);
+      
+      if (!Array.isArray(parsed)) {
+        this.logger.error('Gemini returned non-array result');
+        return [];
+      }
+      
+      if (parsed.length === 0) {
+        this.logger.warn('Gemini returned empty pipeline');
+      } else {
+        this.logger.log(`Successfully parsed pipeline with ${parsed.length} stages`);
+      }
+      
+      return parsed;
+    } catch (error: any) {
+      this.logger.error(`Error calling Gemini AI or parsing response: ${error?.message || error}`);
+      this.logger.error(`Error stack: ${error?.stack || 'N/A'}`);
+      
+      // Return a basic fallback pipeline
+      this.logger.warn('Returning fallback pipeline');
+      return [
+        {
+          $match: {
+            status: 'available',
+            isActive: true,
+          },
+        },
+      ];
     }
   }
 

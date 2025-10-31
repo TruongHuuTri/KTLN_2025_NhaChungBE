@@ -1,104 +1,134 @@
-src/modules/search/search-watcher.service.ts
+# PHASE 3 — GEOCODING FALLBACK & ELASTICSEARCH MAPPING FIX
+# Mục tiêu:
+# - Đảm bảo mọi post có roomId đều được index với tọa độ hợp lệ.
+# - Tự động geocode fallback nếu room chưa có address.location.
+# - Thêm log cảnh báo và đảm bảo mapping geo_point trong Elasticsearch.
+
+### 1️⃣ PATCH — src/modules/search/search-indexer.service.ts
+# (Thay toàn bộ nội dung file)
+# Bổ sung NodeGeocoder, fallback Mapbox geocoding, log cảnh báo.
+# Không thay đổi function names hoặc các phương thức public khác.
 
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
-import { SearchIndexerService } from './search-indexer.service';
+import NodeGeocoder from 'node-geocoder';
+import { ConfigService } from '@nestjs/config';
+import { ElasticsearchService } from '@nestjs/elasticsearch';
 
 @Injectable()
-export class SearchWatcherService {
-  private readonly logger = new Logger(SearchWatcherService.name);
+export class SearchIndexerService {
+  private readonly logger = new Logger(SearchIndexerService.name);
+  private geocoder: NodeGeocoder;
 
   constructor(
-    @InjectConnection() private readonly conn: Connection,
-    private readonly indexer: SearchIndexerService,
-  ) {}
-
-  async onModuleInit() {
-    this.watchPosts();
-    this.watchRooms();
+    private readonly es: ElasticsearchService,
+    private readonly config: ConfigService,
+  ) {
+    const options: NodeGeocoder.Options = {
+      provider: 'mapbox',
+      apiKey: this.config.get<string>('MAPBOX_API_KEY')!,
+    };
+    this.geocoder = NodeGeocoder(options);
   }
 
-  private async watchPosts() {
-    const posts = this.conn.collection('posts');
-    const rooms = this.conn.collection('rooms');
-    const cs = posts.watch([], { fullDocument: 'updateLookup' });
+  async buildDoc(post: any, room?: any) {
+    let lon: number | undefined;
+    let lat: number | undefined;
 
-    cs.on('change', async (chg: any) => {
+    // lấy tọa độ từ room.address.location
+    const coords = room?.address?.location?.coordinates;
+    if (Array.isArray(coords) && coords.length === 2) {
+      lon = Number(coords[0]);
+      lat = Number(coords[1]);
+    }
+
+    // ⚠ fallback nếu room thiếu tọa độ
+    if ((!lon || !lat) && room?.address) {
+      const addressText = [
+        room.address.specificAddress,
+        room.address.wardName,
+        room.address.districtName,
+        room.address.provinceName,
+      ].filter(Boolean).join(', ');
+
       try {
-        if (chg.operationType === 'insert' || chg.operationType === 'update' || chg.operationType === 'replace') {
-          const post = chg.fullDocument;
-          let room: any | null = null;
-          if (post?.roomId != null) {
-            room = await rooms.findOne({ roomId: post.roomId });
-          }
-          await this.indexer.indexPost(post, room);
-        } else if (chg.operationType === 'delete') {
-          const id = chg.documentKey?._id;
-          await this.indexer.deletePost(id);
+        const result = await this.geocoder.geocode(`${addressText}, Vietnam`);
+        if (result?.length > 0) {
+          lon = result[0].longitude;
+          lat = result[0].latitude;
+          this.logger.warn(`⚠ Room ${room?.roomId} thiếu coords — đã geocode fallback thành công.`);
+        } else {
+          this.logger.warn(`⚠ Room ${room?.roomId} geocode fallback không tìm thấy tọa độ.`);
         }
-      } catch (e: any) {
-        this.logger.error(`watchPosts error: ${e?.message || e}`);
+      } catch (e) {
+        this.logger.error(`Geocode fallback lỗi cho Room ${room?.roomId}: ${e.message}`);
       }
-    });
+    }
 
-    cs.on('error', (e: any) => this.logger.error(`watchPosts stream error: ${e?.message || e}`));
-    this.logger.log('Posts change stream started');
+    return {
+      id: post._id?.toString?.() ?? post.id,
+      title: post.title ?? '',
+      description: post.description ?? '',
+      address: {
+        full: room?.address?.specificAddress ?? '',
+        city: room?.address?.provinceName ?? '',
+        district: room?.address?.districtName ?? '',
+        ward: room?.address?.wardName ?? '',
+      },
+      coords: (lon != null && lat != null) ? { lon, lat } : null,
+      price: post.price ?? 0,
+      area: post.area ?? 0,
+      type: post.type ?? '',
+      category: post.category ?? '',
+      status: post.status ?? '',
+      createdAt: post.createdAt ?? new Date(),
+      isActive: post.isActive !== false,
+    };
   }
 
-  private async watchRooms() {
-    const posts = this.conn.collection('posts');
-    const rooms = this.conn.collection('rooms');
-    const cs = rooms.watch([], { fullDocument: 'updateLookup' });
-
-    cs.on('change', async (chg: any) => {
-      try {
-        const op = chg.operationType;
-        const roomId =
-          op === 'delete'
-            ? chg.documentKey?.roomId ?? chg.fullDocumentBeforeChange?.roomId
-            : chg.fullDocument?.roomId;
-
-        if (roomId == null) return;
-
-        // room bị xoá → reindex posts với room=null (giữ post keyword, bỏ geo/price/area)
-        const room = op === 'delete' ? null : chg.fullDocument;
-        const related = await posts.find({ roomId }).toArray();
-        await Promise.all(related.map((p: any) => this.indexer.indexPost(p, room)));
-      } catch (e: any) {
-        this.logger.error(`watchRooms error: ${e?.message || e}`);
-      }
+  async indexPost(post: any, room?: any) {
+    const doc = await this.buildDoc(post, room);
+    await this.es.index({
+      index: 'posts',
+      id: doc.id,
+      document: doc,
     });
+  }
 
-    cs.on('error', (e: any) => this.logger.error(`watchRooms stream error: ${e?.message || e}`));
-    this.logger.log('Rooms change stream started');
+  async deletePost(id: string) {
+    try {
+      await this.es.delete({ index: 'posts', id });
+    } catch (err) {
+      this.logger.warn(`Delete failed or doc missing: ${id}`);
+    }
   }
 }
 
 
-Update src/modules/search/search.module.ts (bổ sung provider)
+### 2️⃣ TẠO MAPPING CHUẨN TRONG ELASTICSEARCH (chạy 1 lần)
+# (Cursor có thể tự chạy shell, hoặc bạn dán vào terminal nếu dùng thủ công)
 
-import { MongooseModule } from '@nestjs/mongoose';
-import { SearchWatcherService } from './search-watcher.service';
+curl -X PUT "http://localhost:9200/posts" -H "Content-Type: application/json" -d '{
+  "mappings": {
+    "properties": {
+      "coords": { "type": "geo_point" },
+      "title": { "type": "text", "analyzer": "vi_analyzer" },
+      "description": { "type": "text", "analyzer": "vi_analyzer" },
+      "address.full": { "type": "text", "analyzer": "vi_analyzer" },
+      "price": { "type": "integer" },
+      "area": { "type": "float" },
+      "isActive": { "type": "boolean" },
+      "createdAt": { "type": "date" }
+    }
+  }
+}'
 
-@Module({
-  imports: [ConfigModule, MongooseModule],
-  providers: [
-    SearchService,
-    SearchIndexerService,
-    SearchWatcherService,
-    {
-      provide: 'ES_CLIENT',
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => new Client({
-        node: cfg.get('ELASTIC_URL'),
-        auth: (cfg.get('ELASTIC_USER') && cfg.get('ELASTIC_PASS'))
-          ? { username: cfg.get('ELASTIC_USER'), password: cfg.get('ELASTIC_PASS') }
-          : undefined,
-      }),
-    },
-  ],
-  controllers: [SearchController, ReindexController],
-  exports: ['ES_CLIENT', SearchService, SearchIndexerService],
-})
-export class SearchModule {}
+### 3️⃣ KIỂM TRA SAU PATCH
+# - Tạo 1 Room mới → có address.location
+# - Tạo Post gắn Room → Indexer sẽ đẩy coords vào ES
+# - Thử sửa Room bỏ address.location để xem log fallback xuất hiện
+# - Gọi thử:
+curl -G "http://localhost:3001/api/search/posts" \
+  --data-urlencode "lat=10.77" \
+  --data-urlencode "lon=106.7" \
+  --data-urlencode "distance=3km" \
+  --data-urlencode "limit=5"
