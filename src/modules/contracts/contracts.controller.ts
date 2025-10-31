@@ -10,6 +10,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
 import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
+import { CreateManualInvoiceDto } from './dto/create-manual-invoice.dto';
 import { Res } from '@nestjs/common';
 import type { Response } from 'express';
 
@@ -97,10 +98,23 @@ export class LandlordContractsController {
     return this.contractsService.createMonthlyRentInvoice(data.contractId, data.month, data.year);
   }
 
+  @Post('invoices/manual')
+  async createManualInvoice(@Request() req, @Body() body: CreateManualInvoiceDto, @Query() query: any) {
+    const landlordId = req.user.userId;
+    // Log và chuẩn hoá contractId tại controller (tăng độ chắc chắn)
+    const raw: any = body as any;
+    const normalizedContractId = raw?.contractId ?? raw?.contractID ?? raw?.contract_id ?? raw?.id ?? query?.contractId ?? query?.id;
+    const normalizedNumber = Number(normalizedContractId);
+    if (!Number.isFinite(normalizedNumber)) {
+      throw new BadRequestException('Invalid contractId');
+    }
+    const normalizedBody: any = { ...raw, ...query, contractId: normalizedNumber };
+    return this.contractsService.createManualMonthlyInvoice(landlordId, normalizedBody);
+  }
+
   @Post('invoices/generate-monthly')
   async generateMonthlyInvoices(@Request() req) {
-    // Chỉ admin mới có quyền chạy batch này
-    return this.contractsService.createMonthlyInvoicesForAllContracts();
+    throw new BadRequestException('Tự động tạo hoá đơn đã bị vô hiệu hoá. Vui lòng tạo thủ công.');
   }
 
   @Get('invoices/:id')
@@ -111,6 +125,13 @@ export class LandlordContractsController {
   @Put('invoices/:id')
   async updateInvoice(@Param('id') invoiceId: number, @Body() updateData: any) {
     return this.contractsService.updateInvoiceStatus(invoiceId, updateData.status, updateData.paymentMethod);
+  }
+
+  // Dashboard summary for landlord
+  @Get('dashboard/summary')
+  async getDashboardSummary(@Request() req, @Query('from') from?: string, @Query('to') to?: string) {
+    const landlordId = req.user.userId;
+    return this.contractsService.getLandlordDashboardSummary(landlordId, from, to);
   }
 
 

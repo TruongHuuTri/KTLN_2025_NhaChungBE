@@ -85,7 +85,7 @@ export class AdminPostsController {
 
   @Put(':id/approve')
   async approvePost(@Param('id') postId: string) {
-    return this.postsService.updatePostStatus(parseInt(postId), 'approved');
+    return this.postsService.updatePostStatus(parseInt(postId), 'active');
   }
 
   @Put(':id/reject')

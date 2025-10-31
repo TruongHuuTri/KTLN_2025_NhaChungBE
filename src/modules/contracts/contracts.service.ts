@@ -567,6 +567,133 @@ export class ContractsService {
   }
 
   /**
+   * Tạo hoá đơn thủ công theo số liệu chủ nhà nhập (điện/nước/phí khác) cho tháng/năm
+   */
+  async createManualMonthlyInvoice(
+    landlordId: number,
+    data: import('./dto/create-manual-invoice.dto').CreateManualInvoiceDto
+  ): Promise<Invoice> {
+    const { month, year } = data;
+    // Nới lỏng: chấp nhận nhiều key để tránh sai sót từ FE
+    const rawBody: any = data as any;
+    const contractIdRaw = rawBody.contractId ?? rawBody.contractID ?? rawBody.id ?? rawBody.contract_id;
+    const candidates: Array<number | string> = [];
+    if (contractIdRaw !== undefined && contractIdRaw !== null) {
+      const asNum = Number(contractIdRaw);
+      if (Number.isFinite(asNum)) candidates.push(asNum);
+      const asStr = String(contractIdRaw);
+      if (asStr.length > 0) candidates.push(asStr);
+    }
+    if (candidates.length === 0) {
+      throw new BadRequestException('Invalid contractId');
+    }
+
+    // Tìm hợp đồng theo contractId (chấp nhận cả number và string) và đúng landlord
+    const contract = await this.contractModel.findOne({
+      $and: [
+        { landlordId: Number(landlordId) },
+        { $or: candidates.map((v) => ({ contractId: v })) }
+      ]
+    }).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+    // landlord đã được ràng buộc trong truy vấn
+
+    const room = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const invoiceId = await this.getNextInvoiceId();
+
+    const dueDate = data.dueDate
+      ? new Date(data.dueDate)
+      : new Date(year, month - 1, 15);
+
+    const items: Array<{ description: string; amount: number; type: string }>= [];
+    let totalAmount = 0;
+
+    // Rent
+    const includeRent = data.includeRent !== false;
+    if (includeRent) {
+      const rentAmount = typeof data.rentAmountOverride === 'number' ? data.rentAmountOverride : (contract.monthlyRent || 0);
+      if (rentAmount > 0) {
+        items.push({ description: `Tiền thuê tháng ${month}/${year}`, amount: rentAmount, type: 'rent' });
+        totalAmount += rentAmount;
+      }
+    }
+
+    // Electricity
+    const hasElectricityNumbers = typeof data.electricityStart === 'number' && typeof data.electricityEnd === 'number';
+    if (hasElectricityNumbers) {
+      const kwh = Math.max(0, (data.electricityEnd as number) - (data.electricityStart as number));
+      const unitPrice = typeof data.electricityUnitPrice === 'number' && data.electricityUnitPrice! >= 0
+        ? data.electricityUnitPrice as number
+        : (room.utilities?.electricityPricePerKwh || 0);
+      const amount = kwh * unitPrice;
+      if (amount > 0) {
+        items.push({ description: `Điện: ${kwh} kWh x ${unitPrice.toLocaleString()}đ`, amount, type: 'electricity' });
+        totalAmount += amount;
+      }
+    }
+
+    // Water
+    const hasWaterNumbers = typeof data.waterStart === 'number' && typeof data.waterEnd === 'number';
+    if (hasWaterNumbers) {
+      const m3 = Math.max(0, (data.waterEnd as number) - (data.waterStart as number));
+      const unitPrice = typeof data.waterUnitPrice === 'number' && data.waterUnitPrice! >= 0
+        ? data.waterUnitPrice as number
+        : (room.utilities?.waterPrice || 0);
+      const amount = m3 * unitPrice;
+      if (amount > 0) {
+        items.push({ description: `Nước: ${m3} m³ x ${unitPrice.toLocaleString()}đ`, amount, type: 'water' });
+        totalAmount += amount;
+      }
+    }
+
+    // Other items
+    if (Array.isArray(data.otherItems)) {
+      for (const it of data.otherItems) {
+        if (!it || typeof it.amount !== 'number' || it.amount <= 0) continue;
+        items.push({ description: it.description || 'Khoản phí khác', amount: it.amount, type: it.type || 'other' });
+        totalAmount += it.amount;
+      }
+    }
+
+    if (items.length === 0 || totalAmount <= 0) {
+      throw new BadRequestException('Invoice has no payable items');
+    }
+
+    const tenantId = contract.tenants && contract.tenants.length > 0
+      ? Number(contract.tenants[0].tenantId)
+      : undefined;
+    if (!tenantId) {
+      throw new BadRequestException('Contract has no tenant to bill');
+    }
+
+    const descriptionParts = items.map(i => i.description);
+    if (data.note) descriptionParts.push(data.note);
+
+    const invoice = new this.invoiceModel({
+      invoiceId,
+      contractId: Number(contract.contractId),
+      roomId: contract.roomId,
+      tenantId,
+      landlordId: contract.landlordId,
+      invoiceType: 'monthly_rent',
+      amount: totalAmount,
+      status: 'pending',
+      dueDate,
+      description: `Hóa đơn tháng ${month}/${year} - ${descriptionParts.join('; ')}`,
+      items
+    });
+
+    await invoice.save();
+    return invoice;
+  }
+
+  /**
    * Tạo hóa đơn hàng tháng cho tất cả hợp đồng active
    */
   async createMonthlyInvoicesForAllContracts(): Promise<{ created: number; errors: number }> {
@@ -636,6 +763,81 @@ export class ContractsService {
       throw new NotFoundException('Invoice not found');
     }
     return invoice;
+  }
+
+  /**
+   * Dashboard summary for landlord: contracts, revenue, rooms, posts
+   */
+  async getLandlordDashboardSummary(landlordId: number, from?: string, to?: string): Promise<any> {
+    const now = new Date();
+    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Contracts
+    const totalContracts = await this.contractModel.countDocuments({ landlordId }).exec();
+    const activeContracts = await this.contractModel.countDocuments({ landlordId, status: 'active' }).exec();
+    const expiredContracts = await this.contractModel.countDocuments({ landlordId, endDate: { $lt: now } }).exec();
+    const expiringSoonContracts = await this.contractModel.countDocuments({ landlordId, endDate: { $gte: now, $lte: in30Days } }).exec();
+
+    // Revenue (sum of paid invoices amount)
+    const paidMatch: any = { landlordId: Number(landlordId), status: 'paid' };
+    if (from) {
+      paidMatch.paidDate = paidMatch.paidDate || {};
+      paidMatch.paidDate.$gte = new Date(from);
+    }
+    if (to) {
+      paidMatch.paidDate = paidMatch.paidDate || {};
+      paidMatch.paidDate.$lte = new Date(to);
+    }
+    const paidInvoices = await this.invoiceModel.aggregate([
+      { $match: paidMatch },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).exec();
+    const revenueTotal = paidInvoices?.[0]?.total || 0;
+
+    // Revenue by month (last 12 months or from/to)
+    const rangeStart = from ? new Date(from) : new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const rangeEnd = to ? new Date(to) : now;
+    const revenueByMonthAgg = await this.invoiceModel.aggregate([
+      { $match: { landlordId: Number(landlordId), status: 'paid', paidDate: { $gte: rangeStart, $lte: rangeEnd } } },
+      { $group: { _id: { y: { $year: '$paidDate' }, m: { $month: '$paidDate' } }, amount: { $sum: '$amount' } } },
+      { $sort: { '_id.y': 1, '_id.m': 1 } }
+    ]).exec();
+    const revenueByMonth = revenueByMonthAgg.map((r: any) => ({ year: r._id.y, month: r._id.m, amount: r.amount }));
+
+    // Rooms (available/occupied)
+    const totalRooms = await this.roomModel.countDocuments({ landlordId }).exec();
+    const availableRooms = await this.roomModel.countDocuments({ landlordId, status: 'available' }).exec();
+    const occupiedRooms = await this.roomModel.countDocuments({ landlordId, status: 'occupied' }).exec();
+
+    // Posts by status for landlord
+    const postStatuses = ['pending', 'active', 'inactive', 'rejected', 'approved'];
+    const postsByStatus: Record<string, number> = {};
+    await Promise.all(postStatuses.map(async (s) => {
+      postsByStatus[s] = await this.postModel.countDocuments({ landlordId, status: s }).exec();
+    }));
+    const postsTotal = await this.postModel.countDocuments({ landlordId }).exec();
+
+    return {
+      contracts: {
+        total: totalContracts,
+        active: activeContracts,
+        expired: expiredContracts,
+        expiringSoon: expiringSoonContracts
+      },
+      revenue: {
+        totalPaid: revenueTotal,
+        byMonth: revenueByMonth
+      },
+      rooms: {
+        total: totalRooms,
+        available: availableRooms,
+        occupied: occupiedRooms
+      },
+      posts: {
+        total: postsTotal,
+        byStatus: postsByStatus
+      }
+    };
   }
 
 

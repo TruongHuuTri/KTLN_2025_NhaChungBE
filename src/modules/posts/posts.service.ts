@@ -26,7 +26,7 @@ export class PostsService {
       postId,
       userId,
       ...enrichedPostData,
-      status: 'active', // Tự động duyệt luôn
+      status: 'pending', // Mặc định chờ admin duyệt
     });
     
     return post.save();

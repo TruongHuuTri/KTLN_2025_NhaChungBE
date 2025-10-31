@@ -28,7 +28,7 @@ export class MonthlyInvoiceService {
       this.logger.log('Starting monthly invoice generation...');
 
       // Kiểm tra xem có bật tự động tạo hóa đơn không
-      const isEnabled = this.configService.get<boolean>('MONTHLY_INVOICE_ENABLED', true);
+      const isEnabled = this.configService.get<boolean>('MONTHLY_INVOICE_ENABLED', false);
       if (!isEnabled) {
         this.logger.log('Monthly invoice generation is disabled');
         return;
