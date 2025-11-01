@@ -14,6 +14,7 @@ import { Room, RoomSchema } from '../rooms/schemas/room.schema';
 import { Building, BuildingSchema } from '../rooms/schemas/building.schema';
 import { UsersModule } from '../users/users.module';
 import { PdfService } from '../../shared/services/pdf.service';
+import { MaintenanceFeeService } from '../../shared/services/maintenance-fee.service';
 
 @Module({
   imports: [
@@ -38,7 +39,7 @@ import { PdfService } from '../../shared/services/pdf.service';
     UsersModule,
   ],
   controllers: [LandlordContractsController, UserContractsController],
-  providers: [ContractsService, PdfService],
-  exports: [ContractsService, PdfService],
+  providers: [ContractsService, PdfService, MaintenanceFeeService],
+  exports: [ContractsService, PdfService, MaintenanceFeeService],
 })
 export class ContractsModule {}

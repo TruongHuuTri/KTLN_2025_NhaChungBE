@@ -11,7 +11,7 @@ export class PaymentOrder {
   @Prop({ required: true })
   invoiceId: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false }) // Optional for maintenance fee invoices
   tenantId: number;
 
   @Prop({ required: true })
@@ -21,7 +21,7 @@ export class PaymentOrder {
   amount: number;
 
   @Prop({ required: true })
-  orderType: string; // 'initial_payment', 'monthly_rent', 'deposit', 'utilities'
+  orderType: string; // 'initial_payment', 'monthly_rent', 'deposit', 'utilities', 'maintenance_fee'
 
   @Prop({ default: 'pending' })
   status: string; // 'pending', 'paid', 'expired', 'cancelled'

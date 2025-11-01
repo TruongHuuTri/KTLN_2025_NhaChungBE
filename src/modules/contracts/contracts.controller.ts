@@ -4,6 +4,7 @@ import { LandlordGuard } from '../users/guards/landlord.guard';
 import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
 import { ContractsService } from './contracts.service';
 import { PdfService } from '../../shared/services/pdf.service';
+import { MaintenanceFeeService } from '../../shared/services/maintenance-fee.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -19,7 +20,8 @@ import type { Response } from 'express';
 export class LandlordContractsController {
   constructor(
     private readonly contractsService: ContractsService,
-    private readonly pdfService: PdfService
+    private readonly pdfService: PdfService,
+    private readonly maintenanceFeeService: MaintenanceFeeService
   ) {}
 
   // Contract Management
@@ -152,6 +154,12 @@ export class LandlordContractsController {
   async rejectRoomSharingRequest(@Request() req, @Param('id') requestId: number) {
     const landlordId = req.user.userId;
     return this.contractsService.rejectRoomSharingByLandlord(requestId, landlordId);
+  }
+
+  // Test endpoint để tạo hóa đơn phí duy trì cho tất cả landlords
+  @Post('test/generate-maintenance-fee')
+  async generateMaintenanceFee() {
+    return this.maintenanceFeeService.manualGenerateMaintenanceInvoices();
   }
 }
 

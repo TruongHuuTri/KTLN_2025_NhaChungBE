@@ -8,20 +8,20 @@ export class Invoice {
   @Prop({ required: true, unique: true })
   invoiceId: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false }) // Optional for maintenance fee invoices
   tenantId: number;
 
   @Prop({ required: true })
   landlordId: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false }) // Optional for maintenance fee invoices
   roomId: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false }) // Optional for maintenance fee invoices
   contractId: number;
 
   @Prop({ required: true })
-  invoiceType: string; // 'rent', 'deposit', 'utilities', 'penalty'
+  invoiceType: string; // 'rent', 'deposit', 'utilities', 'penalty', 'maintenance_fee'
 
   @Prop({ required: true })
   amount: number;
