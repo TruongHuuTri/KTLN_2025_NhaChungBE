@@ -33,7 +33,7 @@ export class SearchService {
       should.push({
         multi_match: {
           query: p.q,
-          fields: ['title^3', 'description', 'address.full'],
+          fields: ['address.full^4', 'description^2.5', 'title^1.5'],
           type: 'best_fields',
           fuzziness: 'AUTO',
           minimum_should_match: '60%',
@@ -85,11 +85,22 @@ export class SearchService {
       },
     };
 
+    body.highlight = {
+      pre_tags: ['<mark>'],
+      post_tags: ['</mark>'],
+      fields: {
+        'address.full': {},
+        description: {},
+        title: {},
+      },
+    };
+
     const resp = await this.es.search({ index: this.index, body });
     const items = (resp.hits?.hits || []).map((h: any) => ({
       id: h._id,
       score: h._score,
       ...(h._source || {}),
+      highlight: h.highlight,
     }));
 
     return {

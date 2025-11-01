@@ -57,11 +57,12 @@ export class SearchIndexerService {
     }
 
     return {
+      postId: post?.postId ?? null,
       title: post?.title ?? '',
       description: post?.description ?? '',
       category: post?.category ?? '',
       type: post?.postType ?? '',
-      status: post?.status ?? '',
+      status: post?.status ?? 'active',
       source: post?.source ?? '',
       images: Array.isArray(post?.images) ? post.images : [],
       price: room?.price ?? null,
@@ -80,13 +81,24 @@ export class SearchIndexerService {
   }
 
   async indexPost(post: any, room?: any) {
-    const id = String(post?._id ?? post?.postId ?? post?.id);
-    if (!id) return;
+    const postId = post?.postId;
+    if (postId == null) {
+      this.logger.warn('Bỏ qua index vì thiếu postId.');
+      return;
+    }
     try {
       const document = await this.buildDoc(post, room);
-      await this.es.index({ index: this.index, id, document, refresh: 'wait_for' });
+      document.postId = postId;
+      document.status = post?.status ?? document?.status ?? 'active';
+
+      await this.es.index({
+        index: this.index,
+        id: String(postId),
+        document,
+        refresh: 'wait_for',
+      });
     } catch (err: any) {
-      this.logger.error(`Index post ${id} failed: ${err?.message || err}`);
+      this.logger.error(`Index post ${postId} failed: ${err?.message || err}`);
     }
   }
 
