@@ -11,6 +11,12 @@ export class Address {
   @Prop({ required: true })
   provinceName: string; // Tên tỉnh/TP
 
+  @Prop()
+  districtCode?: string; // Mã quận/huyện (tuỳ CSV)
+
+  @Prop()
+  districtName?: string; // Tên quận/huyện
+
   @Prop({ required: true })
   wardCode: string; // Mã phường/xã
 

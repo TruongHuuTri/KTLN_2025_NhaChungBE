@@ -1,0 +1,295 @@
+provinceCode,provinceName,districtCode,districtName,wardCode,wardName
+701,Tp Hồ Chí Minh,71701,Thành phố Vũng Tàu,71701001,Phường Vũng Tàu
+701,Tp Hồ Chí Minh,71701,Thành phố Vũng Tàu,71701002,Phường Tam Thắng
+701,Tp Hồ Chí Minh,71701,Thành phố Vũng Tàu,71701003,Phường Rạch Dừa
+701,Tp Hồ Chí Minh,71701,Thành phố Vũng Tàu,71701004,Phường Phước Thắng
+701,Tp Hồ Chí Minh,71703,Thành phố Bà Rịa,71703005,Phường Bà Rịa
+701,Tp Hồ Chí Minh,71703,Thành phố Bà Rịa,71703006,Phường Long Hương
+701,Tp Hồ Chí Minh,71709,Thành phố Phú Mỹ,71709007,Phường Phú Mỹ
+701,Tp Hồ Chí Minh,71703,Thành phố Bà Rịa,71703008,Phường Tam Long
+701,Tp Hồ Chí Minh,71709,Thành phố Phú Mỹ,71709009,Phường Tân Thành
+701,Tp Hồ Chí Minh,71709,Thành phố Phú Mỹ,71709010,Phường Tân Phước
+701,Tp Hồ Chí Minh,71709,Thành phố Phú Mỹ,71709011,Phường Tân Hải
+701,Tp Hồ Chí Minh,71709,Thành phố Phú Mỹ,71709012,Xã Châu Pha
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705013,Xã Ngãi Giao
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705014,Xã Bình Giã
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705015,Xã Kim Long
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705016,Xã Châu Đức
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705017,Xã Xuân Sơn
+701,Tp Hồ Chí Minh,71705,Huyện Châu Đức,71705018,Xã Nghĩa Thành
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707019,Xã Hồ Tràm
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707020,Xã Xuyên Mộc
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707021,Xã Hòa Hội
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707022,Xã Bàu Lâm
+701,Tp Hồ Chí Minh,71712,Huyện Long Đất,71712023,Xã Phước Hải
+701,Tp Hồ Chí Minh,71712,Huyện Long Đất,71712024,Xã Long Hải
+701,Tp Hồ Chí Minh,71712,Huyện Long Đất,71712025,Xã Đất Đỏ
+701,Tp Hồ Chí Minh,71712,Huyện Long Đất,71712026,Xã Long Điền
+701,Tp Hồ Chí Minh,71713,Huyện Côn Đảo,71713027,Đặc khu Côn Đảo
+701,Tp Hồ Chí Minh,71109,Thành phố Dĩ An,71109028,Phường Đông Hoà
+701,Tp Hồ Chí Minh,71109,Thành phố Dĩ An,71109029,Phường Dĩ An
+701,Tp Hồ Chí Minh,71109,Thành phố Dĩ An,71109030,Phường Tân Đông Hiệp
+701,Tp Hồ Chí Minh,71107,Thành phố Thuận An,71107031,Phường Thuận An
+701,Tp Hồ Chí Minh,71107,Thành phố Thuận An,71107032,Phường Thuận Giao
+701,Tp Hồ Chí Minh,71107,Thành phố Thuận An,71107033,Phường Bình Hoà
+701,Tp Hồ Chí Minh,71107,Thành phố Thuận An,71107034,Phường Lái Thiêu
+701,Tp Hồ Chí Minh,71107,Thành phố Thuận An,71107035,Phường An Phú
+701,Tp Hồ Chí Minh,71101,Thành phố Thủ Dầu Một,71101036,Phường Bình Dương
+701,Tp Hồ Chí Minh,71101,Thành phố Thủ Dầu Một,71101037,Phường Chánh Hiệp
+701,Tp Hồ Chí Minh,71101,Thành phố Thủ Dầu Một,71101038,Phường Thủ Dầu Một
+701,Tp Hồ Chí Minh,71101,Thành phố Thủ Dầu Một,71101039,Phường Phú Lợi
+701,Tp Hồ Chí Minh,71105,Thành phố Tân Uyên,71105040,Phường Vĩnh Tân
+701,Tp Hồ Chí Minh,71105,Thành phố Tân Uyên,71105041,Phường Bình Cơ
+701,Tp Hồ Chí Minh,71105,Thành phố Tân Uyên,71105042,Phường Tân Uyên
+701,Tp Hồ Chí Minh,71105,Thành phố Tân Uyên,71105043,Phường Tân Hiệp
+701,Tp Hồ Chí Minh,71105,Thành phố Tân Uyên,71105044,Phường Tân Khánh
+701,Tp Hồ Chí Minh,71103,Thành phố Bến Cát,71103045,Phường Hoà Lợi
+701,Tp Hồ Chí Minh,71101,Thành phố Thủ Dầu Một,71101046,Phường Phú An
+701,Tp Hồ Chí Minh,71113,Huyện Dầu Tiếng,71113047,Phường Tây Nam
+701,Tp Hồ Chí Minh,71115,Huyện Bàu Bàng,71115048,Phường Long Nguyên
+701,Tp Hồ Chí Minh,71115,Huyện Bàu Bàng,71115049,Phường Bến Cát
+701,Tp Hồ Chí Minh,71115,Huyện Bàu Bàng,71115050,Phường Chánh Phú Hoà
+701,Tp Hồ Chí Minh,71117,Huyện Bắc Tân Uyên,71117051,Xã Bắc Tân Uyên
+701,Tp Hồ Chí Minh,71117,Huyện Bắc Tân Uyên,71117052,Xã Thường Tân
+701,Tp Hồ Chí Minh,71111,Huyện Phú Giáo,71111053,Xã An Long
+701,Tp Hồ Chí Minh,71111,Huyện Phú Giáo,71111054,Xã Phước Thành
+701,Tp Hồ Chí Minh,71111,Huyện Phú Giáo,71111055,Xã Phước Hoà
+701,Tp Hồ Chí Minh,71111,Huyện Phú Giáo,71111056,Xã Phú Giáo
+701,Tp Hồ Chí Minh,71115,Huyện Bàu Bàng,71115057,Xã Trừ Văn Thố
+701,Tp Hồ Chí Minh,71115,Huyện Bàu Bàng,71115058,Xã Bàu Bàng
+701,Tp Hồ Chí Minh,71113,Huyện Dầu Tiếng,71113059,Xã Minh Thạnh
+701,Tp Hồ Chí Minh,71113,Huyện Dầu Tiếng,71113060,Xã Long Hoà
+701,Tp Hồ Chí Minh,71113,Huyện Dầu Tiếng,71113061,Xã Dầu Tiếng
+701,Tp Hồ Chí Minh,71113,Huyện Dầu Tiếng,71113062,Xã Thanh An
+701,Tp Hồ Chí Minh,70101,Quận 1,70101063,Phường Sài Gòn
+701,Tp Hồ Chí Minh,70101,Quận 1,70101064,Phường Tân Định
+701,Tp Hồ Chí Minh,70101,Quận 1,70101065,Phường Bến Thành
+701,Tp Hồ Chí Minh,70101,Quận 1,70101066,Phường Cầu Ông Lãnh
+701,Tp Hồ Chí Minh,70105,Quận 3,70105067,Phường Bàn Cờ
+701,Tp Hồ Chí Minh,70105,Quận 3,70105068,Phường Xuân Hoà
+701,Tp Hồ Chí Minh,70105,Quận 3,70105069,Phường Nhiêu Lộc
+701,Tp Hồ Chí Minh,70107,Quận 4,70107070,Phường Xóm Chiếu
+701,Tp Hồ Chí Minh,70107,Quận 4,70107071,Phường Khánh Hội
+701,Tp Hồ Chí Minh,70107,Quận 4,70107072,Phường Vĩnh Hội
+701,Tp Hồ Chí Minh,70109,Quận 5,70109073,Phường Chợ Quán
+701,Tp Hồ Chí Minh,70109,Quận 5,70109074,Phường An Đông
+701,Tp Hồ Chí Minh,70109,Quận 5,70109075,Phường Chợ Lớn
+701,Tp Hồ Chí Minh,70111,Quận 6,70111076,Phường Bình Tây
+701,Tp Hồ Chí Minh,70111,Quận 6,70111077,Phường Bình Tiên
+701,Tp Hồ Chí Minh,70111,Quận 6,70111078,Phường Bình Phú
+701,Tp Hồ Chí Minh,70111,Quận 6,70111079,Phường Phú Lâm
+701,Tp Hồ Chí Minh,70113,Quận 7,70113080,Phường Tân Thuận
+701,Tp Hồ Chí Minh,70113,Quận 7,70113081,Phường Phú Thuận
+701,Tp Hồ Chí Minh,70113,Quận 7,70113082,Phường Tân Mỹ
+701,Tp Hồ Chí Minh,70113,Quận 7,70113083,Phường Tân Hưng
+701,Tp Hồ Chí Minh,70115,Quận 8,70115084,Phường Chánh Hưng
+701,Tp Hồ Chí Minh,70115,Quận 8,70115085,Phường Phú Định
+701,Tp Hồ Chí Minh,70115,Quận 8,70115086,Phường Bình Đông
+701,Tp Hồ Chí Minh,70119,Quận 10,70119087,Phường Diên Hồng
+701,Tp Hồ Chí Minh,70119,Quận 10,70119088,Phường Vườn Lài
+701,Tp Hồ Chí Minh,70119,Quận 10,70119089,Phường Hoà Hưng
+701,Tp Hồ Chí Minh,70121,Quận 11,70121090,Phường Minh Phụng
+701,Tp Hồ Chí Minh,70121,Quận 11,70121091,Phường Bình Thới
+701,Tp Hồ Chí Minh,70121,Quận 11,70121092,Phường Hoà Bình
+701,Tp Hồ Chí Minh,70121,Quận 11,70121093,Phường Phú Thọ
+701,Tp Hồ Chí Minh,70123,Quận 12,70123094,Phường Đông Hưng Thuận
+701,Tp Hồ Chí Minh,70123,Quận 12,70123095,Phường Trung Mỹ Tây
+701,Tp Hồ Chí Minh,70123,Quận 12,70123096,Phường Tân Thới Hiệp
+701,Tp Hồ Chí Minh,70123,Quận 12,70123097,Phường Thới An
+701,Tp Hồ Chí Minh,70123,Quận 12,70123098,Phường An Phú Đông
+701,Tp Hồ Chí Minh,70134,Quận Bình Tân,70134099,Phường An Lạc
+701,Tp Hồ Chí Minh,70134,Quận Bình Tân,70134100,Phường Tân Tạo
+701,Tp Hồ Chí Minh,70134,Quận Bình Tân,70134101,Phường Bình Tân
+701,Tp Hồ Chí Minh,70134,Quận Bình Tân,70134102,Phường Bình Trị Đông
+701,Tp Hồ Chí Minh,70134,Quận Bình Tân,70134103,Phường Bình Hưng Hoà
+701,Tp Hồ Chí Minh,70129,Quận Bình Thạnh,70129104,Phường Gia Định
+701,Tp Hồ Chí Minh,70129,Quận Bình Thạnh,70129105,Phường Bình Thạnh
+701,Tp Hồ Chí Minh,70129,Quận Bình Thạnh,70129106,Phường Bình Lợi Trung
+701,Tp Hồ Chí Minh,70129,Quận Bình Thạnh,70129107,Phường Thạnh Mỹ Tây
+701,Tp Hồ Chí Minh,70129,Quận Bình Thạnh,70129108,Phường Bình Quới
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125109,Phường Hạnh Thông
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125110,Phường An Nhơn
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125111,Phường Gò Vấp
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125112,Phường An Hội Đông
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125113,Phường Thông Tây Hội
+701,Tp Hồ Chí Minh,70125,Quận Gò Vấp,70125114,Phường An Hội Tây
+701,Tp Hồ Chí Minh,70131,Quận Phú Nhuận,70131115,Phường Đức Nhuận
+701,Tp Hồ Chí Minh,70131,Quận Phú Nhuận,70131116,Phường Cầu Kiệu
+701,Tp Hồ Chí Minh,70131,Quận Phú Nhuận,70131117,Phường Phú Nhuận
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127118,Phường Tân Sơn Hoà
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127119,Phường Tân Sơn Nhất
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127120,Phường Tân Hoà
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127121,Phường Bảy Hiền
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127122,Phường Tân Bình
+701,Tp Hồ Chí Minh,70127,Quận Tân Bình,70127123,Phường Tân Sơn
+701,Tp Hồ Chí Minh,70128,Quận Tân Phú,70128124,Phường Tây Thạnh
+701,Tp Hồ Chí Minh,70128,Quận Tân Phú,70128125,Phường Tân Sơn Nhì
+701,Tp Hồ Chí Minh,70128,Quận Tân Phú,70128126,Phường Phú Thọ Hoà
+701,Tp Hồ Chí Minh,70128,Quận Tân Phú,70128127,Phường Tân Phú
+701,Tp Hồ Chí Minh,70128,Quận Tân Phú,70128128,Phường Phú Thạnh
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145129,Phường Hiệp Bình
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145130,Phường Thủ Đức
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145131,Phường Tam Bình
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145132,Phường Linh Xuân
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145133,Phường Tăng Nhơn Phú
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145134,Phường Long Bình
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145135,Phường Long Phước
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145136,Phường Long Trường
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145137,Phường Cát Lái
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145138,Phường Bình Trưng
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145139,Phường Phước Long
+701,Tp Hồ Chí Minh,70145,Thành phố Thủ Đức,70145140,Phường An Khánh
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139141,Xã Vĩnh Lộc
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139142,Xã Tân Vĩnh Lộc
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139143,Xã Bình Lợi
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139144,Xã Tân Nhựt
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139145,Xã Bình Chánh
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139146,Xã Hưng Long
+701,Tp Hồ Chí Minh,70139,Huyện Bình Chánh,70139147,Xã Bình Hưng
+701,Tp Hồ Chí Minh,70143,Huyện Cần Giờ,70143148,Xã Bình Khánh
+701,Tp Hồ Chí Minh,70143,Huyện Cần Giờ,70143149,Xã An Thới Đông
+701,Tp Hồ Chí Minh,70143,Huyện Cần Giờ,70143150,Xã Cần Giờ
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135151,Xã Củ Chi
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135152,Xã Tân An Hội
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135153,Xã Thái Mỹ
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135154,Xã An Nhơn Tây
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135155,Xã Nhuận Đức
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135156,Xã Phú Hoà Đông
+701,Tp Hồ Chí Minh,70135,Huyện Củ Chi,70135157,Xã Bình Mỹ
+701,Tp Hồ Chí Minh,70137,Huyện Hóc Môn,70137158,Xã Đông Thạnh
+701,Tp Hồ Chí Minh,70137,Huyện Hóc Môn,70137159,Xã Hóc Môn
+701,Tp Hồ Chí Minh,70137,Huyện Hóc Môn,70137160,Xã Xuân Thới Sơn
+701,Tp Hồ Chí Minh,70137,Huyện Hóc Môn,70137161,Xã Bà Điểm
+701,Tp Hồ Chí Minh,70141,Huyện Nhà Bè,70141162,Xã Nhà Bè
+701,Tp Hồ Chí Minh,70141,Huyện Nhà Bè,70141163,Xã Hiệp Phước
+701,Tp Hồ Chí Minh,71701,Thành phố Vũng Tàu,71701164,Xã Long Sơn
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707165,Xã Hòa Hiệp
+701,Tp Hồ Chí Minh,71707,Huyện Xuyên Mộc,71707166,Xã Bình Châu
+701,Tp Hồ Chí Minh,71103,Thành phố Bến Cát,71103167,Phường Thới Hoà
+701,Tp Hồ Chí Minh,70143,Huyện Cần Giờ,70143168,Xã Thạnh An
+101,Thành phố Hà Nội,10105,Quận Hoàn Kiếm,10105001,Phường Hoàn Kiếm
+101,Thành phố Hà Nội,10105,Quận Hoàn Kiếm,10105002,Phường Cửa Nam
+101,Thành phố Hà Nội,10101,Quận Ba Đình,10101003,Phường Ba Đình
+101,Thành phố Hà Nội,10101,Quận Ba Đình,10101004,Phường Ngọc Hà
+101,Thành phố Hà Nội,10101,Quận Ba Đình,10101005,Phường Giảng Võ
+101,Thành phố Hà Nội,10107,Quận Hai Bà Trưng,10107006,Phường Hai Bà Trưng
+101,Thành phố Hà Nội,10107,Quận Hai Bà Trưng,10107007,Phường Vĩnh Tuy
+101,Thành phố Hà Nội,10107,Quận Hai Bà Trưng,10107008,Phường Bạch Mai
+101,Thành phố Hà Nội,10109,Quận Đống Đa,10109009,Phường Đống Đa
+101,Thành phố Hà Nội,10109,Quận Đống Đa,10109010,Phường Kim Liên
+101,Thành phố Hà Nội,10109,Quận Đống Đa,10109011,Phường Văn Miếu - Quốc Tử Giám
+101,Thành phố Hà Nội,10109,Quận Đống Đa,10109012,Phường Láng
+101,Thành phố Hà Nội,10109,Quận Đống Đa,10109013,Phường Ô Chợ Dừa
+101,Thành phố Hà Nội,10103,Quận Tây Hồ,10103014,Phường Hồng Hà
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108015,Phường Lĩnh Nam
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108016,Phường Hoàng Mai
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108017,Phường Vĩnh Hưng
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108018,Phường Tương Mai
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108019,Phường Định Công
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123020,Phường Hoàng Liệt
+101,Thành phố Hà Nội,10108,Quận Hoàng Mai,10108021,Phường Yên Sở
+101,Thành phố Hà Nội,10111,Quận Thanh Xuân,10111022,Phường Thanh Xuân
+101,Thành phố Hà Nội,10111,Quận Thanh Xuân,10111023,Phường Khương Đình
+101,Thành phố Hà Nội,10111,Quận Thanh Xuân,10111024,Phường Phương Liệt
+101,Thành phố Hà Nội,10113,Quận Cầu Giấy,10113025,Phường Cầu Giấy
+101,Thành phố Hà Nội,10113,Quận Cầu Giấy,10113026,Phường Nghĩa Đô
+101,Thành phố Hà Nội,10113,Quận Cầu Giấy,10113027,Phường Yên Hoà
+101,Thành phố Hà Nội,10103,Quận Tây Hồ,10103028,Phường Tây Hồ
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157029,Phường Phú Thượng
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157030,Phường Tây Tựu
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157031,Phường Phú Diễn
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157032,Phường Xuân Đỉnh
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157033,Phường Đông Ngạc
+101,Thành phố Hà Nội,10157,Quận Bắc Từ Liêm,10157034,Phường Thượng Cát
+101,Thành phố Hà Nội,10155,Quận Nam Từ Liêm,10155035,Phường Từ Liêm
+101,Thành phố Hà Nội,10155,Quận Nam Từ Liêm,10155036,Phường Xuân Phương
+101,Thành phố Hà Nội,10155,Quận Nam Từ Liêm,10155037,Phường Tây Mỗ
+101,Thành phố Hà Nội,10155,Quận Nam Từ Liêm,10155038,Phường Đại Mỗ
+101,Thành phố Hà Nội,10106,Quận Long Biên,10106039,Phường Long Biên
+101,Thành phố Hà Nội,10106,Quận Long Biên,10106040,Phường Bồ Đề
+101,Thành phố Hà Nội,10106,Quận Long Biên,10106041,Phường Việt Hưng
+101,Thành phố Hà Nội,10106,Quận Long Biên,10106042,Phường Phúc Lợi
+101,Thành phố Hà Nội,10127,Quận Hà Đông,10127043,Phường Hà Đông
+101,Thành phố Hà Nội,10127,Quận Hà Đông,10127044,Phường Dương Nội
+101,Thành phố Hà Nội,10127,Quận Hà Đông,10127045,Phường Yên Nghĩa
+101,Thành phố Hà Nội,10127,Quận Hà Đông,10127046,Phường Phú Lương
+101,Thành phố Hà Nội,10127,Quận Hà Đông,10127047,Phường Kiến Hưng
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123048,Xã Thanh Trì
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123049,Xã Đại Thanh
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123050,Xã Nam Phù
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123051,Xã Ngọc Hồi
+101,Thành phố Hà Nội,10123,Huyện Thanh Trì,10123052,Phường Thanh Liệt
+101,Thành phố Hà Nội,10143,Huyện Thường Tín,10143053,Xã Thượng Phúc
+101,Thành phố Hà Nội,10143,Huyện Thường Tín,10143054,Xã Thường Tín
+101,Thành phố Hà Nội,10143,Huyện Thường Tín,10143055,Xã Chương Dương
+101,Thành phố Hà Nội,10143,Huyện Thường Tín,10143056,Xã Hồng Vân
+101,Thành phố Hà Nội,10149,Huyện Phú Xuyên,10149057,Xã Phú Xuyên
+101,Thành phố Hà Nội,10149,Huyện Phú Xuyên,10149058,Xã Phượng Dực
+101,Thành phố Hà Nội,10149,Huyện Phú Xuyên,10149059,Xã Chuyên Mỹ
+101,Thành phố Hà Nội,10149,Huyện Phú Xuyên,10149060,Xã Đại Xuyên
+101,Thành phố Hà Nội,10141,Huyện Thanh Oai,10141061,Xã Thanh Oai
+101,Thành phố Hà Nội,10141,Huyện Thanh Oai,10141062,Xã Bình Minh
+101,Thành phố Hà Nội,10141,Huyện Thanh Oai,10141063,Xã Tam Hưng
+101,Thành phố Hà Nội,10141,Huyện Thanh Oai,10141064,Xã Dân Hoà
+101,Thành phố Hà Nội,10147,Huyện Ứng Hoà,10147065,Xã Vân Đình
+101,Thành phố Hà Nội,10147,Huyện Ứng Hoà,10147066,Xã Ứng Thiên
+101,Thành phố Hà Nội,10147,Huyện Ứng Hoà,10147067,Xã Hoà Xá
+101,Thành phố Hà Nội,10147,Huyện Ứng Hoà,10147068,Xã Ứng Hoà
+101,Thành phố Hà Nội,10145,Huyện Mỹ Đức,10145069,Xã Mỹ Đức
+101,Thành phố Hà Nội,10145,Huyện Mỹ Đức,10145070,Xã Hồng Sơn
+101,Thành phố Hà Nội,10145,Huyện Mỹ Đức,10145071,Xã Phúc Sơn
+101,Thành phố Hà Nội,10145,Huyện Mỹ Đức,10145072,Xã Hương Sơn
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153073,Phường Chương Mỹ
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153074,Xã Phú Nghĩa
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153075,Xã Xuân Mai
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153076,Xã Trần Phú
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153077,Xã Hoà Phú
+101,Thành phố Hà Nội,10153,Huyện Chương Mỹ,10153078,Xã Quảng Bị
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151079,Xã Minh Châu
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151080,Xã Quảng Oai
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151081,Xã Vật Lại
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151082,Xã Cổ Đô
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151083,Xã Bất Bạt
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151084,Xã Suối Hai
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151085,Xã Ba Vì
+101,Thành phố Hà Nội,10151,Huyện Ba Vì,10151086,Xã Yên Bài
+101,Thành phố Hà Nội,10129,Thị xã Sơn Tây,10129087,Phường Sơn Tây
+101,Thành phố Hà Nội,10129,Thị xã Sơn Tây,10129088,Phường Tùng Thiện
+101,Thành phố Hà Nội,10129,Thị xã Sơn Tây,10129089,Xã Đoài Phương
+101,Thành phố Hà Nội,10131,Huyện Phúc Thọ,10131090,Xã Phúc Thọ
+101,Thành phố Hà Nội,10131,Huyện Phúc Thọ,10131091,Xã Phúc Lộc
+101,Thành phố Hà Nội,10131,Huyện Phúc Thọ,10131092,Xã Hát Môn
+101,Thành phố Hà Nội,10135,Huyện Thạch Thất,10135093,Xã Thạch Thất
+101,Thành phố Hà Nội,10135,Huyện Thạch Thất,10135094,Xã Hạ Bằng
+101,Thành phố Hà Nội,10135,Huyện Thạch Thất,10135095,Xã Tây Phương
+101,Thành phố Hà Nội,10135,Huyện Thạch Thất,10135096,Xã Hoà Lạc
+101,Thành phố Hà Nội,10135,Huyện Thạch Thất,10135097,Xã Yên Xuân
+101,Thành phố Hà Nội,10139,Huyện Quốc Oai,10139098,Xã Quốc Oai
+101,Thành phố Hà Nội,10139,Huyện Quốc Oai,10139099,Xã Hưng Đạo
+101,Thành phố Hà Nội,10139,Huyện Quốc Oai,10139100,Xã Kiều Phú
+101,Thành phố Hà Nội,10139,Huyện Quốc Oai,10139101,Xã Phú Cát
+101,Thành phố Hà Nội,10137,Huyện Hoài Đức,10137102,Xã Hoài Đức
+101,Thành phố Hà Nội,10137,Huyện Hoài Đức,10137103,Xã Dương Hoà
+101,Thành phố Hà Nội,10137,Huyện Hoài Đức,10137104,Xã Sơn Đồng
+101,Thành phố Hà Nội,10137,Huyện Hoài Đức,10137105,Xã An Khánh
+101,Thành phố Hà Nội,10133,Huyện Đan Phượng,10133106,Xã Đan Phượng
+101,Thành phố Hà Nội,10133,Huyện Đan Phượng,10133107,Xã Ô Diên
+101,Thành phố Hà Nội,10133,Huyện Đan Phượng,10133108,Xã Liên Minh
+101,Thành phố Hà Nội,10119,Huyện Gia Lâm,10119109,Xã Gia Lâm
+101,Thành phố Hà Nội,10119,Huyện Gia Lâm,10119110,Xã Thuận An
+101,Thành phố Hà Nội,10119,Huyện Gia Lâm,10119111,Xã Bát Tràng
+101,Thành phố Hà Nội,10119,Huyện Gia Lâm,10119112,Xã Phù Đổng
+101,Thành phố Hà Nội,10117,Huyện Đông Anh,10117113,Xã Thư Lâm
+101,Thành phố Hà Nội,10117,Huyện Đông Anh,10117114,Xã Đông Anh
+101,Thành phố Hà Nội,10117,Huyện Đông Anh,10117115,Xã Phúc Thịnh
+101,Thành phố Hà Nội,10117,Huyện Đông Anh,10117116,Xã Thiên Lộc
+101,Thành phố Hà Nội,10117,Huyện Đông Anh,10117117,Xã Vĩnh Thanh
+101,Thành phố Hà Nội,10125,Huyện Mê Linh,10125118,Xã Mê Linh
+101,Thành phố Hà Nội,10125,Huyện Mê Linh,10125119,Xã Yên Lãng
+101,Thành phố Hà Nội,10125,Huyện Mê Linh,10125120,Xã Tiến Thắng
+101,Thành phố Hà Nội,10125,Huyện Mê Linh,10125121,Xã Quang Minh
+101,Thành phố Hà Nội,10115,Huyện Sóc Sơn,10115122,Xã Sóc Sơn
+101,Thành phố Hà Nội,10115,Huyện Sóc Sơn,10115123,Xã Đa Phúc
+101,Thành phố Hà Nội,10115,Huyện Sóc Sơn,10115124,Xã Nội Bài
+101,Thành phố Hà Nội,10115,Huyện Sóc Sơn,10115125,Xã Trung Giã
+101,Thành phố Hà Nội,10115,Huyện Sóc Sơn,10115126,Xã Kim Anh

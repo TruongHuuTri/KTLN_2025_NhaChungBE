@@ -9,6 +9,14 @@ export class CreateAddressDto {
   @IsString({ message: 'Tên tỉnh phải là chuỗi' })
   provinceName: string;
 
+  @IsOptional()
+  @IsString({ message: 'Mã quận/huyện phải là chuỗi' })
+  districtCode?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Tên quận/huyện phải là chuỗi' })
+  districtName?: string;
+
   @IsNotEmpty({ message: 'Mã phường/xã không được để trống' })
   @IsString({ message: 'Mã phường/xã phải là chuỗi' })
   wardCode: string;

@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "amenities": [
+    {
+      "key": "ban_cong",
+      "keywords": ["ban công", "ban cong", "balcony", "sân thượng", "san thuong", "terrace"],
+      "synonyms": ["ban công", "ban cong", "balcony", "sân thượng", "san thuong", "terrace", "loggia"]
+    },
+    {
+      "key": "ho_boi",
+      "keywords": ["hồ bơi", "ho boi", "swimming pool", "bể bơi", "be boi", "pool"],
+      "synonyms": ["hồ bơi", "ho boi", "swimming pool", "bể bơi", "be boi", "pool", "hồ bơi trong nhà", "indoor pool"]
+    },
+    {
+      "key": "gym",
+      "keywords": ["gym", "phòng gym", "phong gym", "phòng tập", "phong tap", "fitness", "thể dục", "the duc"],
+      "synonyms": ["gym", "phòng gym", "phong gym", "phòng tập", "phong tap", "fitness", "thể dục", "the duc", "phòng tập gym", "fitness center"]
+    },
+    {
+      "key": "giu_xe",
+      "keywords": ["gửi xe", "gui xe", "parking", "bãi đỗ xe", "bai do xe", "chỗ để xe", "cho de xe"],
+      "synonyms": ["gửi xe", "gui xe", "parking", "bãi đỗ xe", "bai do xe", "chỗ để xe", "cho de xe", "bãi đậu xe", "bai dau xe", "garage"]
+    },
+    {
+      "key": "thang_may",
+      "keywords": ["thang máy", "thang may", "elevator", "lift", "thang bộ", "thang bo"],
+      "synonyms": ["thang máy", "thang may", "elevator", "lift", "thang máy hiện đại", "modern elevator"]
+    },
+    {
+      "key": "an_ninh",
+      "keywords": ["an ninh", "an ninh 24/7", "security", "bảo vệ", "bao ve", "camera", "cctv"],
+      "synonyms": ["an ninh", "an ninh 24/7", "security", "bảo vệ", "bao ve", "camera", "cctv", "hệ thống an ninh", "security system"]
+    },
+    {
+      "key": "wifi",
+      "keywords": ["wifi", "internet", "mạng", "mang", "internet miễn phí", "internet mien phi"],
+      "synonyms": ["wifi", "internet", "mạng", "mang", "internet miễn phí", "internet mien phi", "wifi miễn phí", "free wifi", "high speed internet"]
+    },
+    {
+      "key": "dieu_hoa",
+      "keywords": ["điều hòa", "dieu hoa", "air conditioner", "ac", "máy lạnh", "may lanh", "climate control"],
+      "synonyms": ["điều hòa", "dieu hoa", "air conditioner", "ac", "máy lạnh", "may lanh", "climate control", "điều hòa trung tâm", "central ac"]
+    },
+    {
+      "key": "may_giat",
+      "keywords": ["máy giặt", "may giat", "washing machine", "phòng giặt", "phong giat", "laundry"],
+      "synonyms": ["máy giặt", "may giat", "washing machine", "phòng giặt", "phong giat", "laundry", "máy giặt riêng", "private laundry"]
+    },
+    {
+      "key": "tu_lanh",
+      "keywords": ["tủ lạnh", "tu lanh", "refrigerator", "fridge", "tủ đông", "tu dong"],
+      "synonyms": ["tủ lạnh", "tu lanh", "refrigerator", "fridge", "tủ đông", "tu dong", "tủ lạnh lớn", "large fridge"]
+    },
+    {
+      "key": "tivi",
+      "keywords": ["tivi", "tv", "smart tv", "truyền hình cáp", "truyen hinh cap", "cable tv"],
+      "synonyms": ["tivi", "tv", "smart tv", "truyền hình cáp", "truyen hinh cap", "cable tv", "led tv", "4k tv"]
+    },
+    {
+      "key": "nha_bep",
+      "keywords": ["nhà bếp", "nha bep", "kitchen", "bếp", "bep", "nấu ăn", "nau an"],
+      "synonyms": ["nhà bếp", "nha bep", "kitchen", "bếp", "bep", "nấu ăn", "nau an", "bếp đầy đủ", "full kitchen", "bếp riêng", "private kitchen"]
+    },
+    {
+      "key": "cua_so",
+      "keywords": ["cửa sổ", "cua so", "window", "ánh sáng", "anh sang", "natural light"],
+      "synonyms": ["cửa sổ", "cua so", "window", "ánh sáng", "anh sang", "natural light", "cửa sổ lớn", "large window", "cửa sổ ban công"]
+    },
+    {
+      "key": "san_pho",
+      "keywords": ["sân phơi", "san phoi", "drying area", "khu vực phơi", "khu vuc phoi"],
+      "synonyms": ["sân phơi", "san phoi", "drying area", "khu vực phơi", "khu vuc phoi", "sân phơi riêng", "private drying area"]
+    },
+    {
+      "key": "nong_lanh",
+      "keywords": ["nước nóng lạnh", "nuoc nong lanh", "hot water", "nước nóng", "nuoc nong", "heated water"],
+      "synonyms": ["nước nóng lạnh", "nuoc nong lanh", "hot water", "nước nóng", "nuoc nong", "heated water", "nước nóng 24/7"]
+    },
+    {
+      "key": "dong_co",
+      "keywords": ["đồng cỏ", "dong co", "garden", "vườn", "vuon", "green space"],
+      "synonyms": ["đồng cỏ", "dong co", "garden", "vườn", "vuon", "green space", "sân vườn", "san vuon", "landscaped garden"]
+    }
+  ]
+}
+

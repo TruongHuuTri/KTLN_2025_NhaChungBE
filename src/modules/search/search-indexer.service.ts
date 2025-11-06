@@ -2,6 +2,7 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
 import { ConfigService } from '@nestjs/config';
 import NodeGeocoder from 'node-geocoder';
+import { GeoCodeService } from './geo-code.service';
 
 @Injectable()
 export class SearchIndexerService {
@@ -12,6 +13,7 @@ export class SearchIndexerService {
   constructor(
     @Inject('ES_CLIENT') private readonly es: Client,
     private readonly cfg: ConfigService,
+    private readonly geo: GeoCodeService,
   ) {
     this.index = this.cfg.get<string>('ELASTIC_INDEX_POSTS') || 'posts';
     const geocoderOptions: NodeGeocoder.Options = {
@@ -56,19 +58,31 @@ export class SearchIndexerService {
       }
     }
 
-    return {
+    const normalizeType = (t: any): 'rent' | 'roommate' => {
+      const v = String(t ?? '').toLowerCase().trim();
+      if (v === 'roommate' || v === 'o-ghep' || v === 'oghep' || v === 'og' || v === 'share' || v === 'share_room') {
+        return 'roommate';
+      }
+      // default to rent
+      if (v === 'rent' || v === 'cho-thue' || v === 'chothue' || v === 'rent_post') {
+        return 'rent';
+      }
+      return 'rent';
+    };
+
+    const doc: any = {
       postId: post?.postId ?? null,
       title: post?.title ?? '',
       description: post?.description ?? '',
       category: post?.category ?? '',
-      type: post?.postType ?? '',
+      type: normalizeType(post?.postType ?? post?.type),
       status: post?.status ?? 'active',
       source: post?.source ?? '',
       images: Array.isArray(post?.images) ? post.images : [],
-      price: room?.price ?? null,
-      area: room?.area ?? null,
+      price: Number(post?.roomInfo?.price ?? room?.price ?? post?.price ?? 0) || null,
+      area: Number(post?.roomInfo?.area ?? room?.area ?? post?.area ?? 0) || null,
       address: {
-        full: room?.address?.specificAddress ?? '',
+        full: room?.address?.specificAddress ?? room?.address?.street ?? '',
         city: room?.address?.provinceName ?? '',
         district: room?.address?.districtName ?? '',
         ward: room?.address?.wardName ?? '',
@@ -78,6 +92,21 @@ export class SearchIndexerService {
       isActive: post?.isActive !== false,
       roomId: post?.roomId ?? null,
     };
+
+    // Enrich codes from wardName if available
+    try {
+      const r = this.geo.resolveWardByName(doc.address?.ward);
+      if (r) {
+        doc.address.provinceCode = r.provinceCode;
+        doc.address.wardCode = r.wardCode;
+      }
+    } catch {}
+
+    if (doc.type === 'roommate') {
+      doc.gender = (post?.gender ?? 'any').toString().toLowerCase();
+    }
+
+    return doc;
   }
 
   async indexPost(post: any, room?: any) {
@@ -86,10 +115,23 @@ export class SearchIndexerService {
       this.logger.warn('Bỏ qua index vì thiếu postId.');
       return;
     }
+    
+    // CRITICAL: Chỉ index posts có status="active" và isActive=true
+    const status = post?.status ?? 'active';
+    const isActive = post?.isActive !== false;
+    
+    if (status !== 'active' || !isActive) {
+      // Nếu post không active, xóa khỏi ES (nếu có)
+      await this.deletePost(postId);
+      this.logger.debug(`Bỏ qua index post ${postId}: status="${status}", isActive=${isActive}`);
+      return;
+    }
+    
     try {
       const document = await this.buildDoc(post, room);
       document.postId = postId;
-      document.status = post?.status ?? document?.status ?? 'active';
+      document.status = 'active'; // Force active status
+      document.isActive = true;   // Force isActive
 
       await this.es.index({
         index: this.index,
@@ -97,6 +139,7 @@ export class SearchIndexerService {
         document,
         refresh: 'wait_for',
       });
+      this.logger.debug(`Indexed post ${postId} successfully`);
     } catch (err: any) {
       this.logger.error(`Index post ${postId} failed: ${err?.message || err}`);
     }

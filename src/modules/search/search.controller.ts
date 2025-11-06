@@ -20,6 +20,11 @@ export class SearchController {
       page: q.page ? Number(q.page) : undefined,
       limit: q.limit ? Number(q.limit) : undefined,
       sort: q.sort,
+      roommate: q.roommate === '1' || q.roommate === 'true',
+      searcherGender: q.searcherGender === 'male' || q.searcherGender === 'female' ? q.searcherGender : undefined,
+      province_code: q.province_code,
+      district_code: q.district_code,
+      ward_code: q.ward_code,
     });
   }
 }

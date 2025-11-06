@@ -16,6 +16,21 @@ export class NlpSearchController {
         
         try {
             const results = await this.nlpSearchService.search(query);
+            
+            // DEBUG: Log response structure để kiểm tra
+            console.log('[NlpSearchController] Response structure:', {
+                total: results.total,
+                itemsCount: results.items?.length || 0,
+                firstItemKeys: results.items?.[0] ? Object.keys(results.items[0]) : [],
+                firstItemSample: results.items?.[0] ? {
+                    id: results.items[0].id,
+                    postId: results.items[0].postId,
+                    title: results.items[0].title?.substring(0, 50),
+                    hasHighlight: !!results.items[0].highlight,
+                    highlightKeys: results.items[0].highlight ? Object.keys(results.items[0].highlight) : [],
+                } : null,
+            });
+            
             return {
                 statusCode: HttpStatus.OK,
                 message: 'Search completed successfully.',

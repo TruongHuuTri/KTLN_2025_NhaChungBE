@@ -67,14 +67,40 @@ export class AddressesService {
         const batch = dataLines.slice(i, i + batchSize);
         const addresses = batch
           .map(line => {
-            const [provinceCode, provinceName, wardCode, wardName] = line.split(',');
-            if (provinceCode && provinceName && wardCode && wardName) {
+            const parts = line.split(',');
+            // Hỗ trợ 2 định dạng CSV:
+            // 1) provinceCode, provinceName, wardCode, wardName
+            // 2) provinceCode, provinceName, districtCode, districtName, wardCode, wardName
+            if (parts.length >= 4) {
+              const p0 = parts[0]?.trim();
+              const p1 = parts[1]?.trim();
+              if (parts.length >= 6) {
+                const p2 = parts[2]?.trim();
+                const p3 = parts[3]?.trim();
+                const p4 = parts[4]?.trim();
+                const p5 = parts[5]?.trim();
+                if (p0 && p1 && p4 && p5) {
+                  return {
+                    provinceCode: p0,
+                    provinceName: p1,
+                    districtCode: p2 || undefined,
+                    districtName: p3 || undefined,
+                    wardCode: p4,
+                    wardName: p5,
+                  };
+                }
+              } else {
+                const p2 = parts[2]?.trim();
+                const p3 = parts[3]?.trim();
+                if (p0 && p1 && p2 && p3) {
               return {
-                provinceCode: provinceCode.trim(),
-                provinceName: provinceName.trim(),
-                wardCode: wardCode.trim(),
-                wardName: wardName.trim(),
+                    provinceCode: p0,
+                    provinceName: p1,
+                    wardCode: p2,
+                    wardName: p3,
               };
+                }
+              }
             }
             return null;
           })
