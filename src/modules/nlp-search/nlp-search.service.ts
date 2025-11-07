@@ -222,6 +222,9 @@ export class NlpSearchService {
           params.lat = coords.lat;
           params.lon = coords.lon;
           if (!params.distance) params.distance = '3km';
+          // Lưu POI name để boost title/description
+          if (!params.poiKeywords) params.poiKeywords = [];
+          params.poiKeywords.push(poiNameEarly.poiName);
           poiHandled = true;
           this.logger.debug(`POI detected early: "${poiNameEarly.poiName}"${poiNameEarly.city ? ` (${poiNameEarly.city})` : ''} -> lat=${coords.lat}, lon=${coords.lon}, distance=${params.distance}`);
         }
@@ -299,11 +302,28 @@ export class NlpSearchService {
             params.lat = coords.lat;
             params.lon = coords.lon;
             if (!params.distance) params.distance = '3km';
+            // Lưu POI name để boost title/description
+            if (!params.poiKeywords) params.poiKeywords = [];
+            params.poiKeywords.push(poiInfo.poiName);
             this.logger.debug(`POI detected: "${poiInfo.poiName}"${poiInfo.city ? ` (${poiInfo.city})` : ''} -> lat=${coords.lat}, lon=${coords.lon}, distance=${params.distance}`);
           }
         }
       } catch {}
     }
+
+    // 2.2) Luôn extract POI keywords để boost title/description (kể cả khi không geocode được)
+    // Điều này giúp tìm các bài có title/description chứa POI name
+    try {
+      const poiInfo = this.extractPoiName(normalizedQuery);
+      if (poiInfo && poiInfo.poiName) {
+        if (!params.poiKeywords) params.poiKeywords = [];
+        // Chỉ thêm nếu chưa có (tránh duplicate)
+        if (!params.poiKeywords.includes(poiInfo.poiName)) {
+          params.poiKeywords.push(poiInfo.poiName);
+          this.logger.debug(`POI keyword added for title/description boost: "${poiInfo.poiName}"`);
+        }
+      }
+    } catch {}
 
     // 2) Search ES with parsed params
     try {

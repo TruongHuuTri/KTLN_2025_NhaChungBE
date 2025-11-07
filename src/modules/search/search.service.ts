@@ -22,6 +22,7 @@ export type SearchPostsParams = {
   searcherGender?: 'male' | 'female';
   amenities?: string[]; // Array of amenity keys (e.g., ["ban_cong", "gym"])
   category?: string; // "phong-tro", "chung-cu", "nha-nguyen-can"
+  poiKeywords?: string[]; // POI names extracted from query (e.g., ["đại học công nghiệp", "IUH"])
 };
 
 @Injectable()
@@ -181,6 +182,36 @@ export class SearchService {
             should: amenityQueries,
             minimum_should_match: 1,
             boost: 2.0, // Boost amenities matches
+          },
+        });
+      }
+    }
+
+    // Boost POI keywords in title and description (e.g., "đại học công nghiệp", "IUH")
+    // This helps find posts that mention the POI in title/description even if not geocoded nearby
+    if (p.poiKeywords && p.poiKeywords.length > 0) {
+      const poiQueries = p.poiKeywords.map(poiName => ({
+        multi_match: {
+          query: poiName,
+          type: 'best_fields',
+          fields: [
+            'title.raw^6',        // Very strong boost in title (highest priority)
+            'description.raw^5', // Strong boost in description
+            'title.ng^4',
+            'description.fold^3',
+            'address.full.raw^2', // Also boost if POI appears in address
+          ],
+          fuzziness: 'AUTO',
+        },
+      }));
+
+      if (poiQueries.length > 0) {
+        // Add as should clause with high boost (OR logic across POI keywords)
+        must.push({
+          bool: {
+            should: poiQueries,
+            minimum_should_match: 1,
+            boost: 3.0, // High boost for POI matches in title/description
           },
         });
       }
