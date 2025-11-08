@@ -23,15 +23,56 @@ function aliasDistrict(d: string): string[] {
   const lower = d.toLowerCase().trim();
   const plain = strip(lower);
   out.add(lower); out.add(plain);
+  
+  // Extract district name without prefix (quận/huyện/thị xã/thành phố)
+  // Ví dụ: "Quận Bình Thạnh" -> "bình thạnh"
+  // Ví dụ: "Thành phố Thủ Đức" -> "thủ đức"
+  const withoutPrefix = lower.replace(/^(quận|huyện|thị xã|thành phố|thanh pho)\s+/i, '').trim();
+  if (withoutPrefix && withoutPrefix !== lower) {
+    out.add(withoutPrefix);
+    out.add(strip(withoutPrefix));
+    
+    // CRITICAL: Special case cho "thủ đức" - thêm alias "thủ đức" và "thu duc"
+    // Vì "thủ đức" là tên riêng phổ biến, user thường search "thủ đức" thay vì "thành phố thủ đức"
+    if (withoutPrefix === 'thủ đức' || withoutPrefix === 'thu duc') {
+      out.add('thủ đức');
+      out.add('thu duc');
+    }
+  }
+  
+  // Handle numbered districts: "Quận 1" -> "1", "q1", "q.1", etc.
   const m = lower.match(/^quận\s+(\d+)/);
-  if (m) { const num = m[1]; out.add(`q${num}`); out.add(`q.${num}`); out.add(`district ${num}`); out.add(`d${num}`); out.add(`quan ${num}`); }
+  if (m) { 
+    const num = m[1]; 
+    out.add(`q${num}`); 
+    out.add(`q.${num}`); 
+    out.add(`district ${num}`); 
+    out.add(`d${num}`); 
+    out.add(`quan ${num}`);
+    out.add(num); // Just the number: "1", "2", etc.
+  }
+  
   return Array.from(out);
 }
 
 function aliasWard(w: string): string[] {
   const out = new Set<string>();
-  const lower = w.toLowerCase().trim(); const plain = strip(lower);
-  out.add(lower); out.add(plain); out.add(`p. ${lower}`); out.add(`p ${lower}`); out.add(`phường ${lower}`);
+  const lower = w.toLowerCase().trim(); 
+  const plain = strip(lower);
+  out.add(lower); 
+  out.add(plain); 
+  out.add(`p. ${lower}`); 
+  out.add(`p ${lower}`); 
+  out.add(`phường ${lower}`);
+  
+  // Extract ward name without prefix (phường/xã)
+  // Ví dụ: "Phường Bình Thạnh" -> "bình thạnh"
+  const withoutPrefix = lower.replace(/^(phường|xã)\s+/i, '').trim();
+  if (withoutPrefix && withoutPrefix !== lower) {
+    out.add(withoutPrefix);
+    out.add(strip(withoutPrefix));
+  }
+  
   return Array.from(out);
 }
 

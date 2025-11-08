@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2025-11-04T07:05:09.806Z",
+  "generatedAt": "2025-11-08T05:30:12.134Z",
   "source": "district-ward.txt",
   "mappings": {
     "hcm": {
@@ -8,7 +8,9 @@
         "old_name": "Huyện Châu Đức",
         "aliases": [
           "huyện châu đức",
-          "huyen chau duc"
+          "huyen chau duc",
+          "châu đức",
+          "chau duc"
         ],
         "province_code": "701",
         "current_wards": [
@@ -42,7 +44,9 @@
         "old_name": "Huyện Xuyên Mộc",
         "aliases": [
           "huyện xuyên mộc",
-          "huyen xuyen moc"
+          "huyen xuyen moc",
+          "xuyên mộc",
+          "xuyen moc"
         ],
         "province_code": "701",
         "current_wards": [
@@ -76,7 +80,9 @@
         "old_name": "Huyện Long Đất",
         "aliases": [
           "huyện long đất",
-          "huyen long dat"
+          "huyen long dat",
+          "long đất",
+          "long dat"
         ],
         "province_code": "701",
         "current_wards": [
@@ -102,7 +108,9 @@
         "old_name": "Huyện Côn Đảo",
         "aliases": [
           "huyện côn đảo",
-          "huyen con dao"
+          "huyen con dao",
+          "côn đảo",
+          "con dao"
         ],
         "province_code": "701",
         "current_wards": [
@@ -116,7 +124,9 @@
         "old_name": "Huyện Dầu Tiếng",
         "aliases": [
           "huyện dầu tiếng",
-          "huyen dau tieng"
+          "huyen dau tieng",
+          "dầu tiếng",
+          "dau tieng"
         ],
         "province_code": "701",
         "current_wards": [
@@ -146,7 +156,9 @@
         "old_name": "Huyện Bàu Bàng",
         "aliases": [
           "huyện bàu bàng",
-          "huyen bau bang"
+          "huyen bau bang",
+          "bàu bàng",
+          "bau bang"
         ],
         "province_code": "701",
         "current_wards": [
@@ -176,7 +188,9 @@
         "old_name": "Huyện Bắc Tân Uyên",
         "aliases": [
           "huyện bắc tân uyên",
-          "huyen bac tan uyen"
+          "huyen bac tan uyen",
+          "bắc tân uyên",
+          "bac tan uyen"
         ],
         "province_code": "701",
         "current_wards": [
@@ -194,7 +208,9 @@
         "old_name": "Huyện Phú Giáo",
         "aliases": [
           "huyện phú giáo",
-          "huyen phu giao"
+          "huyen phu giao",
+          "phú giáo",
+          "phu giao"
         ],
         "province_code": "701",
         "current_wards": [
@@ -221,6 +237,7 @@
         "aliases": [
           "quận 1",
           "quan 1",
+          "1",
           "q1",
           "q.1",
           "district 1",
@@ -251,6 +268,7 @@
         "aliases": [
           "quận 3",
           "quan 3",
+          "3",
           "q3",
           "q.3",
           "district 3",
@@ -277,6 +295,7 @@
         "aliases": [
           "quận 4",
           "quan 4",
+          "4",
           "q4",
           "q.4",
           "district 4",
@@ -303,6 +322,7 @@
         "aliases": [
           "quận 5",
           "quan 5",
+          "5",
           "q5",
           "q.5",
           "district 5",
@@ -329,6 +349,7 @@
         "aliases": [
           "quận 6",
           "quan 6",
+          "6",
           "q6",
           "q.6",
           "district 6",
@@ -359,6 +380,7 @@
         "aliases": [
           "quận 7",
           "quan 7",
+          "7",
           "q7",
           "q.7",
           "district 7",
@@ -389,6 +411,7 @@
         "aliases": [
           "quận 8",
           "quan 8",
+          "8",
           "q8",
           "q.8",
           "district 8",
@@ -415,6 +438,7 @@
         "aliases": [
           "quận 10",
           "quan 10",
+          "10",
           "q10",
           "q.10",
           "district 10",
@@ -441,6 +465,7 @@
         "aliases": [
           "quận 11",
           "quan 11",
+          "11",
           "q11",
           "q.11",
           "district 11",
@@ -471,6 +496,7 @@
         "aliases": [
           "quận 12",
           "quan 12",
+          "12",
           "q12",
           "q.12",
           "district 12",
@@ -504,7 +530,9 @@
         "old_name": "Quận Bình Tân",
         "aliases": [
           "quận bình tân",
-          "quan binh tan"
+          "quan binh tan",
+          "bình tân",
+          "binh tan"
         ],
         "province_code": "701",
         "current_wards": [
@@ -534,7 +562,9 @@
         "old_name": "Quận Bình Thạnh",
         "aliases": [
           "quận bình thạnh",
-          "quan binh thanh"
+          "quan binh thanh",
+          "bình thạnh",
+          "binh thanh"
         ],
         "province_code": "701",
         "current_wards": [
@@ -564,7 +594,9 @@
         "old_name": "Quận Gò Vấp",
         "aliases": [
           "quận gò vấp",
-          "quan go vap"
+          "quan go vap",
+          "gò vấp",
+          "go vap"
         ],
         "province_code": "701",
         "current_wards": [
@@ -598,7 +630,9 @@
         "old_name": "Quận Phú Nhuận",
         "aliases": [
           "quận phú nhuận",
-          "quan phu nhuan"
+          "quan phu nhuan",
+          "phú nhuận",
+          "phu nhuan"
         ],
         "province_code": "701",
         "current_wards": [
@@ -620,7 +654,9 @@
         "old_name": "Quận Tân Bình",
         "aliases": [
           "quận tân bình",
-          "quan tan binh"
+          "quan tan binh",
+          "tân bình",
+          "tan binh"
         ],
         "province_code": "701",
         "current_wards": [
@@ -654,7 +690,9 @@
         "old_name": "Quận Tân Phú",
         "aliases": [
           "quận tân phú",
-          "quan tan phu"
+          "quan tan phu",
+          "tân phú",
+          "tan phu"
         ],
         "province_code": "701",
         "current_wards": [
@@ -684,7 +722,9 @@
         "old_name": "Thành phố Thủ Đức",
         "aliases": [
           "thành phố thủ đức",
-          "thanh pho thu duc"
+          "thanh pho thu duc",
+          "thủ đức",
+          "thu duc"
         ],
         "province_code": "701",
         "current_wards": [
@@ -742,7 +782,9 @@
         "old_name": "Huyện Bình Chánh",
         "aliases": [
           "huyện bình chánh",
-          "huyen binh chanh"
+          "huyen binh chanh",
+          "bình chánh",
+          "binh chanh"
         ],
         "province_code": "701",
         "current_wards": [
@@ -780,7 +822,9 @@
         "old_name": "Huyện Cần Giờ",
         "aliases": [
           "huyện cần giờ",
-          "huyen can gio"
+          "huyen can gio",
+          "cần giờ",
+          "can gio"
         ],
         "province_code": "701",
         "current_wards": [
@@ -806,7 +850,9 @@
         "old_name": "Huyện Củ Chi",
         "aliases": [
           "huyện củ chi",
-          "huyen cu chi"
+          "huyen cu chi",
+          "củ chi",
+          "cu chi"
         ],
         "province_code": "701",
         "current_wards": [
@@ -844,7 +890,9 @@
         "old_name": "Huyện Hóc Môn",
         "aliases": [
           "huyện hóc môn",
-          "huyen hoc mon"
+          "huyen hoc mon",
+          "hóc môn",
+          "hoc mon"
         ],
         "province_code": "701",
         "current_wards": [
@@ -870,7 +918,9 @@
         "old_name": "Huyện Nhà Bè",
         "aliases": [
           "huyện nhà bè",
-          "huyen nha be"
+          "huyen nha be",
+          "nhà bè",
+          "nha be"
         ],
         "province_code": "701",
         "current_wards": [
@@ -890,7 +940,9 @@
         "old_name": "Quận Hoàn Kiếm",
         "aliases": [
           "quận hoàn kiếm",
-          "quan hoan kiem"
+          "quan hoan kiem",
+          "hoàn kiếm",
+          "hoan kiem"
         ],
         "province_code": "101",
         "current_wards": [
@@ -908,7 +960,9 @@
         "old_name": "Quận Ba Đình",
         "aliases": [
           "quận ba đình",
-          "quan ba dinh"
+          "quan ba dinh",
+          "ba đình",
+          "ba dinh"
         ],
         "province_code": "101",
         "current_wards": [
@@ -930,7 +984,9 @@
         "old_name": "Quận Hai Bà Trưng",
         "aliases": [
           "quận hai bà trưng",
-          "quan hai ba trung"
+          "quan hai ba trung",
+          "hai bà trưng",
+          "hai ba trung"
         ],
         "province_code": "101",
         "current_wards": [
@@ -952,7 +1008,9 @@
         "old_name": "Quận Đống Đa",
         "aliases": [
           "quận đống đa",
-          "quan dong da"
+          "quan dong da",
+          "đống đa",
+          "dong da"
         ],
         "province_code": "101",
         "current_wards": [
@@ -982,7 +1040,9 @@
         "old_name": "Quận Tây Hồ",
         "aliases": [
           "quận tây hồ",
-          "quan tay ho"
+          "quan tay ho",
+          "tây hồ",
+          "tay ho"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1000,7 +1060,9 @@
         "old_name": "Quận Hoàng Mai",
         "aliases": [
           "quận hoàng mai",
-          "quan hoang mai"
+          "quan hoang mai",
+          "hoàng mai",
+          "hoang mai"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1034,7 +1096,9 @@
         "old_name": "Huyện Thanh Trì",
         "aliases": [
           "huyện thanh trì",
-          "huyen thanh tri"
+          "huyen thanh tri",
+          "thanh trì",
+          "thanh tri"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1068,7 +1132,9 @@
         "old_name": "Quận Thanh Xuân",
         "aliases": [
           "quận thanh xuân",
-          "quan thanh xuan"
+          "quan thanh xuan",
+          "thanh xuân",
+          "thanh xuan"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1090,7 +1156,9 @@
         "old_name": "Quận Cầu Giấy",
         "aliases": [
           "quận cầu giấy",
-          "quan cau giay"
+          "quan cau giay",
+          "cầu giấy",
+          "cau giay"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1112,7 +1180,9 @@
         "old_name": "Quận Bắc Từ Liêm",
         "aliases": [
           "quận bắc từ liêm",
-          "quan bac tu liem"
+          "quan bac tu liem",
+          "bắc từ liêm",
+          "bac tu liem"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1146,7 +1216,9 @@
         "old_name": "Quận Nam Từ Liêm",
         "aliases": [
           "quận nam từ liêm",
-          "quan nam tu liem"
+          "quan nam tu liem",
+          "nam từ liêm",
+          "nam tu liem"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1172,7 +1244,9 @@
         "old_name": "Quận Long Biên",
         "aliases": [
           "quận long biên",
-          "quan long bien"
+          "quan long bien",
+          "long biên",
+          "long bien"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1198,7 +1272,9 @@
         "old_name": "Quận Hà Đông",
         "aliases": [
           "quận hà đông",
-          "quan ha dong"
+          "quan ha dong",
+          "hà đông",
+          "ha dong"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1228,7 +1304,9 @@
         "old_name": "Huyện Thường Tín",
         "aliases": [
           "huyện thường tín",
-          "huyen thuong tin"
+          "huyen thuong tin",
+          "thường tín",
+          "thuong tin"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1254,7 +1332,9 @@
         "old_name": "Huyện Phú Xuyên",
         "aliases": [
           "huyện phú xuyên",
-          "huyen phu xuyen"
+          "huyen phu xuyen",
+          "phú xuyên",
+          "phu xuyen"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1280,7 +1360,8 @@
         "old_name": "Huyện Thanh Oai",
         "aliases": [
           "huyện thanh oai",
-          "huyen thanh oai"
+          "huyen thanh oai",
+          "thanh oai"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1306,7 +1387,9 @@
         "old_name": "Huyện Ứng Hoà",
         "aliases": [
           "huyện ứng hoà",
-          "huyen ung hoa"
+          "huyen ung hoa",
+          "ứng hoà",
+          "ung hoa"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1332,7 +1415,9 @@
         "old_name": "Huyện Mỹ Đức",
         "aliases": [
           "huyện mỹ đức",
-          "huyen my duc"
+          "huyen my duc",
+          "mỹ đức",
+          "my duc"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1358,7 +1443,9 @@
         "old_name": "Huyện Chương Mỹ",
         "aliases": [
           "huyện chương mỹ",
-          "huyen chuong my"
+          "huyen chuong my",
+          "chương mỹ",
+          "chuong my"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1392,7 +1479,9 @@
         "old_name": "Huyện Ba Vì",
         "aliases": [
           "huyện ba vì",
-          "huyen ba vi"
+          "huyen ba vi",
+          "ba vì",
+          "ba vi"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1434,7 +1523,9 @@
         "old_name": "Thị xã Sơn Tây",
         "aliases": [
           "thị xã sơn tây",
-          "thi xa son tay"
+          "thi xa son tay",
+          "sơn tây",
+          "son tay"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1456,7 +1547,9 @@
         "old_name": "Huyện Phúc Thọ",
         "aliases": [
           "huyện phúc thọ",
-          "huyen phuc tho"
+          "huyen phuc tho",
+          "phúc thọ",
+          "phuc tho"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1478,7 +1571,9 @@
         "old_name": "Huyện Thạch Thất",
         "aliases": [
           "huyện thạch thất",
-          "huyen thach that"
+          "huyen thach that",
+          "thạch thất",
+          "thach that"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1508,7 +1603,9 @@
         "old_name": "Huyện Quốc Oai",
         "aliases": [
           "huyện quốc oai",
-          "huyen quoc oai"
+          "huyen quoc oai",
+          "quốc oai",
+          "quoc oai"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1534,7 +1631,9 @@
         "old_name": "Huyện Hoài Đức",
         "aliases": [
           "huyện hoài đức",
-          "huyen hoai duc"
+          "huyen hoai duc",
+          "hoài đức",
+          "hoai duc"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1560,7 +1659,9 @@
         "old_name": "Huyện Đan Phượng",
         "aliases": [
           "huyện đan phượng",
-          "huyen dan phuong"
+          "huyen dan phuong",
+          "đan phượng",
+          "dan phuong"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1582,7 +1683,9 @@
         "old_name": "Huyện Gia Lâm",
         "aliases": [
           "huyện gia lâm",
-          "huyen gia lam"
+          "huyen gia lam",
+          "gia lâm",
+          "gia lam"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1608,7 +1711,9 @@
         "old_name": "Huyện Đông Anh",
         "aliases": [
           "huyện đông anh",
-          "huyen dong anh"
+          "huyen dong anh",
+          "đông anh",
+          "dong anh"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1638,7 +1743,9 @@
         "old_name": "Huyện Mê Linh",
         "aliases": [
           "huyện mê linh",
-          "huyen me linh"
+          "huyen me linh",
+          "mê linh",
+          "me linh"
         ],
         "province_code": "101",
         "current_wards": [
@@ -1664,7 +1771,9 @@
         "old_name": "Huyện Sóc Sơn",
         "aliases": [
           "huyện sóc sơn",
-          "huyen soc son"
+          "huyen soc son",
+          "sóc sơn",
+          "soc son"
         ],
         "province_code": "101",
         "current_wards": [

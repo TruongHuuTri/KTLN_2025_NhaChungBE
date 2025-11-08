@@ -3,383 +3,383 @@ tphcm, hcm, sài gòn, saigon, thành phố hồ chí minh, tp hcm, tp. hcm
 hà nội, ha noi, hanoi, hn, thủ đô hà nội
 
 # District and ward variants
-huyện châu đức, huyen chau duc
-xã ngãi giao, xa ngai giao, p. xã ngãi giao, p xã ngãi giao, phường xã ngãi giao
-xã bình giã, xa binh gia, p. xã bình giã, p xã bình giã, phường xã bình giã
-xã kim long, xa kim long, p. xã kim long, p xã kim long, phường xã kim long
-xã châu đức, xa chau duc, p. xã châu đức, p xã châu đức, phường xã châu đức
-xã xuân sơn, xa xuan son, p. xã xuân sơn, p xã xuân sơn, phường xã xuân sơn
-xã nghĩa thành, xa nghia thanh, p. xã nghĩa thành, p xã nghĩa thành, phường xã nghĩa thành
+huyện châu đức, huyen chau duc, châu đức, chau duc
+xã ngãi giao, xa ngai giao, p. xã ngãi giao, p xã ngãi giao, phường xã ngãi giao, ngãi giao, ngai giao
+xã bình giã, xa binh gia, p. xã bình giã, p xã bình giã, phường xã bình giã, bình giã, binh gia
+xã kim long, xa kim long, p. xã kim long, p xã kim long, phường xã kim long, kim long
+xã châu đức, xa chau duc, p. xã châu đức, p xã châu đức, phường xã châu đức, châu đức, chau duc
+xã xuân sơn, xa xuan son, p. xã xuân sơn, p xã xuân sơn, phường xã xuân sơn, xuân sơn, xuan son
+xã nghĩa thành, xa nghia thanh, p. xã nghĩa thành, p xã nghĩa thành, phường xã nghĩa thành, nghĩa thành, nghia thanh
 
-huyện xuyên mộc, huyen xuyen moc
-xã hồ tràm, xa ho tram, p. xã hồ tràm, p xã hồ tràm, phường xã hồ tràm
-xã xuyên mộc, xa xuyen moc, p. xã xuyên mộc, p xã xuyên mộc, phường xã xuyên mộc
-xã hòa hội, xa hoa hoi, p. xã hòa hội, p xã hòa hội, phường xã hòa hội
-xã bàu lâm, xa bau lam, p. xã bàu lâm, p xã bàu lâm, phường xã bàu lâm
-xã hòa hiệp, xa hoa hiep, p. xã hòa hiệp, p xã hòa hiệp, phường xã hòa hiệp
-xã bình châu, xa binh chau, p. xã bình châu, p xã bình châu, phường xã bình châu
+huyện xuyên mộc, huyen xuyen moc, xuyên mộc, xuyen moc
+xã hồ tràm, xa ho tram, p. xã hồ tràm, p xã hồ tràm, phường xã hồ tràm, hồ tràm, ho tram
+xã xuyên mộc, xa xuyen moc, p. xã xuyên mộc, p xã xuyên mộc, phường xã xuyên mộc, xuyên mộc, xuyen moc
+xã hòa hội, xa hoa hoi, p. xã hòa hội, p xã hòa hội, phường xã hòa hội, hòa hội, hoa hoi
+xã bàu lâm, xa bau lam, p. xã bàu lâm, p xã bàu lâm, phường xã bàu lâm, bàu lâm, bau lam
+xã hòa hiệp, xa hoa hiep, p. xã hòa hiệp, p xã hòa hiệp, phường xã hòa hiệp, hòa hiệp, hoa hiep
+xã bình châu, xa binh chau, p. xã bình châu, p xã bình châu, phường xã bình châu, bình châu, binh chau
 
-huyện long đất, huyen long dat
-xã phước hải, xa phuoc hai, p. xã phước hải, p xã phước hải, phường xã phước hải
-xã long hải, xa long hai, p. xã long hải, p xã long hải, phường xã long hải
-xã đất đỏ, xa dat do, p. xã đất đỏ, p xã đất đỏ, phường xã đất đỏ
-xã long điền, xa long dien, p. xã long điền, p xã long điền, phường xã long điền
+huyện long đất, huyen long dat, long đất, long dat
+xã phước hải, xa phuoc hai, p. xã phước hải, p xã phước hải, phường xã phước hải, phước hải, phuoc hai
+xã long hải, xa long hai, p. xã long hải, p xã long hải, phường xã long hải, long hải, long hai
+xã đất đỏ, xa dat do, p. xã đất đỏ, p xã đất đỏ, phường xã đất đỏ, đất đỏ, dat do
+xã long điền, xa long dien, p. xã long điền, p xã long điền, phường xã long điền, long điền, long dien
 
-huyện côn đảo, huyen con dao
+huyện côn đảo, huyen con dao, côn đảo, con dao
 đặc khu côn đảo, dac khu con dao, p. đặc khu côn đảo, p đặc khu côn đảo, phường đặc khu côn đảo
 
-huyện dầu tiếng, huyen dau tieng
-phường tây nam, phuong tay nam, p. phường tây nam, p phường tây nam, phường phường tây nam
-xã minh thạnh, xa minh thanh, p. xã minh thạnh, p xã minh thạnh, phường xã minh thạnh
-xã long hoà, xa long hoa, p. xã long hoà, p xã long hoà, phường xã long hoà
-xã dầu tiếng, xa dau tieng, p. xã dầu tiếng, p xã dầu tiếng, phường xã dầu tiếng
-xã thanh an, xa thanh an, p. xã thanh an, p xã thanh an, phường xã thanh an
+huyện dầu tiếng, huyen dau tieng, dầu tiếng, dau tieng
+phường tây nam, phuong tay nam, p. phường tây nam, p phường tây nam, phường phường tây nam, tây nam, tay nam
+xã minh thạnh, xa minh thanh, p. xã minh thạnh, p xã minh thạnh, phường xã minh thạnh, minh thạnh, minh thanh
+xã long hoà, xa long hoa, p. xã long hoà, p xã long hoà, phường xã long hoà, long hoà, long hoa
+xã dầu tiếng, xa dau tieng, p. xã dầu tiếng, p xã dầu tiếng, phường xã dầu tiếng, dầu tiếng, dau tieng
+xã thanh an, xa thanh an, p. xã thanh an, p xã thanh an, phường xã thanh an, thanh an
 
-huyện bàu bàng, huyen bau bang
-phường long nguyên, phuong long nguyen, p. phường long nguyên, p phường long nguyên, phường phường long nguyên
-phường bến cát, phuong ben cat, p. phường bến cát, p phường bến cát, phường phường bến cát
-phường chánh phú hoà, phuong chanh phu hoa, p. phường chánh phú hoà, p phường chánh phú hoà, phường phường chánh phú hoà
-xã trừ văn thố, xa tru van tho, p. xã trừ văn thố, p xã trừ văn thố, phường xã trừ văn thố
-xã bàu bàng, xa bau bang, p. xã bàu bàng, p xã bàu bàng, phường xã bàu bàng
+huyện bàu bàng, huyen bau bang, bàu bàng, bau bang
+phường long nguyên, phuong long nguyen, p. phường long nguyên, p phường long nguyên, phường phường long nguyên, long nguyên, long nguyen
+phường bến cát, phuong ben cat, p. phường bến cát, p phường bến cát, phường phường bến cát, bến cát, ben cat
+phường chánh phú hoà, phuong chanh phu hoa, p. phường chánh phú hoà, p phường chánh phú hoà, phường phường chánh phú hoà, chánh phú hoà, chanh phu hoa
+xã trừ văn thố, xa tru van tho, p. xã trừ văn thố, p xã trừ văn thố, phường xã trừ văn thố, trừ văn thố, tru van tho
+xã bàu bàng, xa bau bang, p. xã bàu bàng, p xã bàu bàng, phường xã bàu bàng, bàu bàng, bau bang
 
-huyện bắc tân uyên, huyen bac tan uyen
-xã bắc tân uyên, xa bac tan uyen, p. xã bắc tân uyên, p xã bắc tân uyên, phường xã bắc tân uyên
-xã thường tân, xa thuong tan, p. xã thường tân, p xã thường tân, phường xã thường tân
+huyện bắc tân uyên, huyen bac tan uyen, bắc tân uyên, bac tan uyen
+xã bắc tân uyên, xa bac tan uyen, p. xã bắc tân uyên, p xã bắc tân uyên, phường xã bắc tân uyên, bắc tân uyên, bac tan uyen
+xã thường tân, xa thuong tan, p. xã thường tân, p xã thường tân, phường xã thường tân, thường tân, thuong tan
 
-huyện phú giáo, huyen phu giao
-xã an long, xa an long, p. xã an long, p xã an long, phường xã an long
-xã phước thành, xa phuoc thanh, p. xã phước thành, p xã phước thành, phường xã phước thành
-xã phước hoà, xa phuoc hoa, p. xã phước hoà, p xã phước hoà, phường xã phước hoà
-xã phú giáo, xa phu giao, p. xã phú giáo, p xã phú giáo, phường xã phú giáo
+huyện phú giáo, huyen phu giao, phú giáo, phu giao
+xã an long, xa an long, p. xã an long, p xã an long, phường xã an long, an long
+xã phước thành, xa phuoc thanh, p. xã phước thành, p xã phước thành, phường xã phước thành, phước thành, phuoc thanh
+xã phước hoà, xa phuoc hoa, p. xã phước hoà, p xã phước hoà, phường xã phước hoà, phước hoà, phuoc hoa
+xã phú giáo, xa phu giao, p. xã phú giáo, p xã phú giáo, phường xã phú giáo, phú giáo, phu giao
 
-quận 1, quan 1, q1, q.1, district 1, d1
-phường sài gòn, phuong sai gon, p. phường sài gòn, p phường sài gòn, phường phường sài gòn
-phường tân định, phuong tan dinh, p. phường tân định, p phường tân định, phường phường tân định
-phường bến thành, phuong ben thanh, p. phường bến thành, p phường bến thành, phường phường bến thành
-phường cầu ông lãnh, phuong cau ong lanh, p. phường cầu ông lãnh, p phường cầu ông lãnh, phường phường cầu ông lãnh
+quận 1, quan 1, 1, q1, q.1, district 1, d1
+phường sài gòn, phuong sai gon, p. phường sài gòn, p phường sài gòn, phường phường sài gòn, sài gòn, sai gon
+phường tân định, phuong tan dinh, p. phường tân định, p phường tân định, phường phường tân định, tân định, tan dinh
+phường bến thành, phuong ben thanh, p. phường bến thành, p phường bến thành, phường phường bến thành, bến thành, ben thanh
+phường cầu ông lãnh, phuong cau ong lanh, p. phường cầu ông lãnh, p phường cầu ông lãnh, phường phường cầu ông lãnh, cầu ông lãnh, cau ong lanh
 
-quận 3, quan 3, q3, q.3, district 3, d3
-phường bàn cờ, phuong ban co, p. phường bàn cờ, p phường bàn cờ, phường phường bàn cờ
-phường xuân hoà, phuong xuan hoa, p. phường xuân hoà, p phường xuân hoà, phường phường xuân hoà
-phường nhiêu lộc, phuong nhieu loc, p. phường nhiêu lộc, p phường nhiêu lộc, phường phường nhiêu lộc
+quận 3, quan 3, 3, q3, q.3, district 3, d3
+phường bàn cờ, phuong ban co, p. phường bàn cờ, p phường bàn cờ, phường phường bàn cờ, bàn cờ, ban co
+phường xuân hoà, phuong xuan hoa, p. phường xuân hoà, p phường xuân hoà, phường phường xuân hoà, xuân hoà, xuan hoa
+phường nhiêu lộc, phuong nhieu loc, p. phường nhiêu lộc, p phường nhiêu lộc, phường phường nhiêu lộc, nhiêu lộc, nhieu loc
 
-quận 4, quan 4, q4, q.4, district 4, d4
-phường xóm chiếu, phuong xom chieu, p. phường xóm chiếu, p phường xóm chiếu, phường phường xóm chiếu
-phường khánh hội, phuong khanh hoi, p. phường khánh hội, p phường khánh hội, phường phường khánh hội
-phường vĩnh hội, phuong vinh hoi, p. phường vĩnh hội, p phường vĩnh hội, phường phường vĩnh hội
+quận 4, quan 4, 4, q4, q.4, district 4, d4
+phường xóm chiếu, phuong xom chieu, p. phường xóm chiếu, p phường xóm chiếu, phường phường xóm chiếu, xóm chiếu, xom chieu
+phường khánh hội, phuong khanh hoi, p. phường khánh hội, p phường khánh hội, phường phường khánh hội, khánh hội, khanh hoi
+phường vĩnh hội, phuong vinh hoi, p. phường vĩnh hội, p phường vĩnh hội, phường phường vĩnh hội, vĩnh hội, vinh hoi
 
-quận 5, quan 5, q5, q.5, district 5, d5
-phường chợ quán, phuong cho quan, p. phường chợ quán, p phường chợ quán, phường phường chợ quán
-phường an đông, phuong an dong, p. phường an đông, p phường an đông, phường phường an đông
-phường chợ lớn, phuong cho lon, p. phường chợ lớn, p phường chợ lớn, phường phường chợ lớn
+quận 5, quan 5, 5, q5, q.5, district 5, d5
+phường chợ quán, phuong cho quan, p. phường chợ quán, p phường chợ quán, phường phường chợ quán, chợ quán, cho quan
+phường an đông, phuong an dong, p. phường an đông, p phường an đông, phường phường an đông, an đông, an dong
+phường chợ lớn, phuong cho lon, p. phường chợ lớn, p phường chợ lớn, phường phường chợ lớn, chợ lớn, cho lon
 
-quận 6, quan 6, q6, q.6, district 6, d6
-phường bình tây, phuong binh tay, p. phường bình tây, p phường bình tây, phường phường bình tây
-phường bình tiên, phuong binh tien, p. phường bình tiên, p phường bình tiên, phường phường bình tiên
-phường bình phú, phuong binh phu, p. phường bình phú, p phường bình phú, phường phường bình phú
-phường phú lâm, phuong phu lam, p. phường phú lâm, p phường phú lâm, phường phường phú lâm
+quận 6, quan 6, 6, q6, q.6, district 6, d6
+phường bình tây, phuong binh tay, p. phường bình tây, p phường bình tây, phường phường bình tây, bình tây, binh tay
+phường bình tiên, phuong binh tien, p. phường bình tiên, p phường bình tiên, phường phường bình tiên, bình tiên, binh tien
+phường bình phú, phuong binh phu, p. phường bình phú, p phường bình phú, phường phường bình phú, bình phú, binh phu
+phường phú lâm, phuong phu lam, p. phường phú lâm, p phường phú lâm, phường phường phú lâm, phú lâm, phu lam
 
-quận 7, quan 7, q7, q.7, district 7, d7
-phường tân thuận, phuong tan thuan, p. phường tân thuận, p phường tân thuận, phường phường tân thuận
-phường phú thuận, phuong phu thuan, p. phường phú thuận, p phường phú thuận, phường phường phú thuận
-phường tân mỹ, phuong tan my, p. phường tân mỹ, p phường tân mỹ, phường phường tân mỹ
-phường tân hưng, phuong tan hung, p. phường tân hưng, p phường tân hưng, phường phường tân hưng
+quận 7, quan 7, 7, q7, q.7, district 7, d7
+phường tân thuận, phuong tan thuan, p. phường tân thuận, p phường tân thuận, phường phường tân thuận, tân thuận, tan thuan
+phường phú thuận, phuong phu thuan, p. phường phú thuận, p phường phú thuận, phường phường phú thuận, phú thuận, phu thuan
+phường tân mỹ, phuong tan my, p. phường tân mỹ, p phường tân mỹ, phường phường tân mỹ, tân mỹ, tan my
+phường tân hưng, phuong tan hung, p. phường tân hưng, p phường tân hưng, phường phường tân hưng, tân hưng, tan hung
 
-quận 8, quan 8, q8, q.8, district 8, d8
-phường chánh hưng, phuong chanh hung, p. phường chánh hưng, p phường chánh hưng, phường phường chánh hưng
-phường phú định, phuong phu dinh, p. phường phú định, p phường phú định, phường phường phú định
-phường bình đông, phuong binh dong, p. phường bình đông, p phường bình đông, phường phường bình đông
+quận 8, quan 8, 8, q8, q.8, district 8, d8
+phường chánh hưng, phuong chanh hung, p. phường chánh hưng, p phường chánh hưng, phường phường chánh hưng, chánh hưng, chanh hung
+phường phú định, phuong phu dinh, p. phường phú định, p phường phú định, phường phường phú định, phú định, phu dinh
+phường bình đông, phuong binh dong, p. phường bình đông, p phường bình đông, phường phường bình đông, bình đông, binh dong
 
-quận 10, quan 10, q10, q.10, district 10, d10
-phường diên hồng, phuong dien hong, p. phường diên hồng, p phường diên hồng, phường phường diên hồng
-phường vườn lài, phuong vuon lai, p. phường vườn lài, p phường vườn lài, phường phường vườn lài
-phường hoà hưng, phuong hoa hung, p. phường hoà hưng, p phường hoà hưng, phường phường hoà hưng
+quận 10, quan 10, 10, q10, q.10, district 10, d10
+phường diên hồng, phuong dien hong, p. phường diên hồng, p phường diên hồng, phường phường diên hồng, diên hồng, dien hong
+phường vườn lài, phuong vuon lai, p. phường vườn lài, p phường vườn lài, phường phường vườn lài, vườn lài, vuon lai
+phường hoà hưng, phuong hoa hung, p. phường hoà hưng, p phường hoà hưng, phường phường hoà hưng, hoà hưng, hoa hung
 
-quận 11, quan 11, q11, q.11, district 11, d11
-phường minh phụng, phuong minh phung, p. phường minh phụng, p phường minh phụng, phường phường minh phụng
-phường bình thới, phuong binh thoi, p. phường bình thới, p phường bình thới, phường phường bình thới
-phường hoà bình, phuong hoa binh, p. phường hoà bình, p phường hoà bình, phường phường hoà bình
-phường phú thọ, phuong phu tho, p. phường phú thọ, p phường phú thọ, phường phường phú thọ
+quận 11, quan 11, 11, q11, q.11, district 11, d11
+phường minh phụng, phuong minh phung, p. phường minh phụng, p phường minh phụng, phường phường minh phụng, minh phụng, minh phung
+phường bình thới, phuong binh thoi, p. phường bình thới, p phường bình thới, phường phường bình thới, bình thới, binh thoi
+phường hoà bình, phuong hoa binh, p. phường hoà bình, p phường hoà bình, phường phường hoà bình, hoà bình, hoa binh
+phường phú thọ, phuong phu tho, p. phường phú thọ, p phường phú thọ, phường phường phú thọ, phú thọ, phu tho
 
-quận 12, quan 12, q12, q.12, district 12, d12
-phường đông hưng thuận, phuong dong hung thuan, p. phường đông hưng thuận, p phường đông hưng thuận, phường phường đông hưng thuận
-phường trung mỹ tây, phuong trung my tay, p. phường trung mỹ tây, p phường trung mỹ tây, phường phường trung mỹ tây
-phường tân thới hiệp, phuong tan thoi hiep, p. phường tân thới hiệp, p phường tân thới hiệp, phường phường tân thới hiệp
-phường thới an, phuong thoi an, p. phường thới an, p phường thới an, phường phường thới an
-phường an phú đông, phuong an phu dong, p. phường an phú đông, p phường an phú đông, phường phường an phú đông
+quận 12, quan 12, 12, q12, q.12, district 12, d12
+phường đông hưng thuận, phuong dong hung thuan, p. phường đông hưng thuận, p phường đông hưng thuận, phường phường đông hưng thuận, đông hưng thuận, dong hung thuan
+phường trung mỹ tây, phuong trung my tay, p. phường trung mỹ tây, p phường trung mỹ tây, phường phường trung mỹ tây, trung mỹ tây, trung my tay
+phường tân thới hiệp, phuong tan thoi hiep, p. phường tân thới hiệp, p phường tân thới hiệp, phường phường tân thới hiệp, tân thới hiệp, tan thoi hiep
+phường thới an, phuong thoi an, p. phường thới an, p phường thới an, phường phường thới an, thới an, thoi an
+phường an phú đông, phuong an phu dong, p. phường an phú đông, p phường an phú đông, phường phường an phú đông, an phú đông, an phu dong
 
-quận bình tân, quan binh tan
-phường an lạc, phuong an lac, p. phường an lạc, p phường an lạc, phường phường an lạc
-phường tân tạo, phuong tan tao, p. phường tân tạo, p phường tân tạo, phường phường tân tạo
-phường bình tân, phuong binh tan, p. phường bình tân, p phường bình tân, phường phường bình tân
-phường bình trị đông, phuong binh tri dong, p. phường bình trị đông, p phường bình trị đông, phường phường bình trị đông
-phường bình hưng hoà, phuong binh hung hoa, p. phường bình hưng hoà, p phường bình hưng hoà, phường phường bình hưng hoà
+quận bình tân, quan binh tan, bình tân, binh tan
+phường an lạc, phuong an lac, p. phường an lạc, p phường an lạc, phường phường an lạc, an lạc, an lac
+phường tân tạo, phuong tan tao, p. phường tân tạo, p phường tân tạo, phường phường tân tạo, tân tạo, tan tao
+phường bình tân, phuong binh tan, p. phường bình tân, p phường bình tân, phường phường bình tân, bình tân, binh tan
+phường bình trị đông, phuong binh tri dong, p. phường bình trị đông, p phường bình trị đông, phường phường bình trị đông, bình trị đông, binh tri dong
+phường bình hưng hoà, phuong binh hung hoa, p. phường bình hưng hoà, p phường bình hưng hoà, phường phường bình hưng hoà, bình hưng hoà, binh hung hoa
 
-quận bình thạnh, quan binh thanh
-phường gia định, phuong gia dinh, p. phường gia định, p phường gia định, phường phường gia định
-phường bình thạnh, phuong binh thanh, p. phường bình thạnh, p phường bình thạnh, phường phường bình thạnh
-phường bình lợi trung, phuong binh loi trung, p. phường bình lợi trung, p phường bình lợi trung, phường phường bình lợi trung
-phường thạnh mỹ tây, phuong thanh my tay, p. phường thạnh mỹ tây, p phường thạnh mỹ tây, phường phường thạnh mỹ tây
-phường bình quới, phuong binh quoi, p. phường bình quới, p phường bình quới, phường phường bình quới
+quận bình thạnh, quan binh thanh, bình thạnh, binh thanh
+phường gia định, phuong gia dinh, p. phường gia định, p phường gia định, phường phường gia định, gia định, gia dinh
+phường bình thạnh, phuong binh thanh, p. phường bình thạnh, p phường bình thạnh, phường phường bình thạnh, bình thạnh, binh thanh
+phường bình lợi trung, phuong binh loi trung, p. phường bình lợi trung, p phường bình lợi trung, phường phường bình lợi trung, bình lợi trung, binh loi trung
+phường thạnh mỹ tây, phuong thanh my tay, p. phường thạnh mỹ tây, p phường thạnh mỹ tây, phường phường thạnh mỹ tây, thạnh mỹ tây, thanh my tay
+phường bình quới, phuong binh quoi, p. phường bình quới, p phường bình quới, phường phường bình quới, bình quới, binh quoi
 
-quận gò vấp, quan go vap
-phường hạnh thông, phuong hanh thong, p. phường hạnh thông, p phường hạnh thông, phường phường hạnh thông
-phường an nhơn, phuong an nhon, p. phường an nhơn, p phường an nhơn, phường phường an nhơn
-phường gò vấp, phuong go vap, p. phường gò vấp, p phường gò vấp, phường phường gò vấp
-phường an hội đông, phuong an hoi dong, p. phường an hội đông, p phường an hội đông, phường phường an hội đông
-phường thông tây hội, phuong thong tay hoi, p. phường thông tây hội, p phường thông tây hội, phường phường thông tây hội
-phường an hội tây, phuong an hoi tay, p. phường an hội tây, p phường an hội tây, phường phường an hội tây
+quận gò vấp, quan go vap, gò vấp, go vap
+phường hạnh thông, phuong hanh thong, p. phường hạnh thông, p phường hạnh thông, phường phường hạnh thông, hạnh thông, hanh thong
+phường an nhơn, phuong an nhon, p. phường an nhơn, p phường an nhơn, phường phường an nhơn, an nhơn, an nhon
+phường gò vấp, phuong go vap, p. phường gò vấp, p phường gò vấp, phường phường gò vấp, gò vấp, go vap
+phường an hội đông, phuong an hoi dong, p. phường an hội đông, p phường an hội đông, phường phường an hội đông, an hội đông, an hoi dong
+phường thông tây hội, phuong thong tay hoi, p. phường thông tây hội, p phường thông tây hội, phường phường thông tây hội, thông tây hội, thong tay hoi
+phường an hội tây, phuong an hoi tay, p. phường an hội tây, p phường an hội tây, phường phường an hội tây, an hội tây, an hoi tay
 
-quận phú nhuận, quan phu nhuan
-phường đức nhuận, phuong duc nhuan, p. phường đức nhuận, p phường đức nhuận, phường phường đức nhuận
-phường cầu kiệu, phuong cau kieu, p. phường cầu kiệu, p phường cầu kiệu, phường phường cầu kiệu
-phường phú nhuận, phuong phu nhuan, p. phường phú nhuận, p phường phú nhuận, phường phường phú nhuận
+quận phú nhuận, quan phu nhuan, phú nhuận, phu nhuan
+phường đức nhuận, phuong duc nhuan, p. phường đức nhuận, p phường đức nhuận, phường phường đức nhuận, đức nhuận, duc nhuan
+phường cầu kiệu, phuong cau kieu, p. phường cầu kiệu, p phường cầu kiệu, phường phường cầu kiệu, cầu kiệu, cau kieu
+phường phú nhuận, phuong phu nhuan, p. phường phú nhuận, p phường phú nhuận, phường phường phú nhuận, phú nhuận, phu nhuan
 
-quận tân bình, quan tan binh
-phường tân sơn hoà, phuong tan son hoa, p. phường tân sơn hoà, p phường tân sơn hoà, phường phường tân sơn hoà
-phường tân sơn nhất, phuong tan son nhat, p. phường tân sơn nhất, p phường tân sơn nhất, phường phường tân sơn nhất
-phường tân hoà, phuong tan hoa, p. phường tân hoà, p phường tân hoà, phường phường tân hoà
-phường bảy hiền, phuong bay hien, p. phường bảy hiền, p phường bảy hiền, phường phường bảy hiền
-phường tân bình, phuong tan binh, p. phường tân bình, p phường tân bình, phường phường tân bình
-phường tân sơn, phuong tan son, p. phường tân sơn, p phường tân sơn, phường phường tân sơn
+quận tân bình, quan tan binh, tân bình, tan binh
+phường tân sơn hoà, phuong tan son hoa, p. phường tân sơn hoà, p phường tân sơn hoà, phường phường tân sơn hoà, tân sơn hoà, tan son hoa
+phường tân sơn nhất, phuong tan son nhat, p. phường tân sơn nhất, p phường tân sơn nhất, phường phường tân sơn nhất, tân sơn nhất, tan son nhat
+phường tân hoà, phuong tan hoa, p. phường tân hoà, p phường tân hoà, phường phường tân hoà, tân hoà, tan hoa
+phường bảy hiền, phuong bay hien, p. phường bảy hiền, p phường bảy hiền, phường phường bảy hiền, bảy hiền, bay hien
+phường tân bình, phuong tan binh, p. phường tân bình, p phường tân bình, phường phường tân bình, tân bình, tan binh
+phường tân sơn, phuong tan son, p. phường tân sơn, p phường tân sơn, phường phường tân sơn, tân sơn, tan son
 
-quận tân phú, quan tan phu
-phường tây thạnh, phuong tay thanh, p. phường tây thạnh, p phường tây thạnh, phường phường tây thạnh
-phường tân sơn nhì, phuong tan son nhi, p. phường tân sơn nhì, p phường tân sơn nhì, phường phường tân sơn nhì
-phường phú thọ hoà, phuong phu tho hoa, p. phường phú thọ hoà, p phường phú thọ hoà, phường phường phú thọ hoà
-phường tân phú, phuong tan phu, p. phường tân phú, p phường tân phú, phường phường tân phú
-phường phú thạnh, phuong phu thanh, p. phường phú thạnh, p phường phú thạnh, phường phường phú thạnh
+quận tân phú, quan tan phu, tân phú, tan phu
+phường tây thạnh, phuong tay thanh, p. phường tây thạnh, p phường tây thạnh, phường phường tây thạnh, tây thạnh, tay thanh
+phường tân sơn nhì, phuong tan son nhi, p. phường tân sơn nhì, p phường tân sơn nhì, phường phường tân sơn nhì, tân sơn nhì, tan son nhi
+phường phú thọ hoà, phuong phu tho hoa, p. phường phú thọ hoà, p phường phú thọ hoà, phường phường phú thọ hoà, phú thọ hoà, phu tho hoa
+phường tân phú, phuong tan phu, p. phường tân phú, p phường tân phú, phường phường tân phú, tân phú, tan phu
+phường phú thạnh, phuong phu thanh, p. phường phú thạnh, p phường phú thạnh, phường phường phú thạnh, phú thạnh, phu thanh
 
-thành phố thủ đức, thanh pho thu duc
-phường hiệp bình, phuong hiep binh, p. phường hiệp bình, p phường hiệp bình, phường phường hiệp bình
-phường thủ đức, phuong thu duc, p. phường thủ đức, p phường thủ đức, phường phường thủ đức
-phường tam bình, phuong tam binh, p. phường tam bình, p phường tam bình, phường phường tam bình
-phường linh xuân, phuong linh xuan, p. phường linh xuân, p phường linh xuân, phường phường linh xuân
-phường tăng nhơn phú, phuong tang nhon phu, p. phường tăng nhơn phú, p phường tăng nhơn phú, phường phường tăng nhơn phú
-phường long bình, phuong long binh, p. phường long bình, p phường long bình, phường phường long bình
-phường long phước, phuong long phuoc, p. phường long phước, p phường long phước, phường phường long phước
-phường long trường, phuong long truong, p. phường long trường, p phường long trường, phường phường long trường
-phường cát lái, phuong cat lai, p. phường cát lái, p phường cát lái, phường phường cát lái
-phường bình trưng, phuong binh trung, p. phường bình trưng, p phường bình trưng, phường phường bình trưng
-phường phước long, phuong phuoc long, p. phường phước long, p phường phước long, phường phường phước long
-phường an khánh, phuong an khanh, p. phường an khánh, p phường an khánh, phường phường an khánh
+thành phố thủ đức, thanh pho thu duc, thủ đức, thu duc
+phường hiệp bình, phuong hiep binh, p. phường hiệp bình, p phường hiệp bình, phường phường hiệp bình, hiệp bình, hiep binh
+phường thủ đức, phuong thu duc, p. phường thủ đức, p phường thủ đức, phường phường thủ đức, thủ đức, thu duc
+phường tam bình, phuong tam binh, p. phường tam bình, p phường tam bình, phường phường tam bình, tam bình, tam binh
+phường linh xuân, phuong linh xuan, p. phường linh xuân, p phường linh xuân, phường phường linh xuân, linh xuân, linh xuan
+phường tăng nhơn phú, phuong tang nhon phu, p. phường tăng nhơn phú, p phường tăng nhơn phú, phường phường tăng nhơn phú, tăng nhơn phú, tang nhon phu
+phường long bình, phuong long binh, p. phường long bình, p phường long bình, phường phường long bình, long bình, long binh
+phường long phước, phuong long phuoc, p. phường long phước, p phường long phước, phường phường long phước, long phước, long phuoc
+phường long trường, phuong long truong, p. phường long trường, p phường long trường, phường phường long trường, long trường, long truong
+phường cát lái, phuong cat lai, p. phường cát lái, p phường cát lái, phường phường cát lái, cát lái, cat lai
+phường bình trưng, phuong binh trung, p. phường bình trưng, p phường bình trưng, phường phường bình trưng, bình trưng, binh trung
+phường phước long, phuong phuoc long, p. phường phước long, p phường phước long, phường phường phước long, phước long, phuoc long
+phường an khánh, phuong an khanh, p. phường an khánh, p phường an khánh, phường phường an khánh, an khánh, an khanh
 
-huyện bình chánh, huyen binh chanh
-xã vĩnh lộc, xa vinh loc, p. xã vĩnh lộc, p xã vĩnh lộc, phường xã vĩnh lộc
-xã tân vĩnh lộc, xa tan vinh loc, p. xã tân vĩnh lộc, p xã tân vĩnh lộc, phường xã tân vĩnh lộc
-xã bình lợi, xa binh loi, p. xã bình lợi, p xã bình lợi, phường xã bình lợi
-xã tân nhựt, xa tan nhut, p. xã tân nhựt, p xã tân nhựt, phường xã tân nhựt
-xã bình chánh, xa binh chanh, p. xã bình chánh, p xã bình chánh, phường xã bình chánh
-xã hưng long, xa hung long, p. xã hưng long, p xã hưng long, phường xã hưng long
-xã bình hưng, xa binh hung, p. xã bình hưng, p xã bình hưng, phường xã bình hưng
+huyện bình chánh, huyen binh chanh, bình chánh, binh chanh
+xã vĩnh lộc, xa vinh loc, p. xã vĩnh lộc, p xã vĩnh lộc, phường xã vĩnh lộc, vĩnh lộc, vinh loc
+xã tân vĩnh lộc, xa tan vinh loc, p. xã tân vĩnh lộc, p xã tân vĩnh lộc, phường xã tân vĩnh lộc, tân vĩnh lộc, tan vinh loc
+xã bình lợi, xa binh loi, p. xã bình lợi, p xã bình lợi, phường xã bình lợi, bình lợi, binh loi
+xã tân nhựt, xa tan nhut, p. xã tân nhựt, p xã tân nhựt, phường xã tân nhựt, tân nhựt, tan nhut
+xã bình chánh, xa binh chanh, p. xã bình chánh, p xã bình chánh, phường xã bình chánh, bình chánh, binh chanh
+xã hưng long, xa hung long, p. xã hưng long, p xã hưng long, phường xã hưng long, hưng long, hung long
+xã bình hưng, xa binh hung, p. xã bình hưng, p xã bình hưng, phường xã bình hưng, bình hưng, binh hung
 
-huyện cần giờ, huyen can gio
-xã bình khánh, xa binh khanh, p. xã bình khánh, p xã bình khánh, phường xã bình khánh
-xã an thới đông, xa an thoi dong, p. xã an thới đông, p xã an thới đông, phường xã an thới đông
-xã cần giờ, xa can gio, p. xã cần giờ, p xã cần giờ, phường xã cần giờ
-xã thạnh an, xa thanh an, p. xã thạnh an, p xã thạnh an, phường xã thạnh an
+huyện cần giờ, huyen can gio, cần giờ, can gio
+xã bình khánh, xa binh khanh, p. xã bình khánh, p xã bình khánh, phường xã bình khánh, bình khánh, binh khanh
+xã an thới đông, xa an thoi dong, p. xã an thới đông, p xã an thới đông, phường xã an thới đông, an thới đông, an thoi dong
+xã cần giờ, xa can gio, p. xã cần giờ, p xã cần giờ, phường xã cần giờ, cần giờ, can gio
+xã thạnh an, xa thanh an, p. xã thạnh an, p xã thạnh an, phường xã thạnh an, thạnh an, thanh an
 
-huyện củ chi, huyen cu chi
-xã củ chi, xa cu chi, p. xã củ chi, p xã củ chi, phường xã củ chi
-xã tân an hội, xa tan an hoi, p. xã tân an hội, p xã tân an hội, phường xã tân an hội
-xã thái mỹ, xa thai my, p. xã thái mỹ, p xã thái mỹ, phường xã thái mỹ
-xã an nhơn tây, xa an nhon tay, p. xã an nhơn tây, p xã an nhơn tây, phường xã an nhơn tây
-xã nhuận đức, xa nhuan duc, p. xã nhuận đức, p xã nhuận đức, phường xã nhuận đức
-xã phú hoà đông, xa phu hoa dong, p. xã phú hoà đông, p xã phú hoà đông, phường xã phú hoà đông
-xã bình mỹ, xa binh my, p. xã bình mỹ, p xã bình mỹ, phường xã bình mỹ
+huyện củ chi, huyen cu chi, củ chi, cu chi
+xã củ chi, xa cu chi, p. xã củ chi, p xã củ chi, phường xã củ chi, củ chi, cu chi
+xã tân an hội, xa tan an hoi, p. xã tân an hội, p xã tân an hội, phường xã tân an hội, tân an hội, tan an hoi
+xã thái mỹ, xa thai my, p. xã thái mỹ, p xã thái mỹ, phường xã thái mỹ, thái mỹ, thai my
+xã an nhơn tây, xa an nhon tay, p. xã an nhơn tây, p xã an nhơn tây, phường xã an nhơn tây, an nhơn tây, an nhon tay
+xã nhuận đức, xa nhuan duc, p. xã nhuận đức, p xã nhuận đức, phường xã nhuận đức, nhuận đức, nhuan duc
+xã phú hoà đông, xa phu hoa dong, p. xã phú hoà đông, p xã phú hoà đông, phường xã phú hoà đông, phú hoà đông, phu hoa dong
+xã bình mỹ, xa binh my, p. xã bình mỹ, p xã bình mỹ, phường xã bình mỹ, bình mỹ, binh my
 
-huyện hóc môn, huyen hoc mon
-xã đông thạnh, xa dong thanh, p. xã đông thạnh, p xã đông thạnh, phường xã đông thạnh
-xã hóc môn, xa hoc mon, p. xã hóc môn, p xã hóc môn, phường xã hóc môn
-xã xuân thới sơn, xa xuan thoi son, p. xã xuân thới sơn, p xã xuân thới sơn, phường xã xuân thới sơn
-xã bà điểm, xa ba diem, p. xã bà điểm, p xã bà điểm, phường xã bà điểm
+huyện hóc môn, huyen hoc mon, hóc môn, hoc mon
+xã đông thạnh, xa dong thanh, p. xã đông thạnh, p xã đông thạnh, phường xã đông thạnh, đông thạnh, dong thanh
+xã hóc môn, xa hoc mon, p. xã hóc môn, p xã hóc môn, phường xã hóc môn, hóc môn, hoc mon
+xã xuân thới sơn, xa xuan thoi son, p. xã xuân thới sơn, p xã xuân thới sơn, phường xã xuân thới sơn, xuân thới sơn, xuan thoi son
+xã bà điểm, xa ba diem, p. xã bà điểm, p xã bà điểm, phường xã bà điểm, bà điểm, ba diem
 
-huyện nhà bè, huyen nha be
-xã nhà bè, xa nha be, p. xã nhà bè, p xã nhà bè, phường xã nhà bè
-xã hiệp phước, xa hiep phuoc, p. xã hiệp phước, p xã hiệp phước, phường xã hiệp phước
+huyện nhà bè, huyen nha be, nhà bè, nha be
+xã nhà bè, xa nha be, p. xã nhà bè, p xã nhà bè, phường xã nhà bè, nhà bè, nha be
+xã hiệp phước, xa hiep phuoc, p. xã hiệp phước, p xã hiệp phước, phường xã hiệp phước, hiệp phước, hiep phuoc
 
-quận hoàn kiếm, quan hoan kiem
-phường hoàn kiếm, phuong hoan kiem, p. phường hoàn kiếm, p phường hoàn kiếm, phường phường hoàn kiếm
-phường cửa nam, phuong cua nam, p. phường cửa nam, p phường cửa nam, phường phường cửa nam
+quận hoàn kiếm, quan hoan kiem, hoàn kiếm, hoan kiem
+phường hoàn kiếm, phuong hoan kiem, p. phường hoàn kiếm, p phường hoàn kiếm, phường phường hoàn kiếm, hoàn kiếm, hoan kiem
+phường cửa nam, phuong cua nam, p. phường cửa nam, p phường cửa nam, phường phường cửa nam, cửa nam, cua nam
 
-quận ba đình, quan ba dinh
-phường ba đình, phuong ba dinh, p. phường ba đình, p phường ba đình, phường phường ba đình
-phường ngọc hà, phuong ngoc ha, p. phường ngọc hà, p phường ngọc hà, phường phường ngọc hà
-phường giảng võ, phuong giang vo, p. phường giảng võ, p phường giảng võ, phường phường giảng võ
+quận ba đình, quan ba dinh, ba đình, ba dinh
+phường ba đình, phuong ba dinh, p. phường ba đình, p phường ba đình, phường phường ba đình, ba đình, ba dinh
+phường ngọc hà, phuong ngoc ha, p. phường ngọc hà, p phường ngọc hà, phường phường ngọc hà, ngọc hà, ngoc ha
+phường giảng võ, phuong giang vo, p. phường giảng võ, p phường giảng võ, phường phường giảng võ, giảng võ, giang vo
 
-quận hai bà trưng, quan hai ba trung
-phường hai bà trưng, phuong hai ba trung, p. phường hai bà trưng, p phường hai bà trưng, phường phường hai bà trưng
-phường vĩnh tuy, phuong vinh tuy, p. phường vĩnh tuy, p phường vĩnh tuy, phường phường vĩnh tuy
-phường bạch mai, phuong bach mai, p. phường bạch mai, p phường bạch mai, phường phường bạch mai
+quận hai bà trưng, quan hai ba trung, hai bà trưng, hai ba trung
+phường hai bà trưng, phuong hai ba trung, p. phường hai bà trưng, p phường hai bà trưng, phường phường hai bà trưng, hai bà trưng, hai ba trung
+phường vĩnh tuy, phuong vinh tuy, p. phường vĩnh tuy, p phường vĩnh tuy, phường phường vĩnh tuy, vĩnh tuy, vinh tuy
+phường bạch mai, phuong bach mai, p. phường bạch mai, p phường bạch mai, phường phường bạch mai, bạch mai, bach mai
 
-quận đống đa, quan dong da
-phường đống đa, phuong dong da, p. phường đống đa, p phường đống đa, phường phường đống đa
-phường kim liên, phuong kim lien, p. phường kim liên, p phường kim liên, phường phường kim liên
-phường văn miếu - quốc tử giám, phuong van mieu - quoc tu giam, p. phường văn miếu - quốc tử giám, p phường văn miếu - quốc tử giám, phường phường văn miếu - quốc tử giám
-phường láng, phuong lang, p. phường láng, p phường láng, phường phường láng
-phường ô chợ dừa, phuong o cho dua, p. phường ô chợ dừa, p phường ô chợ dừa, phường phường ô chợ dừa
+quận đống đa, quan dong da, đống đa, dong da
+phường đống đa, phuong dong da, p. phường đống đa, p phường đống đa, phường phường đống đa, đống đa, dong da
+phường kim liên, phuong kim lien, p. phường kim liên, p phường kim liên, phường phường kim liên, kim liên, kim lien
+phường văn miếu - quốc tử giám, phuong van mieu - quoc tu giam, p. phường văn miếu - quốc tử giám, p phường văn miếu - quốc tử giám, phường phường văn miếu - quốc tử giám, văn miếu - quốc tử giám, van mieu - quoc tu giam
+phường láng, phuong lang, p. phường láng, p phường láng, phường phường láng, láng, lang
+phường ô chợ dừa, phuong o cho dua, p. phường ô chợ dừa, p phường ô chợ dừa, phường phường ô chợ dừa, ô chợ dừa, o cho dua
 
-quận tây hồ, quan tay ho
-phường hồng hà, phuong hong ha, p. phường hồng hà, p phường hồng hà, phường phường hồng hà
-phường tây hồ, phuong tay ho, p. phường tây hồ, p phường tây hồ, phường phường tây hồ
+quận tây hồ, quan tay ho, tây hồ, tay ho
+phường hồng hà, phuong hong ha, p. phường hồng hà, p phường hồng hà, phường phường hồng hà, hồng hà, hong ha
+phường tây hồ, phuong tay ho, p. phường tây hồ, p phường tây hồ, phường phường tây hồ, tây hồ, tay ho
 
-quận hoàng mai, quan hoang mai
-phường lĩnh nam, phuong linh nam, p. phường lĩnh nam, p phường lĩnh nam, phường phường lĩnh nam
-phường hoàng mai, phuong hoang mai, p. phường hoàng mai, p phường hoàng mai, phường phường hoàng mai
-phường vĩnh hưng, phuong vinh hung, p. phường vĩnh hưng, p phường vĩnh hưng, phường phường vĩnh hưng
-phường tương mai, phuong tuong mai, p. phường tương mai, p phường tương mai, phường phường tương mai
-phường định công, phuong dinh cong, p. phường định công, p phường định công, phường phường định công
-phường yên sở, phuong yen so, p. phường yên sở, p phường yên sở, phường phường yên sở
+quận hoàng mai, quan hoang mai, hoàng mai, hoang mai
+phường lĩnh nam, phuong linh nam, p. phường lĩnh nam, p phường lĩnh nam, phường phường lĩnh nam, lĩnh nam, linh nam
+phường hoàng mai, phuong hoang mai, p. phường hoàng mai, p phường hoàng mai, phường phường hoàng mai, hoàng mai, hoang mai
+phường vĩnh hưng, phuong vinh hung, p. phường vĩnh hưng, p phường vĩnh hưng, phường phường vĩnh hưng, vĩnh hưng, vinh hung
+phường tương mai, phuong tuong mai, p. phường tương mai, p phường tương mai, phường phường tương mai, tương mai, tuong mai
+phường định công, phuong dinh cong, p. phường định công, p phường định công, phường phường định công, định công, dinh cong
+phường yên sở, phuong yen so, p. phường yên sở, p phường yên sở, phường phường yên sở, yên sở, yen so
 
-huyện thanh trì, huyen thanh tri
-phường hoàng liệt, phuong hoang liet, p. phường hoàng liệt, p phường hoàng liệt, phường phường hoàng liệt
-xã thanh trì, xa thanh tri, p. xã thanh trì, p xã thanh trì, phường xã thanh trì
-xã đại thanh, xa dai thanh, p. xã đại thanh, p xã đại thanh, phường xã đại thanh
-xã nam phù, xa nam phu, p. xã nam phù, p xã nam phù, phường xã nam phù
-xã ngọc hồi, xa ngoc hoi, p. xã ngọc hồi, p xã ngọc hồi, phường xã ngọc hồi
-phường thanh liệt, phuong thanh liet, p. phường thanh liệt, p phường thanh liệt, phường phường thanh liệt
+huyện thanh trì, huyen thanh tri, thanh trì, thanh tri
+phường hoàng liệt, phuong hoang liet, p. phường hoàng liệt, p phường hoàng liệt, phường phường hoàng liệt, hoàng liệt, hoang liet
+xã thanh trì, xa thanh tri, p. xã thanh trì, p xã thanh trì, phường xã thanh trì, thanh trì, thanh tri
+xã đại thanh, xa dai thanh, p. xã đại thanh, p xã đại thanh, phường xã đại thanh, đại thanh, dai thanh
+xã nam phù, xa nam phu, p. xã nam phù, p xã nam phù, phường xã nam phù, nam phù, nam phu
+xã ngọc hồi, xa ngoc hoi, p. xã ngọc hồi, p xã ngọc hồi, phường xã ngọc hồi, ngọc hồi, ngoc hoi
+phường thanh liệt, phuong thanh liet, p. phường thanh liệt, p phường thanh liệt, phường phường thanh liệt, thanh liệt, thanh liet
 
-quận thanh xuân, quan thanh xuan
-phường thanh xuân, phuong thanh xuan, p. phường thanh xuân, p phường thanh xuân, phường phường thanh xuân
-phường khương đình, phuong khuong dinh, p. phường khương đình, p phường khương đình, phường phường khương đình
-phường phương liệt, phuong phuong liet, p. phường phương liệt, p phường phương liệt, phường phường phương liệt
+quận thanh xuân, quan thanh xuan, thanh xuân, thanh xuan
+phường thanh xuân, phuong thanh xuan, p. phường thanh xuân, p phường thanh xuân, phường phường thanh xuân, thanh xuân, thanh xuan
+phường khương đình, phuong khuong dinh, p. phường khương đình, p phường khương đình, phường phường khương đình, khương đình, khuong dinh
+phường phương liệt, phuong phuong liet, p. phường phương liệt, p phường phương liệt, phường phường phương liệt, phương liệt, phuong liet
 
-quận cầu giấy, quan cau giay
-phường cầu giấy, phuong cau giay, p. phường cầu giấy, p phường cầu giấy, phường phường cầu giấy
-phường nghĩa đô, phuong nghia do, p. phường nghĩa đô, p phường nghĩa đô, phường phường nghĩa đô
-phường yên hoà, phuong yen hoa, p. phường yên hoà, p phường yên hoà, phường phường yên hoà
+quận cầu giấy, quan cau giay, cầu giấy, cau giay
+phường cầu giấy, phuong cau giay, p. phường cầu giấy, p phường cầu giấy, phường phường cầu giấy, cầu giấy, cau giay
+phường nghĩa đô, phuong nghia do, p. phường nghĩa đô, p phường nghĩa đô, phường phường nghĩa đô, nghĩa đô, nghia do
+phường yên hoà, phuong yen hoa, p. phường yên hoà, p phường yên hoà, phường phường yên hoà, yên hoà, yen hoa
 
-quận bắc từ liêm, quan bac tu liem
-phường phú thượng, phuong phu thuong, p. phường phú thượng, p phường phú thượng, phường phường phú thượng
-phường tây tựu, phuong tay tuu, p. phường tây tựu, p phường tây tựu, phường phường tây tựu
-phường phú diễn, phuong phu dien, p. phường phú diễn, p phường phú diễn, phường phường phú diễn
-phường xuân đỉnh, phuong xuan dinh, p. phường xuân đỉnh, p phường xuân đỉnh, phường phường xuân đỉnh
-phường đông ngạc, phuong dong ngac, p. phường đông ngạc, p phường đông ngạc, phường phường đông ngạc
-phường thượng cát, phuong thuong cat, p. phường thượng cát, p phường thượng cát, phường phường thượng cát
+quận bắc từ liêm, quan bac tu liem, bắc từ liêm, bac tu liem
+phường phú thượng, phuong phu thuong, p. phường phú thượng, p phường phú thượng, phường phường phú thượng, phú thượng, phu thuong
+phường tây tựu, phuong tay tuu, p. phường tây tựu, p phường tây tựu, phường phường tây tựu, tây tựu, tay tuu
+phường phú diễn, phuong phu dien, p. phường phú diễn, p phường phú diễn, phường phường phú diễn, phú diễn, phu dien
+phường xuân đỉnh, phuong xuan dinh, p. phường xuân đỉnh, p phường xuân đỉnh, phường phường xuân đỉnh, xuân đỉnh, xuan dinh
+phường đông ngạc, phuong dong ngac, p. phường đông ngạc, p phường đông ngạc, phường phường đông ngạc, đông ngạc, dong ngac
+phường thượng cát, phuong thuong cat, p. phường thượng cát, p phường thượng cát, phường phường thượng cát, thượng cát, thuong cat
 
-quận nam từ liêm, quan nam tu liem
-phường từ liêm, phuong tu liem, p. phường từ liêm, p phường từ liêm, phường phường từ liêm
-phường xuân phương, phuong xuan phuong, p. phường xuân phương, p phường xuân phương, phường phường xuân phương
-phường tây mỗ, phuong tay mo, p. phường tây mỗ, p phường tây mỗ, phường phường tây mỗ
-phường đại mỗ, phuong dai mo, p. phường đại mỗ, p phường đại mỗ, phường phường đại mỗ
+quận nam từ liêm, quan nam tu liem, nam từ liêm, nam tu liem
+phường từ liêm, phuong tu liem, p. phường từ liêm, p phường từ liêm, phường phường từ liêm, từ liêm, tu liem
+phường xuân phương, phuong xuan phuong, p. phường xuân phương, p phường xuân phương, phường phường xuân phương, xuân phương, xuan phuong
+phường tây mỗ, phuong tay mo, p. phường tây mỗ, p phường tây mỗ, phường phường tây mỗ, tây mỗ, tay mo
+phường đại mỗ, phuong dai mo, p. phường đại mỗ, p phường đại mỗ, phường phường đại mỗ, đại mỗ, dai mo
 
-quận long biên, quan long bien
-phường long biên, phuong long bien, p. phường long biên, p phường long biên, phường phường long biên
-phường bồ đề, phuong bo de, p. phường bồ đề, p phường bồ đề, phường phường bồ đề
-phường việt hưng, phuong viet hung, p. phường việt hưng, p phường việt hưng, phường phường việt hưng
-phường phúc lợi, phuong phuc loi, p. phường phúc lợi, p phường phúc lợi, phường phường phúc lợi
+quận long biên, quan long bien, long biên, long bien
+phường long biên, phuong long bien, p. phường long biên, p phường long biên, phường phường long biên, long biên, long bien
+phường bồ đề, phuong bo de, p. phường bồ đề, p phường bồ đề, phường phường bồ đề, bồ đề, bo de
+phường việt hưng, phuong viet hung, p. phường việt hưng, p phường việt hưng, phường phường việt hưng, việt hưng, viet hung
+phường phúc lợi, phuong phuc loi, p. phường phúc lợi, p phường phúc lợi, phường phường phúc lợi, phúc lợi, phuc loi
 
-quận hà đông, quan ha dong
-phường hà đông, phuong ha dong, p. phường hà đông, p phường hà đông, phường phường hà đông
-phường dương nội, phuong duong noi, p. phường dương nội, p phường dương nội, phường phường dương nội
-phường yên nghĩa, phuong yen nghia, p. phường yên nghĩa, p phường yên nghĩa, phường phường yên nghĩa
-phường phú lương, phuong phu luong, p. phường phú lương, p phường phú lương, phường phường phú lương
-phường kiến hưng, phuong kien hung, p. phường kiến hưng, p phường kiến hưng, phường phường kiến hưng
+quận hà đông, quan ha dong, hà đông, ha dong
+phường hà đông, phuong ha dong, p. phường hà đông, p phường hà đông, phường phường hà đông, hà đông, ha dong
+phường dương nội, phuong duong noi, p. phường dương nội, p phường dương nội, phường phường dương nội, dương nội, duong noi
+phường yên nghĩa, phuong yen nghia, p. phường yên nghĩa, p phường yên nghĩa, phường phường yên nghĩa, yên nghĩa, yen nghia
+phường phú lương, phuong phu luong, p. phường phú lương, p phường phú lương, phường phường phú lương, phú lương, phu luong
+phường kiến hưng, phuong kien hung, p. phường kiến hưng, p phường kiến hưng, phường phường kiến hưng, kiến hưng, kien hung
 
-huyện thường tín, huyen thuong tin
-xã thượng phúc, xa thuong phuc, p. xã thượng phúc, p xã thượng phúc, phường xã thượng phúc
-xã thường tín, xa thuong tin, p. xã thường tín, p xã thường tín, phường xã thường tín
-xã chương dương, xa chuong duong, p. xã chương dương, p xã chương dương, phường xã chương dương
-xã hồng vân, xa hong van, p. xã hồng vân, p xã hồng vân, phường xã hồng vân
+huyện thường tín, huyen thuong tin, thường tín, thuong tin
+xã thượng phúc, xa thuong phuc, p. xã thượng phúc, p xã thượng phúc, phường xã thượng phúc, thượng phúc, thuong phuc
+xã thường tín, xa thuong tin, p. xã thường tín, p xã thường tín, phường xã thường tín, thường tín, thuong tin
+xã chương dương, xa chuong duong, p. xã chương dương, p xã chương dương, phường xã chương dương, chương dương, chuong duong
+xã hồng vân, xa hong van, p. xã hồng vân, p xã hồng vân, phường xã hồng vân, hồng vân, hong van
 
-huyện phú xuyên, huyen phu xuyen
-xã phú xuyên, xa phu xuyen, p. xã phú xuyên, p xã phú xuyên, phường xã phú xuyên
-xã phượng dực, xa phuong duc, p. xã phượng dực, p xã phượng dực, phường xã phượng dực
-xã chuyên mỹ, xa chuyen my, p. xã chuyên mỹ, p xã chuyên mỹ, phường xã chuyên mỹ
-xã đại xuyên, xa dai xuyen, p. xã đại xuyên, p xã đại xuyên, phường xã đại xuyên
+huyện phú xuyên, huyen phu xuyen, phú xuyên, phu xuyen
+xã phú xuyên, xa phu xuyen, p. xã phú xuyên, p xã phú xuyên, phường xã phú xuyên, phú xuyên, phu xuyen
+xã phượng dực, xa phuong duc, p. xã phượng dực, p xã phượng dực, phường xã phượng dực, phượng dực, phuong duc
+xã chuyên mỹ, xa chuyen my, p. xã chuyên mỹ, p xã chuyên mỹ, phường xã chuyên mỹ, chuyên mỹ, chuyen my
+xã đại xuyên, xa dai xuyen, p. xã đại xuyên, p xã đại xuyên, phường xã đại xuyên, đại xuyên, dai xuyen
 
-huyện thanh oai, huyen thanh oai
-xã thanh oai, xa thanh oai, p. xã thanh oai, p xã thanh oai, phường xã thanh oai
-xã bình minh, xa binh minh, p. xã bình minh, p xã bình minh, phường xã bình minh
-xã tam hưng, xa tam hung, p. xã tam hưng, p xã tam hưng, phường xã tam hưng
-xã dân hoà, xa dan hoa, p. xã dân hoà, p xã dân hoà, phường xã dân hoà
+huyện thanh oai, huyen thanh oai, thanh oai
+xã thanh oai, xa thanh oai, p. xã thanh oai, p xã thanh oai, phường xã thanh oai, thanh oai
+xã bình minh, xa binh minh, p. xã bình minh, p xã bình minh, phường xã bình minh, bình minh, binh minh
+xã tam hưng, xa tam hung, p. xã tam hưng, p xã tam hưng, phường xã tam hưng, tam hưng, tam hung
+xã dân hoà, xa dan hoa, p. xã dân hoà, p xã dân hoà, phường xã dân hoà, dân hoà, dan hoa
 
-huyện ứng hoà, huyen ung hoa
-xã vân đình, xa van dinh, p. xã vân đình, p xã vân đình, phường xã vân đình
-xã ứng thiên, xa ung thien, p. xã ứng thiên, p xã ứng thiên, phường xã ứng thiên
-xã hoà xá, xa hoa xa, p. xã hoà xá, p xã hoà xá, phường xã hoà xá
-xã ứng hoà, xa ung hoa, p. xã ứng hoà, p xã ứng hoà, phường xã ứng hoà
+huyện ứng hoà, huyen ung hoa, ứng hoà, ung hoa
+xã vân đình, xa van dinh, p. xã vân đình, p xã vân đình, phường xã vân đình, vân đình, van dinh
+xã ứng thiên, xa ung thien, p. xã ứng thiên, p xã ứng thiên, phường xã ứng thiên, ứng thiên, ung thien
+xã hoà xá, xa hoa xa, p. xã hoà xá, p xã hoà xá, phường xã hoà xá, hoà xá, hoa xa
+xã ứng hoà, xa ung hoa, p. xã ứng hoà, p xã ứng hoà, phường xã ứng hoà, ứng hoà, ung hoa
 
-huyện mỹ đức, huyen my duc
-xã mỹ đức, xa my duc, p. xã mỹ đức, p xã mỹ đức, phường xã mỹ đức
-xã hồng sơn, xa hong son, p. xã hồng sơn, p xã hồng sơn, phường xã hồng sơn
-xã phúc sơn, xa phuc son, p. xã phúc sơn, p xã phúc sơn, phường xã phúc sơn
-xã hương sơn, xa huong son, p. xã hương sơn, p xã hương sơn, phường xã hương sơn
+huyện mỹ đức, huyen my duc, mỹ đức, my duc
+xã mỹ đức, xa my duc, p. xã mỹ đức, p xã mỹ đức, phường xã mỹ đức, mỹ đức, my duc
+xã hồng sơn, xa hong son, p. xã hồng sơn, p xã hồng sơn, phường xã hồng sơn, hồng sơn, hong son
+xã phúc sơn, xa phuc son, p. xã phúc sơn, p xã phúc sơn, phường xã phúc sơn, phúc sơn, phuc son
+xã hương sơn, xa huong son, p. xã hương sơn, p xã hương sơn, phường xã hương sơn, hương sơn, huong son
 
-huyện chương mỹ, huyen chuong my
-phường chương mỹ, phuong chuong my, p. phường chương mỹ, p phường chương mỹ, phường phường chương mỹ
-xã phú nghĩa, xa phu nghia, p. xã phú nghĩa, p xã phú nghĩa, phường xã phú nghĩa
-xã xuân mai, xa xuan mai, p. xã xuân mai, p xã xuân mai, phường xã xuân mai
-xã trần phú, xa tran phu, p. xã trần phú, p xã trần phú, phường xã trần phú
-xã hoà phú, xa hoa phu, p. xã hoà phú, p xã hoà phú, phường xã hoà phú
-xã quảng bị, xa quang bi, p. xã quảng bị, p xã quảng bị, phường xã quảng bị
+huyện chương mỹ, huyen chuong my, chương mỹ, chuong my
+phường chương mỹ, phuong chuong my, p. phường chương mỹ, p phường chương mỹ, phường phường chương mỹ, chương mỹ, chuong my
+xã phú nghĩa, xa phu nghia, p. xã phú nghĩa, p xã phú nghĩa, phường xã phú nghĩa, phú nghĩa, phu nghia
+xã xuân mai, xa xuan mai, p. xã xuân mai, p xã xuân mai, phường xã xuân mai, xuân mai, xuan mai
+xã trần phú, xa tran phu, p. xã trần phú, p xã trần phú, phường xã trần phú, trần phú, tran phu
+xã hoà phú, xa hoa phu, p. xã hoà phú, p xã hoà phú, phường xã hoà phú, hoà phú, hoa phu
+xã quảng bị, xa quang bi, p. xã quảng bị, p xã quảng bị, phường xã quảng bị, quảng bị, quang bi
 
-huyện ba vì, huyen ba vi
-xã minh châu, xa minh chau, p. xã minh châu, p xã minh châu, phường xã minh châu
-xã quảng oai, xa quang oai, p. xã quảng oai, p xã quảng oai, phường xã quảng oai
-xã vật lại, xa vat lai, p. xã vật lại, p xã vật lại, phường xã vật lại
-xã cổ đô, xa co do, p. xã cổ đô, p xã cổ đô, phường xã cổ đô
-xã bất bạt, xa bat bat, p. xã bất bạt, p xã bất bạt, phường xã bất bạt
-xã suối hai, xa suoi hai, p. xã suối hai, p xã suối hai, phường xã suối hai
-xã ba vì, xa ba vi, p. xã ba vì, p xã ba vì, phường xã ba vì
-xã yên bài, xa yen bai, p. xã yên bài, p xã yên bài, phường xã yên bài
+huyện ba vì, huyen ba vi, ba vì, ba vi
+xã minh châu, xa minh chau, p. xã minh châu, p xã minh châu, phường xã minh châu, minh châu, minh chau
+xã quảng oai, xa quang oai, p. xã quảng oai, p xã quảng oai, phường xã quảng oai, quảng oai, quang oai
+xã vật lại, xa vat lai, p. xã vật lại, p xã vật lại, phường xã vật lại, vật lại, vat lai
+xã cổ đô, xa co do, p. xã cổ đô, p xã cổ đô, phường xã cổ đô, cổ đô, co do
+xã bất bạt, xa bat bat, p. xã bất bạt, p xã bất bạt, phường xã bất bạt, bất bạt, bat bat
+xã suối hai, xa suoi hai, p. xã suối hai, p xã suối hai, phường xã suối hai, suối hai, suoi hai
+xã ba vì, xa ba vi, p. xã ba vì, p xã ba vì, phường xã ba vì, ba vì, ba vi
+xã yên bài, xa yen bai, p. xã yên bài, p xã yên bài, phường xã yên bài, yên bài, yen bai
 
-thị xã sơn tây, thi xa son tay
-phường sơn tây, phuong son tay, p. phường sơn tây, p phường sơn tây, phường phường sơn tây
-phường tùng thiện, phuong tung thien, p. phường tùng thiện, p phường tùng thiện, phường phường tùng thiện
-xã đoài phương, xa doai phuong, p. xã đoài phương, p xã đoài phương, phường xã đoài phương
+thị xã sơn tây, thi xa son tay, sơn tây, son tay
+phường sơn tây, phuong son tay, p. phường sơn tây, p phường sơn tây, phường phường sơn tây, sơn tây, son tay
+phường tùng thiện, phuong tung thien, p. phường tùng thiện, p phường tùng thiện, phường phường tùng thiện, tùng thiện, tung thien
+xã đoài phương, xa doai phuong, p. xã đoài phương, p xã đoài phương, phường xã đoài phương, đoài phương, doai phuong
 
-huyện phúc thọ, huyen phuc tho
-xã phúc thọ, xa phuc tho, p. xã phúc thọ, p xã phúc thọ, phường xã phúc thọ
-xã phúc lộc, xa phuc loc, p. xã phúc lộc, p xã phúc lộc, phường xã phúc lộc
-xã hát môn, xa hat mon, p. xã hát môn, p xã hát môn, phường xã hát môn
+huyện phúc thọ, huyen phuc tho, phúc thọ, phuc tho
+xã phúc thọ, xa phuc tho, p. xã phúc thọ, p xã phúc thọ, phường xã phúc thọ, phúc thọ, phuc tho
+xã phúc lộc, xa phuc loc, p. xã phúc lộc, p xã phúc lộc, phường xã phúc lộc, phúc lộc, phuc loc
+xã hát môn, xa hat mon, p. xã hát môn, p xã hát môn, phường xã hát môn, hát môn, hat mon
 
-huyện thạch thất, huyen thach that
-xã thạch thất, xa thach that, p. xã thạch thất, p xã thạch thất, phường xã thạch thất
-xã hạ bằng, xa ha bang, p. xã hạ bằng, p xã hạ bằng, phường xã hạ bằng
-xã tây phương, xa tay phuong, p. xã tây phương, p xã tây phương, phường xã tây phương
-xã hoà lạc, xa hoa lac, p. xã hoà lạc, p xã hoà lạc, phường xã hoà lạc
-xã yên xuân, xa yen xuan, p. xã yên xuân, p xã yên xuân, phường xã yên xuân
+huyện thạch thất, huyen thach that, thạch thất, thach that
+xã thạch thất, xa thach that, p. xã thạch thất, p xã thạch thất, phường xã thạch thất, thạch thất, thach that
+xã hạ bằng, xa ha bang, p. xã hạ bằng, p xã hạ bằng, phường xã hạ bằng, hạ bằng, ha bang
+xã tây phương, xa tay phuong, p. xã tây phương, p xã tây phương, phường xã tây phương, tây phương, tay phuong
+xã hoà lạc, xa hoa lac, p. xã hoà lạc, p xã hoà lạc, phường xã hoà lạc, hoà lạc, hoa lac
+xã yên xuân, xa yen xuan, p. xã yên xuân, p xã yên xuân, phường xã yên xuân, yên xuân, yen xuan
 
-huyện quốc oai, huyen quoc oai
-xã quốc oai, xa quoc oai, p. xã quốc oai, p xã quốc oai, phường xã quốc oai
-xã hưng đạo, xa hung dao, p. xã hưng đạo, p xã hưng đạo, phường xã hưng đạo
-xã kiều phú, xa kieu phu, p. xã kiều phú, p xã kiều phú, phường xã kiều phú
-xã phú cát, xa phu cat, p. xã phú cát, p xã phú cát, phường xã phú cát
+huyện quốc oai, huyen quoc oai, quốc oai, quoc oai
+xã quốc oai, xa quoc oai, p. xã quốc oai, p xã quốc oai, phường xã quốc oai, quốc oai, quoc oai
+xã hưng đạo, xa hung dao, p. xã hưng đạo, p xã hưng đạo, phường xã hưng đạo, hưng đạo, hung dao
+xã kiều phú, xa kieu phu, p. xã kiều phú, p xã kiều phú, phường xã kiều phú, kiều phú, kieu phu
+xã phú cát, xa phu cat, p. xã phú cát, p xã phú cát, phường xã phú cát, phú cát, phu cat
 
-huyện hoài đức, huyen hoai duc
-xã hoài đức, xa hoai duc, p. xã hoài đức, p xã hoài đức, phường xã hoài đức
-xã dương hoà, xa duong hoa, p. xã dương hoà, p xã dương hoà, phường xã dương hoà
-xã sơn đồng, xa son dong, p. xã sơn đồng, p xã sơn đồng, phường xã sơn đồng
-xã an khánh, xa an khanh, p. xã an khánh, p xã an khánh, phường xã an khánh
+huyện hoài đức, huyen hoai duc, hoài đức, hoai duc
+xã hoài đức, xa hoai duc, p. xã hoài đức, p xã hoài đức, phường xã hoài đức, hoài đức, hoai duc
+xã dương hoà, xa duong hoa, p. xã dương hoà, p xã dương hoà, phường xã dương hoà, dương hoà, duong hoa
+xã sơn đồng, xa son dong, p. xã sơn đồng, p xã sơn đồng, phường xã sơn đồng, sơn đồng, son dong
+xã an khánh, xa an khanh, p. xã an khánh, p xã an khánh, phường xã an khánh, an khánh, an khanh
 
-huyện đan phượng, huyen dan phuong
-xã đan phượng, xa dan phuong, p. xã đan phượng, p xã đan phượng, phường xã đan phượng
-xã ô diên, xa o dien, p. xã ô diên, p xã ô diên, phường xã ô diên
-xã liên minh, xa lien minh, p. xã liên minh, p xã liên minh, phường xã liên minh
+huyện đan phượng, huyen dan phuong, đan phượng, dan phuong
+xã đan phượng, xa dan phuong, p. xã đan phượng, p xã đan phượng, phường xã đan phượng, đan phượng, dan phuong
+xã ô diên, xa o dien, p. xã ô diên, p xã ô diên, phường xã ô diên, ô diên, o dien
+xã liên minh, xa lien minh, p. xã liên minh, p xã liên minh, phường xã liên minh, liên minh, lien minh
 
-huyện gia lâm, huyen gia lam
-xã gia lâm, xa gia lam, p. xã gia lâm, p xã gia lâm, phường xã gia lâm
-xã thuận an, xa thuan an, p. xã thuận an, p xã thuận an, phường xã thuận an
-xã bát tràng, xa bat trang, p. xã bát tràng, p xã bát tràng, phường xã bát tràng
-xã phù đổng, xa phu dong, p. xã phù đổng, p xã phù đổng, phường xã phù đổng
+huyện gia lâm, huyen gia lam, gia lâm, gia lam
+xã gia lâm, xa gia lam, p. xã gia lâm, p xã gia lâm, phường xã gia lâm, gia lâm, gia lam
+xã thuận an, xa thuan an, p. xã thuận an, p xã thuận an, phường xã thuận an, thuận an, thuan an
+xã bát tràng, xa bat trang, p. xã bát tràng, p xã bát tràng, phường xã bát tràng, bát tràng, bat trang
+xã phù đổng, xa phu dong, p. xã phù đổng, p xã phù đổng, phường xã phù đổng, phù đổng, phu dong
 
-huyện đông anh, huyen dong anh
-xã thư lâm, xa thu lam, p. xã thư lâm, p xã thư lâm, phường xã thư lâm
-xã đông anh, xa dong anh, p. xã đông anh, p xã đông anh, phường xã đông anh
-xã phúc thịnh, xa phuc thinh, p. xã phúc thịnh, p xã phúc thịnh, phường xã phúc thịnh
-xã thiên lộc, xa thien loc, p. xã thiên lộc, p xã thiên lộc, phường xã thiên lộc
-xã vĩnh thanh, xa vinh thanh, p. xã vĩnh thanh, p xã vĩnh thanh, phường xã vĩnh thanh
+huyện đông anh, huyen dong anh, đông anh, dong anh
+xã thư lâm, xa thu lam, p. xã thư lâm, p xã thư lâm, phường xã thư lâm, thư lâm, thu lam
+xã đông anh, xa dong anh, p. xã đông anh, p xã đông anh, phường xã đông anh, đông anh, dong anh
+xã phúc thịnh, xa phuc thinh, p. xã phúc thịnh, p xã phúc thịnh, phường xã phúc thịnh, phúc thịnh, phuc thinh
+xã thiên lộc, xa thien loc, p. xã thiên lộc, p xã thiên lộc, phường xã thiên lộc, thiên lộc, thien loc
+xã vĩnh thanh, xa vinh thanh, p. xã vĩnh thanh, p xã vĩnh thanh, phường xã vĩnh thanh, vĩnh thanh, vinh thanh
 
-huyện mê linh, huyen me linh
-xã mê linh, xa me linh, p. xã mê linh, p xã mê linh, phường xã mê linh
-xã yên lãng, xa yen lang, p. xã yên lãng, p xã yên lãng, phường xã yên lãng
-xã tiến thắng, xa tien thang, p. xã tiến thắng, p xã tiến thắng, phường xã tiến thắng
-xã quang minh, xa quang minh, p. xã quang minh, p xã quang minh, phường xã quang minh
+huyện mê linh, huyen me linh, mê linh, me linh
+xã mê linh, xa me linh, p. xã mê linh, p xã mê linh, phường xã mê linh, mê linh, me linh
+xã yên lãng, xa yen lang, p. xã yên lãng, p xã yên lãng, phường xã yên lãng, yên lãng, yen lang
+xã tiến thắng, xa tien thang, p. xã tiến thắng, p xã tiến thắng, phường xã tiến thắng, tiến thắng, tien thang
+xã quang minh, xa quang minh, p. xã quang minh, p xã quang minh, phường xã quang minh, quang minh
 
-huyện sóc sơn, huyen soc son
-xã sóc sơn, xa soc son, p. xã sóc sơn, p xã sóc sơn, phường xã sóc sơn
-xã đa phúc, xa da phuc, p. xã đa phúc, p xã đa phúc, phường xã đa phúc
-xã nội bài, xa noi bai, p. xã nội bài, p xã nội bài, phường xã nội bài
-xã trung giã, xa trung gia, p. xã trung giã, p xã trung giã, phường xã trung giã
-xã kim anh, xa kim anh, p. xã kim anh, p xã kim anh, phường xã kim anh
+huyện sóc sơn, huyen soc son, sóc sơn, soc son
+xã sóc sơn, xa soc son, p. xã sóc sơn, p xã sóc sơn, phường xã sóc sơn, sóc sơn, soc son
+xã đa phúc, xa da phuc, p. xã đa phúc, p xã đa phúc, phường xã đa phúc, đa phúc, da phuc
+xã nội bài, xa noi bai, p. xã nội bài, p xã nội bài, phường xã nội bài, nội bài, noi bai
+xã trung giã, xa trung gia, p. xã trung giã, p xã trung giã, phường xã trung giã, trung giã, trung gia
+xã kim anh, xa kim anh, p. xã kim anh, p xã kim anh, phường xã kim anh, kim anh
