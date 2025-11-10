@@ -5,6 +5,8 @@ import { UpdateReviewDto } from './dto/update-review.dto';
 import { ListReviewsQueryDto } from './dto/list-reviews.dto';
 import { ListAllReviewsQueryDto } from './dto/list-all-reviews.dto';
 import { VoteReviewDto } from './dto/vote-review.dto';
+import { CreateReplyDto } from './dto/create-reply.dto';
+import { UpdateReplyDto } from './dto/update-reply.dto';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 
 @Controller('reviews')
@@ -20,7 +22,7 @@ export class ReviewsController {
   }
 
   @Get()
-  list(@Query() q: ListReviewsQueryDto) {
+  list(@Query() q: ListReviewsQueryDto, @Query('userId') userId?: string) {
     return this.reviewsService.listByTarget({
       targetType: q.targetType,
       targetId: Number(q.targetId),
@@ -29,11 +31,12 @@ export class ReviewsController {
       sort: (q.sort as any) || 'recent',
       page: q.page ? Number(q.page) : 1,
       pageSize: q.pageSize ? Number(q.pageSize) : 10,
+      userId: userId ? Number(userId) : undefined, // Optional: để check myVote
     });
   }
 
   @Get('all')
-  listAll(@Query() q: ListAllReviewsQueryDto) {
+  listAll(@Query() q: ListAllReviewsQueryDto, @Query('userId') userId?: string) {
     return this.reviewsService.listAll({
       targetType: q.targetType,
       rating: q.rating ? Number(q.rating) : undefined,
@@ -41,6 +44,7 @@ export class ReviewsController {
       sort: (q.sort as any) || 'recent',
       page: q.page ? Number(q.page) : 1,
       pageSize: q.pageSize ? Number(q.pageSize) : 10,
+      userId: userId ? Number(userId) : undefined, // Optional: để check myVote
     });
   }
 
@@ -74,6 +78,36 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   vote(@Param('reviewId') reviewId: string, @Query('userId') userId: string, @Body() dto: VoteReviewDto) {
     return this.reviewsService.vote(Number(reviewId), Number(userId), dto.isHelpful);
+  }
+
+  // Reply endpoints (Multiple replies support)
+  @Post(':reviewId/replies')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard)
+  createReply(@Param('reviewId') reviewId: string, @Body() dto: CreateReplyDto) {
+    return this.reviewsService.createReply(Number(reviewId), dto);
+  }
+
+  @Patch(':reviewId/replies/:replyId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  updateReply(
+    @Param('reviewId') reviewId: string,
+    @Param('replyId') replyId: string,
+    @Body() dto: UpdateReplyDto,
+  ) {
+    return this.reviewsService.updateReply(Number(reviewId), Number(replyId), dto);
+  }
+
+  @Delete(':reviewId/replies/:replyId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  deleteReply(
+    @Param('reviewId') reviewId: string,
+    @Param('replyId') replyId: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.reviewsService.deleteReply(Number(reviewId), Number(replyId), Number(userId));
   }
 }
 

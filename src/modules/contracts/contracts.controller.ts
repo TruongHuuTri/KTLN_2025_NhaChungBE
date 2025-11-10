@@ -12,6 +12,7 @@ import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
 import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
 import { CreateManualInvoiceDto } from './dto/create-manual-invoice.dto';
+import { TerminateContractDto } from './dto/terminate-contract.dto';
 import { Res } from '@nestjs/common';
 import type { Response } from 'express';
 
@@ -161,6 +162,12 @@ export class LandlordContractsController {
   async generateMaintenanceFee() {
     return this.maintenanceFeeService.manualGenerateMaintenanceInvoices();
   }
+
+  // Test endpoint để tự động expire contracts hết hạn
+  @Post('test/expire-contracts')
+  async expireContracts() {
+    return this.contractsService.expireContracts();
+  }
 }
 
 @Controller('users')
@@ -282,5 +289,62 @@ export class UserContractsController {
   async rejectRoomSharingByUser(@Request() req, @Param('id') requestId: number) {
     const userId = req.user.userId;
     return this.contractsService.rejectRoomSharingByUser(requestId, userId);
+  }
+
+  // Rental History APIs
+  @Put('me/contracts/:contractId/terminate')
+  async terminateContract(
+    @Request() req, 
+    @Param('contractId') contractId: string,
+    @Body() terminateData: TerminateContractDto
+  ) {
+    const userId = req.user.userId;
+    const result = await this.contractsService.terminateContract(
+      Number(contractId), 
+      userId, 
+      terminateData
+    );
+    
+    return {
+      message: 'Hợp đồng đã được hủy thành công',
+      contract: {
+        contractId: result.contract.contractId,
+        status: result.contract.status,
+        terminatedAt: result.contract.terminatedAt,
+        terminationReason: result.contract.terminationReason
+      },
+      affectedPosts: {
+        count: result.affectedPostsCount,
+        message: `Đã active lại ${result.affectedPostsCount} bài đăng`
+      }
+    };
+  }
+
+  @Get('me/rental-history')
+  async getRentalHistory(
+    @Request() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string
+  ) {
+    const userId = req.user.userId;
+    return this.contractsService.getRentalHistory(userId, {
+      page: page ? parseInt(page) : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      status,
+      sortBy,
+      sortOrder
+    });
+  }
+
+  @Get('me/rental-history/:contractId')
+  async getRentalHistoryDetail(
+    @Request() req,
+    @Param('contractId') contractId: string
+  ) {
+    const userId = req.user.userId;
+    return this.contractsService.getRentalHistoryDetail(userId, Number(contractId));
   }
 }

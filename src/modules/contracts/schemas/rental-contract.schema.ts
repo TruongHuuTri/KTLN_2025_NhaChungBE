@@ -75,6 +75,15 @@ export class RentalContract {
   roomInfo: RoomInfo;
 
   @Prop()
+  terminatedAt?: Date;
+
+  @Prop()
+  terminationReason?: string;
+
+  @Prop()
+  actualEndDate?: Date;
+
+  @Prop()
   createdAt: Date;
 
   @Prop()

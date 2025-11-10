@@ -14,6 +14,33 @@ export class ReviewVote {
   isHelpful: boolean;
 }
 
+@Schema({ _id: false })
+export class ReviewReply {
+  @Prop({ required: true })
+  replyId: number;
+
+  @Prop({ required: true })
+  userId: number;
+
+  @Prop({ required: true, minlength: 1, maxlength: 500 })
+  content: string;
+
+  @Prop({ type: [String], default: [] })
+  media: string[]; // URLs của ảnh đính kèm (tối đa 3 ảnh)
+
+  @Prop({ default: false })
+  isAuthor: boolean; // true nếu reply từ owner của target
+
+  @Prop({ required: true })
+  createdAt: Date;
+
+  @Prop({ required: true })
+  updatedAt: Date;
+
+  @Prop({ default: false })
+  isEdited: boolean;
+}
+
 @Schema({ timestamps: true, collection: 'reviews' })
 export class Review {
   @Prop({ required: true, unique: true })
@@ -54,6 +81,15 @@ export class Review {
 
   @Prop({ type: [ReviewVote], default: [] })
   votes: ReviewVote[]; // lưu lịch sử vote theo user để chống vote trùng
+
+  @Prop({ type: [ReviewReply], default: [] })
+  replies: ReviewReply[]; // Danh sách replies (ai cũng có thể reply)
+
+  @Prop({ default: 0 })
+  repliesCount: number; // Tổng số replies
+
+  @Prop({ default: 0 })
+  lastReplyId: number; // Counter để sinh replyId unique
 
   @Prop()
   deletedAt?: Date; // soft delete
