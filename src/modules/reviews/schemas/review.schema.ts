@@ -39,6 +39,16 @@ export class ReviewReply {
 
   @Prop({ default: false })
   isEdited: boolean;
+
+  // Voting for reply
+  @Prop({ default: 0 })
+  votesHelpful: number;
+
+  @Prop({ default: 0 })
+  votesUnhelpful: number;
+
+  @Prop({ type: [ReviewVote], default: [] })
+  votes: ReviewVote[];
 }
 
 @Schema({ timestamps: true, collection: 'reviews' })

@@ -1149,6 +1149,84 @@ export class ContractsService {
     }).sort({ createdAt: -1 }).exec();
   }
 
+  /**
+   * Get current tenant info for a landlord's room
+   * Returns null if no active contract exists
+   */
+  async getCurrentTenantForRoom(
+    landlordId: number,
+    roomId: number
+  ): Promise<{
+    roomId: number;
+    contractId: number;
+    contractStatus: string;
+    tenant: {
+      userId: number;
+      fullName: string;
+      phone?: string;
+      email?: string;
+      avatarUrl?: string;
+    };
+    period: { startDate: Date; endDate: Date };
+    monthlyRent: number;
+    deposit: number;
+  } | null> {
+    // Verify room ownership
+    const room = await this.roomModel.findOne({ roomId: Number(roomId), landlordId: Number(landlordId) }).lean().exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const now = new Date();
+    // Find active contract by period and status, newest by startDate
+    const contract = await this.contractModel
+      .findOne({
+        roomId: Number(roomId),
+        landlordId: Number(landlordId),
+        status: 'active',
+        startDate: { $lte: now },
+        endDate: { $gte: now }
+      })
+      .sort({ startDate: -1 })
+      .lean()
+      .exec();
+
+    if (!contract) {
+      return null;
+    }
+
+    // Choose an active tenant in the contract (fallback to first)
+    const activeTenant =
+      (contract.tenants || []).find((t: any) => t?.status === 'active') ||
+      (contract.tenants || [])[0];
+
+    if (!activeTenant) {
+      return null;
+    }
+
+    // Load user info
+    const user = await this.userModel.findOne({ userId: Number(activeTenant.tenantId) }).lean().exec();
+
+    return {
+      roomId: Number(roomId),
+      contractId: Number(contract.contractId),
+      contractStatus: contract.status,
+      tenant: {
+        userId: Number(activeTenant.tenantId),
+        fullName: user?.name || '',
+        phone: user?.phone || '',
+        email: user?.email || '',
+        avatarUrl: user?.avatar || ''
+      },
+      period: {
+        startDate: contract.startDate,
+        endDate: contract.endDate
+      },
+      monthlyRent: Number(contract.monthlyRent) || 0,
+      deposit: Number(contract.deposit) || 0
+    };
+  }
+
   // Rental History Management
   /**
    * Terminate contract - Hủy hợp đồng

@@ -109,5 +109,30 @@ export class ReviewsController {
   ) {
     return this.reviewsService.deleteReply(Number(reviewId), Number(replyId), Number(userId));
   }
+
+  // Vote cho reply
+  @Post(':reviewId/replies/:replyId/vote')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  voteReply(
+    @Param('reviewId') reviewId: string,
+    @Param('replyId') replyId: string,
+    @Query('userId') userId: string,
+    @Body() dto: VoteReviewDto,
+  ) {
+    return this.reviewsService.voteReply(Number(reviewId), Number(replyId), Number(userId), dto.isHelpful);
+  }
+
+  // Bỏ vote reply
+  @Delete(':reviewId/replies/:replyId/vote')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  unvoteReply(
+    @Param('reviewId') reviewId: string,
+    @Param('replyId') replyId: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.reviewsService.unvoteReply(Number(reviewId), Number(replyId), Number(userId));
+  }
 }
 

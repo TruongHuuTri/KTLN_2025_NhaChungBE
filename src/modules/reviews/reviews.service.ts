@@ -439,6 +439,9 @@ export class ReviewsService {
       createdAt: now,
       updatedAt: now,
       isEdited: false,
+      votesHelpful: 0,
+      votesUnhelpful: 0,
+      votes: [],
     };
 
     // Add reply to array and update counters
@@ -550,6 +553,103 @@ export class ReviewsService {
       message: 'Đã xóa reply thành công',
       reviewId: review.reviewId,
       replyId,
+    };
+  }
+
+  /**
+   * Vote/Change vote cho reply
+   */
+  async voteReply(reviewId: number, replyId: number, userId: number, isHelpful: boolean) {
+    const review = await this.reviewModel.findOne({ reviewId }).exec();
+    if (!review) throw new NotFoundException('Review không tồn tại');
+    if (review.deletedAt) throw new BadRequestException('Review đã bị xoá');
+
+    const reply = review.replies.find(r => r.replyId === replyId);
+    if (!reply) throw new NotFoundException('Reply không tồn tại');
+
+    const existing = (reply.votes || []).find(v => v.userId === userId);
+
+    if (!existing) {
+      // Thêm mới vote
+      await this.reviewModel.updateOne(
+        { reviewId },
+        {
+          $push: { 'replies.$[r].votes': { userId, isHelpful } },
+          $inc: {
+            'replies.$[r].votesHelpful': isHelpful ? 1 : 0,
+            'replies.$[r].votesUnhelpful': isHelpful ? 0 : 1,
+          },
+          $set: { updatedAt: new Date() },
+        },
+        { arrayFilters: [{ 'r.replyId': replyId }] as any }
+      );
+    } else if (existing.isHelpful !== isHelpful) {
+      // Đổi vote
+      await this.reviewModel.updateOne(
+        { reviewId },
+        {
+          $set: {
+            'replies.$[r].votes.$[v].isHelpful': isHelpful,
+            updatedAt: new Date(),
+          },
+          $inc: {
+            'replies.$[r].votesHelpful': isHelpful ? 1 : -1,
+            'replies.$[r].votesUnhelpful': isHelpful ? -1 : 1,
+          },
+        },
+        { arrayFilters: [{ 'r.replyId': replyId }, { 'v.userId': userId }] as any }
+      );
+    }
+
+    const updated = await this.reviewModel.findOne({ reviewId }).lean().exec();
+    const updatedReply = (updated?.replies || []).find((r: any) => r.replyId === replyId);
+    const myVote = isHelpful ? 'helpful' : 'unhelpful';
+
+    return {
+      replyId,
+      votesHelpful: updatedReply?.votesHelpful || 0,
+      votesUnhelpful: updatedReply?.votesUnhelpful || 0,
+      myVote,
+    };
+  }
+
+  /**
+   * Bỏ vote cho reply
+   */
+  async unvoteReply(reviewId: number, replyId: number, userId: number) {
+    const review = await this.reviewModel.findOne({ reviewId }).exec();
+    if (!review) throw new NotFoundException('Review không tồn tại');
+    if (review.deletedAt) throw new BadRequestException('Review đã bị xoá');
+
+    const reply = review.replies.find(r => r.replyId === replyId);
+    if (!reply) throw new NotFoundException('Reply không tồn tại');
+
+    const existing = (reply.votes || []).find(v => v.userId === userId);
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy vote để bỏ');
+    }
+
+    await this.reviewModel.updateOne(
+      { reviewId },
+      {
+        $pull: { 'replies.$[r].votes': { userId } },
+        $inc: {
+          'replies.$[r].votesHelpful': existing.isHelpful ? -1 : 0,
+          'replies.$[r].votesUnhelpful': existing.isHelpful ? 0 : -1,
+        },
+        $set: { updatedAt: new Date() },
+      },
+      { arrayFilters: [{ 'r.replyId': replyId }] as any }
+    );
+
+    const updated = await this.reviewModel.findOne({ reviewId }).lean().exec();
+    const updatedReply = (updated?.replies || []).find((r: any) => r.replyId === replyId);
+
+    return {
+      replyId,
+      votesHelpful: updatedReply?.votesHelpful || 0,
+      votesUnhelpful: updatedReply?.votesUnhelpful || 0,
+      myVote: null,
     };
   }
 }

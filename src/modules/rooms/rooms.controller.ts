@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, Res } from '@nestjs/common';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 import { LandlordGuard } from '../users/guards/landlord.guard';
 import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
@@ -7,13 +7,17 @@ import { CreateBuildingDto } from './dto/create-building.dto';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { AddTenantDto } from './dto/add-tenant.dto';
-import { ContractsService } from '../contracts/contracts.service';
 import { CreateRoomSharingRequestDto } from '../contracts/dto/create-room-sharing-request.dto';
+import type { Response } from 'express';
+import { ContractsService } from '../contracts/contracts.service';
 
 @Controller('landlord')
 @UseGuards(JwtAuthGuard, LandlordGuard)
 export class RoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly contractsService: ContractsService
+  ) {}
 
   // Building Management
   @Post('buildings')
@@ -77,6 +81,20 @@ export class RoomsController {
     return this.roomsService.deleteRoom(roomId, landlordId);
   }
 
+  // Current tenant info for a room (active contract)
+  @Get('rooms/:id/tenant')
+  async getCurrentTenantForRoom(
+    @Request() req,
+    @Param('id') roomId: number,
+    @Res() res: Response
+  ) {
+    const landlordId = req.user.userId;
+    const data = await this.contractsService.getCurrentTenantForRoom(landlordId, Number(roomId));
+    if (!data) {
+      return res.status(204).send();
+    }
+    return res.json(data);
+  }
   // Roommate Management
   @Get('rooms/:id/tenants')
   async getRoomTenants(@Request() req, @Param('id') roomId: number) {
