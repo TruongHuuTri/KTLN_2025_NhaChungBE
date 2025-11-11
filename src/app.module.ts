@@ -22,6 +22,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
 import { SearchModule } from './modules/search/search.module';
+import { ChatModule } from './modules/chat/chat.module';
 @Module({
 
   imports: [
@@ -55,6 +56,7 @@ import { SearchModule } from './modules/search/search.module';
     NlpSearchModule,
     ReviewsModule,
     SearchModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService, OTPService],

@@ -127,6 +127,14 @@ export class S3Service {
       contentType = 'application/vnd.ms-excel';
     } else if (dataUrl.includes('data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    } else if (dataUrl.includes('data:video/mp4')) {
+      contentType = 'video/mp4';
+    } else if (dataUrl.includes('data:video/webm')) {
+      contentType = 'video/webm';
+    } else if (dataUrl.includes('data:video/quicktime')) {
+      contentType = 'video/quicktime';
+    } else if (dataUrl.includes('data:video/x-msvideo')) {
+      contentType = 'video/x-msvideo';
     }
 
     // Extract base64 data

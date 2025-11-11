@@ -6,6 +6,7 @@ export enum UploadFolder {
   videos = 'videos',
   verifications = 'verifications',
   documents = 'documents', // Business licenses, contracts, etc.
+  chat = 'chat', // Chat messages (images, videos, files)
 }
 
 export class PresignDto {
