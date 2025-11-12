@@ -23,6 +23,7 @@ import { EmailService } from './shared/services/email.service';
 import { OTPService } from './shared/services/otp.service';
 import { SearchModule } from './modules/search/search.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { RoommatePreferencesModule } from './modules/roommate-preferences/roommate-preferences.module';
 @Module({
 
   imports: [
@@ -57,6 +58,7 @@ import { ChatModule } from './modules/chat/chat.module';
     ReviewsModule,
     SearchModule,
     ChatModule,
+    RoommatePreferencesModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService, OTPService],

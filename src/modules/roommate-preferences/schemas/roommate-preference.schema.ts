@@ -1,0 +1,53 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type RoommatePreferenceDocument = RoommatePreference & Document;
+
+@Schema({ _id: false })
+export class Requirements {
+  @Prop({ type: [Number], required: true })
+  ageRange: number[]; // [min, max]
+
+  @Prop({ required: true, enum: ['male', 'female', 'any'] })
+  gender: string;
+
+  @Prop({ type: [String], default: [] })
+  traits: string[]; // ['sạch sẽ', 'yên tĩnh', 'hòa đồng', etc.]
+
+  @Prop({ required: true })
+  maxPrice: number;
+}
+
+@Schema({ timestamps: true, collection: 'roommate_preferences' })
+export class RoommatePreference {
+  @Prop({ required: true, unique: true })
+  preferenceId: number;
+
+  @Prop({ required: true })
+  userId: number;
+
+  @Prop({ required: true })
+  roomId: number;
+
+  @Prop({ default: false })
+  enabled: boolean;
+
+  @Prop({ type: Requirements })
+  requirements?: Requirements;
+
+  @Prop({ type: [String], default: [] })
+  posterTraits?: string[]; // Traits của chính Poster (người đăng bài)
+
+  @Prop()
+  postId?: number; // ID của bài đăng được tạo tự động
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
+}
+
+export const RoommatePreferenceSchema = SchemaFactory.createForClass(RoommatePreference);
+RoommatePreferenceSchema.index({ userId: 1, roomId: 1 }, { unique: true });
+

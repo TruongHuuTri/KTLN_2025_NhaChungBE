@@ -17,6 +17,7 @@ import { UsersModule } from '../users/users.module';
 import { PdfService } from '../../shared/services/pdf.service';
 import { MaintenanceFeeService } from '../../shared/services/maintenance-fee.service';
 import { ContractExpiryService } from '../../shared/services/contract-expiry.service';
+import { RoommatePreference, RoommatePreferenceSchema } from '../roommate-preferences/schemas/roommate-preference.schema';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ContractExpiryService } from '../../shared/services/contract-expiry.ser
       { name: User.name, schema: UserSchema },
       { name: Room.name, schema: RoomSchema },
       { name: Building.name, schema: BuildingSchema },
+      { name: RoommatePreference.name, schema: RoommatePreferenceSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

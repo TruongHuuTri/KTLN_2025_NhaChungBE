@@ -147,6 +147,11 @@ export class PostsService {
   }
 
   async getPostById(postId: number): Promise<Post> {
+    // Validate postId
+    if (!postId || isNaN(postId) || postId <= 0) {
+      throw new BadRequestException('Invalid post ID');
+    }
+    
     const post = await this.postModel.findOne({ postId }).exec();
     if (!post) {
       throw new NotFoundException('Post not found');

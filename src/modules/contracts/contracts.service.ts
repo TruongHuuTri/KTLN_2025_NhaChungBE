@@ -17,6 +17,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
 import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
+import { RoommatePreference, RoommatePreferenceDocument } from '../roommate-preferences/schemas/roommate-preference.schema';
 
 @Injectable()
 export class ContractsService {
@@ -30,6 +31,7 @@ export class ContractsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
     @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
+    @InjectModel(RoommatePreference.name) private preferenceModel: Model<RoommatePreferenceDocument>,
   ) {}
 
   // Rental Contract Management
@@ -1556,21 +1558,39 @@ export class ContractsService {
             await updatedRoom.save();
           }
 
-          // 3. Active lại TẤT CẢ bài đăng của phòng
+          // 3. Ẩn tất cả bài đăng "tìm ở ghép" của phòng khi contract kết thúc
+          // Chỉ ẩn bài đăng "tìm ở ghép", không ẩn bài đăng "cho thuê"
           await this.postModel.updateMany(
             {
               roomId: contract.roomId,
-              status: { $in: ['inactive', 'pending'] }
+              postType: 'tim-o-ghep',
+              status: { $in: ['active', 'pending'] }
             },
             {
               $set: {
-                status: 'active',
+                status: 'inactive',
                 updatedAt: new Date()
               }
             }
           ).exec();
+          
+          // 4. Cập nhật preferences: disable tất cả roommate preferences của phòng
+          try {
+            // Disable tất cả preferences của phòng
+            await this.preferenceModel.updateMany(
+              { roomId: contract.roomId, enabled: true },
+              {
+                $set: {
+                  enabled: false,
+                  updatedAt: new Date()
+                }
+              }
+            ).exec();
+          } catch (error) {
+            console.error(`Error disabling roommate preferences for room ${contract.roomId}:`, error);
+          }
 
-          // 4. Tạo rental history cho tất cả tenants
+          // 5. Tạo rental history cho tất cả tenants
           for (const tenant of contract.tenants) {
             await this.createRentalHistoryFromContract(contract, tenant.tenantId);
           }
