@@ -215,11 +215,11 @@ export class UserContractsController {
       const userId = req.user.userId;
       const contractId = Number(contractIdParam);
       
-      // Lấy thông tin hợp đồng
-      const contract = await this.contractsService.getUserContract(userId, contractId);
+      // Lấy thông tin hợp đồng đầy đủ (bao gồm room, tenant details, verification)
+      const enrichedContract = await this.contractsService.getEnrichedContractData(userId, contractId);
       
       // Tạo PDF
-      const { filePath, fileName } = await this.pdfService.generateContractPDF(contract);
+      const { filePath, fileName } = await this.pdfService.generateContractPDF(enrichedContract);
       
       // Trả về file PDF
       res.setHeader('Content-Type', 'application/pdf');

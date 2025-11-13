@@ -270,7 +270,6 @@ export class PaymentsService {
       // Tìm invoice
       const invoice = await this.invoiceModel.findOne({ invoiceId: paymentOrder.invoiceId }).exec();
       if (!invoice) {
-        console.error(`[autoAddTenantToRoomAfterPayment] Invoice not found: ${paymentOrder.invoiceId}`);
         return;
       }
 
@@ -286,28 +285,24 @@ export class PaymentsService {
       }
 
       if (!roomId) {
-        console.error(`[autoAddTenantToRoomAfterPayment] RoomId not found for invoice: ${paymentOrder.invoiceId}`);
         return;
       }
 
       // Kiểm tra xem tenant đã được thêm vào room chưa
       const room = await this.roomModel.findOne({ roomId }).exec();
       if (!room) {
-        console.error(`[autoAddTenantToRoomAfterPayment] Room not found: ${roomId}`);
         return;
       }
 
       const tenantId = paymentOrder.tenantId;
       const existingTenant = room.currentTenants?.find(t => t.userId === tenantId);
       if (existingTenant) {
-        console.log(`[autoAddTenantToRoomAfterPayment] Tenant ${tenantId} already exists in room ${roomId}`);
         return;
       }
 
       // Lấy thông tin user
       const user = await this.userModel.findOne({ userId: tenantId }).exec();
       if (!user) {
-        console.error(`[autoAddTenantToRoomAfterPayment] User not found: ${tenantId}`);
         return;
       }
 
@@ -333,14 +328,10 @@ export class PaymentsService {
         { new: true }
       ).exec();
 
-      if (updateResult) {
-        console.log(`[autoAddTenantToRoomAfterPayment] Successfully added tenant ${tenantId} to room ${roomId}`);
-      } else {
-        console.error(`[autoAddTenantToRoomAfterPayment] Failed to update room ${roomId}`);
-      }
+      // Tenant đã được thêm vào room
 
     } catch (error) {
-      console.error(`[autoAddTenantToRoomAfterPayment] Error:`, error);
+      // Error handling
     }
   }
 
@@ -353,14 +344,18 @@ export class PaymentsService {
     dueDate: Date;
     invoiceType: string;
     roomNumber: string;
+    roomId: number | null;
+    contractId: number | null;
     isQrGenerated: boolean;
     canPay: boolean;
+    description?: string;
+    createdAt: Date;
   }[]> {
     try {
       const invoices = await this.invoiceModel.find({
         tenantId,
         status: 'pending'
-      }).exec();
+      }).lean().exec();
 
       const result: any[] = [];
       for (const invoice of invoices) {
@@ -372,20 +367,22 @@ export class PaymentsService {
 
         // Lấy thông tin phòng - xử lý cả ObjectId và number
         let room;
-        try {
-          // Thử tìm với ObjectId trước
-          room = await this.roomModel.findById(invoice.roomId).exec();
-        } catch (error) {
-          // Nếu lỗi ObjectId, thử tìm với roomNumber
-          room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
+        if (invoice.roomId) {
+          try {
+            // Thử tìm với roomId (number)
+            room = await this.roomModel.findOne({ roomId: invoice.roomId }).exec();
+          } catch (error) {
+            // Nếu lỗi, thử tìm với ObjectId
+            try {
+              room = await this.roomModel.findById(invoice.roomId).exec();
+            } catch (e) {
+              // Nếu vẫn lỗi, thử tìm với roomNumber
+              room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
+            }
+          }
         }
         
-        if (!room) {
-          // Fallback: tìm với roomNumber nếu vẫn không tìm thấy
-          room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
-        }
-        
-        const building = room ? await this.buildingModel.findById(room.buildingId).exec() : null;
+        const building = room ? await this.buildingModel.findOne({ buildingId: room.buildingId }).exec() : null;
 
         result.push({
           invoiceId: invoice.invoiceId,
@@ -393,8 +390,12 @@ export class PaymentsService {
           dueDate: invoice.dueDate,
           invoiceType: invoice.invoiceType,
           roomNumber: room ? `${building?.name || 'Building'} - Phòng ${room.roomNumber}` : 'N/A',
+          roomId: invoice.roomId ?? null, // ⭐ REQUIRED: Luôn trả về roomId (có thể null)
+          contractId: invoice.contractId ?? null, // ⭐ REQUIRED: Luôn trả về contractId (có thể null)
           isQrGenerated: !!existingOrder,
-          canPay: true
+          canPay: true,
+          description: invoice.description || undefined,
+          createdAt: invoice.createdAt || invoice['createdAt'] || new Date(),
         });
       }
 
@@ -413,34 +414,40 @@ export class PaymentsService {
     paidDate: Date;
     invoiceType: string;
     roomNumber: string;
+    roomId: number | null;
+    contractId: number | null;
     paymentMethod: string;
     description: string;
     items: any[];
+    dueDate?: Date;
+    createdAt?: Date;
   }[]> {
     try {
       const invoices = await this.invoiceModel.find({
         tenantId,
         status: 'paid'
-      }).sort({ paidDate: -1 }).exec();
+      }).sort({ paidDate: -1 }).lean().exec();
 
       const result: any[] = [];
       for (const invoice of invoices) {
         // Lấy thông tin phòng - xử lý cả ObjectId và number
         let room;
-        try {
-          // Thử tìm với ObjectId trước
-          room = await this.roomModel.findById(invoice.roomId).exec();
-        } catch (error) {
-          // Nếu lỗi ObjectId, thử tìm với roomNumber
-          room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
+        if (invoice.roomId) {
+          try {
+            // Thử tìm với roomId (number)
+            room = await this.roomModel.findOne({ roomId: invoice.roomId }).exec();
+          } catch (error) {
+            // Nếu lỗi, thử tìm với ObjectId
+            try {
+              room = await this.roomModel.findById(invoice.roomId).exec();
+            } catch (e) {
+              // Nếu vẫn lỗi, thử tìm với roomNumber
+              room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
+            }
+          }
         }
         
-        if (!room) {
-          // Fallback: tìm với roomNumber nếu vẫn không tìm thấy
-          room = await this.roomModel.findOne({ roomNumber: invoice.roomId.toString() }).exec();
-        }
-        
-        const building = room ? await this.buildingModel.findById(room.buildingId).exec() : null;
+        const building = room ? await this.buildingModel.findOne({ buildingId: room.buildingId }).exec() : null;
         
         result.push({
           invoiceId: invoice.invoiceId,
@@ -448,9 +455,13 @@ export class PaymentsService {
           paidDate: invoice.paidDate,
           invoiceType: invoice.invoiceType,
           roomNumber: room ? `${building?.name || 'Building'} - Phòng ${room.roomNumber}` : 'N/A',
+          roomId: invoice.roomId ?? null, // ⭐ REQUIRED: Luôn trả về roomId (có thể null)
+          contractId: invoice.contractId ?? null, // ⭐ REQUIRED: Luôn trả về contractId (có thể null)
           paymentMethod: invoice.paymentMethod || 'unknown',
-          description: invoice.description,
-          items: invoice.items || []
+          description: invoice.description || '',
+          items: invoice.items || [],
+          dueDate: invoice.dueDate || undefined,
+          createdAt: invoice.createdAt || invoice['createdAt'] || undefined,
         });
       }
 

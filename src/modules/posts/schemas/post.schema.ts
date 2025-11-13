@@ -242,12 +242,6 @@ export class PersonalInfo {
   @Prop({ default: '' })
   occupation: string;
 
-  @Prop({ type: [String], default: [] })
-  hobbies: string[];
-
-  @Prop({ type: [String], default: [] })
-  habits: string[];
-
   @Prop({ required: true })
   lifestyle: string;
 

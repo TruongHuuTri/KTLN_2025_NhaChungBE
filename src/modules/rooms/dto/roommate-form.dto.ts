@@ -145,17 +145,6 @@ export class RoommateFormDto {
   @IsNumber()
   cleaningFee?: number;
 
-  // Sở thích và thói quen
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  selectedHobbies?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  selectedHabits?: string[];
-
   @IsOptional()
   @IsEnum(['early', 'normal', 'late'])
   lifestyle?: string;

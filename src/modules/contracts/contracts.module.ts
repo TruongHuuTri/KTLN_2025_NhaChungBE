@@ -18,6 +18,7 @@ import { PdfService } from '../../shared/services/pdf.service';
 import { MaintenanceFeeService } from '../../shared/services/maintenance-fee.service';
 import { ContractExpiryService } from '../../shared/services/contract-expiry.service';
 import { RoommatePreference, RoommatePreferenceSchema } from '../roommate-preferences/schemas/roommate-preference.schema';
+import { Verification, VerificationSchema } from '../verifications/schemas/verification.schema';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RoommatePreference, RoommatePreferenceSchema } from '../roommate-prefer
       { name: Room.name, schema: RoomSchema },
       { name: Building.name, schema: BuildingSchema },
       { name: RoommatePreference.name, schema: RoommatePreferenceSchema },
+      { name: Verification.name, schema: VerificationSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

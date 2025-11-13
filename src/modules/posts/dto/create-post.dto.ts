@@ -309,16 +309,6 @@ export class PersonalInfoDto {
   @IsString()
   occupation: string;
 
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  hobbies?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  habits?: string[];
-
   @IsEnum(['early', 'normal', 'late'])
   lifestyle: string;
 

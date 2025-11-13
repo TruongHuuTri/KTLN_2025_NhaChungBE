@@ -48,11 +48,27 @@ export class RoommatePreferencesService {
     const preference = await this.preferenceModel.findOne({ userId, roomId }).exec();
     
     if (!preference) {
+      // Nếu chưa có preference, vẫn trả về tuổi và giới tính từ verification
+      let posterAge: number | null = null;
+      let posterGender: string | null = null;
+      
+      try {
+        const verification = await this.verificationModel.findOne({ userId, status: 'approved' }).exec();
+        if (verification && verification.dateOfBirth && verification.gender) {
+          posterAge = AgeUtils.calculateAge(verification.dateOfBirth);
+          posterGender = verification.gender;
+        }
+      } catch (error) {
+        // Verification không available
+      }
+      
       return {
         enabled: false,
         postId: null,
         postStatus: null,
         requirements: null,
+        posterAge: posterAge,
+        posterGender: posterGender,
       };
     }
 
@@ -65,11 +81,34 @@ export class RoommatePreferencesService {
       }
     }
 
+    // Nếu có preference nhưng chưa có tuổi/giới tính, lấy từ verification
+    let posterAge = preference.posterAge;
+    let posterGender = preference.posterGender;
+    
+    if (!posterAge || !posterGender) {
+      try {
+        const verification = await this.verificationModel.findOne({ userId, status: 'approved' }).exec();
+        if (verification && verification.dateOfBirth && verification.gender) {
+          if (!posterAge) {
+            posterAge = AgeUtils.calculateAge(verification.dateOfBirth);
+          }
+          if (!posterGender) {
+            posterGender = verification.gender;
+          }
+        }
+      } catch (error) {
+        // Verification không available
+      }
+    }
+
     return {
       enabled: preference.enabled,
       postId: preference.postId || null,
       postStatus,
       requirements: preference.requirements || null,
+      posterTraits: preference.posterTraits || [],
+      posterAge: posterAge,
+      posterGender: posterGender,
     };
   }
 
@@ -98,6 +137,16 @@ export class RoommatePreferencesService {
       throw new BadRequestException('Bạn phải có hợp đồng active với phòng này để tìm ở ghép');
     }
 
+    // Lấy tuổi và gender của Poster từ verification và lưu vào preferences
+    const verification = await this.verificationModel.findOne({ userId, status: 'approved' }).exec();
+    
+    if (!verification || !verification.dateOfBirth || !verification.gender) {
+      throw new BadRequestException('Vui lòng xác thực lại tài khoản để sử dụng tính năng này');
+    }
+    
+    const posterAge = AgeUtils.calculateAge(verification.dateOfBirth);
+    const posterGender = verification.gender;
+
     // Tìm preference hiện tại
     let preference = await this.preferenceModel.findOne({ userId, roomId }).exec();
 
@@ -110,6 +159,9 @@ export class RoommatePreferencesService {
       if ((preferenceData as any).posterTraits !== undefined) {
         preference.posterTraits = (preferenceData as any).posterTraits;
       }
+      // Lưu tuổi và gender của Poster
+      preference.posterAge = posterAge;
+      preference.posterGender = posterGender;
       preference.updatedAt = new Date();
     } else {
       // Tạo preference mới
@@ -121,6 +173,8 @@ export class RoommatePreferencesService {
         enabled: preferenceData.enabled,
         requirements: preferenceData.requirements as any,
         posterTraits: (preferenceData as any).posterTraits || [],
+        posterAge: posterAge,
+        posterGender: posterGender,
       });
     }
 
@@ -217,20 +271,15 @@ export class RoommatePreferencesService {
     const user = await this.userModel.findOne({ userId }).exec();
     const fullName = user?.name || 'Người dùng';
 
-    // Lấy từ verification nếu có (có dateOfBirth, gender)
-    let dateOfBirth = new Date(1990, 0, 1);
-    let gender = 'other';
+    // Lấy từ verification (bắt buộc)
+    const verification = await this.verificationModel.findOne({ userId, status: 'approved' }).exec();
     
-    try {
-      const verification = await this.verificationModel.findOne({ userId, status: 'approved' }).exec();
-      
-      if (verification && verification.dateOfBirth) {
-        dateOfBirth = new Date(verification.dateOfBirth);
-        gender = verification.gender || 'other';
-      }
-    } catch (error) {
-      // Verification không available, sử dụng mặc định
+    if (!verification || !verification.dateOfBirth || !verification.gender) {
+      throw new BadRequestException('Vui lòng xác thực lại tài khoản để sử dụng tính năng này');
     }
+    
+    const dateOfBirth = new Date(verification.dateOfBirth);
+    const gender = verification.gender;
 
     // Lấy occupation từ profile nếu có
     const occupation = userProfile?.occupation || '';
@@ -290,17 +339,55 @@ export class RoommatePreferencesService {
     const seekerPreference = await this.seekerPreferenceModel.findOne({ userId: seekerId }).exec();
     
     if (!seekerPreference) {
+      // Nếu chưa có preferences, vẫn trả về tuổi và giới tính từ verification
+      let seekerAge: number | null = null;
+      let seekerGender: string | null = null;
+      
+      try {
+        const verification = await this.verificationModel.findOne({ userId: seekerId, status: 'approved' }).exec();
+        if (verification && verification.dateOfBirth && verification.gender) {
+          seekerAge = AgeUtils.calculateAge(verification.dateOfBirth);
+          seekerGender = verification.gender;
+        }
+      } catch (error) {
+        // Verification không available
+      }
+      
       return {
         hasPreferences: false,
         requirements: null,
         seekerTraits: null,
+        seekerAge: seekerAge,
+        seekerGender: seekerGender,
       };
+    }
+
+    // Nếu có preferences nhưng chưa có tuổi/giới tính, lấy từ verification
+    let seekerAge = seekerPreference.seekerAge;
+    let seekerGender = seekerPreference.seekerGender;
+    
+    if (!seekerAge || !seekerGender) {
+      try {
+        const verification = await this.verificationModel.findOne({ userId: seekerId, status: 'approved' }).exec();
+        if (verification && verification.dateOfBirth && verification.gender) {
+          if (!seekerAge) {
+            seekerAge = AgeUtils.calculateAge(verification.dateOfBirth);
+          }
+          if (!seekerGender) {
+            seekerGender = verification.gender;
+          }
+        }
+      } catch (error) {
+        // Verification không available
+      }
     }
 
     return {
       hasPreferences: true,
       requirements: seekerPreference.requirements || null,
       seekerTraits: seekerPreference.seekerTraits || [],
+      seekerAge: seekerAge,
+      seekerGender: seekerGender,
       updatedAt: seekerPreference.updatedAt,
     };
   }
@@ -324,16 +411,10 @@ export class RoommatePreferencesService {
     const userProfile = await this.userProfileModel.findOne({ userId: seekerId }).exec();
     const personalInfo = await this.getPersonalInfoFromProfile(seekerId, userProfile);
     
-    // Lấy age từ verification hoặc personalInfo
-    let age = personalInfo.dateOfBirth ? AgeUtils.calculateAge(personalInfo.dateOfBirth) : 25;
-    try {
-      const verification = await this.verificationModel.findOne({ userId: seekerId, status: 'approved' }).exec();
-      if (verification && verification.dateOfBirth) {
-        age = AgeUtils.calculateAge(verification.dateOfBirth);
-      }
-    } catch (error) {
-      // Verification không available
-    }
+    // Sử dụng tuổi và gender từ seekerPreference nếu có, nếu không thì tính từ personalInfo
+    // personalInfo đã được lấy từ verification (bắt buộc) trong getPersonalInfoFromProfile
+    const age = seekerPreference.seekerAge ?? this.getAgeFromPersonalInfo(personalInfo);
+    const gender = seekerPreference.seekerGender ?? personalInfo.gender;
 
     // Tạo FindRoommateDto từ preferences đã lưu + personalInfo
     const findRoommateDto: FindRoommateDto = {
@@ -343,8 +424,8 @@ export class RoommatePreferencesService {
       maxPrice: seekerPreference.requirements.maxPrice,
       personalInfo: {
         fullName: personalInfo.fullName,
-        age: age,
-        gender: personalInfo.gender,
+        // Hiển thị tuổi và gender từ preferences (đã lưu từ verification) nhưng không cho sửa
+        gender: gender, // Hiển thị trong form nhưng không cho sửa
         occupation: personalInfo.occupation,
         lifestyle: personalInfo.lifestyle,
         cleanliness: personalInfo.cleanliness,
@@ -371,10 +452,23 @@ export class RoommatePreferencesService {
 
       const seekerTraits = findRoommateDto.traits || [];
 
+      // Lấy tuổi và gender của Seeker từ verification và lưu vào preferences
+      const verification = await this.verificationModel.findOne({ userId: seekerId, status: 'approved' }).exec();
+      
+      if (!verification || !verification.dateOfBirth || !verification.gender) {
+        throw new BadRequestException('Vui lòng xác thực lại tài khoản để sử dụng tính năng này');
+      }
+      
+      const seekerAge = AgeUtils.calculateAge(verification.dateOfBirth);
+      const seekerGender = verification.gender;
+
       if (seekerPreference) {
         // Cập nhật preferences
         seekerPreference.requirements = requirements as any;
         seekerPreference.seekerTraits = seekerTraits;
+        // Lưu tuổi và gender của Seeker
+        seekerPreference.seekerAge = seekerAge;
+        seekerPreference.seekerGender = seekerGender;
         seekerPreference.updatedAt = new Date();
         await seekerPreference.save();
       } else {
@@ -385,11 +479,12 @@ export class RoommatePreferencesService {
           userId: seekerId,
           requirements: requirements as any,
           seekerTraits,
+          seekerAge: seekerAge,
+          seekerGender: seekerGender,
         });
         await seekerPreference.save();
       }
     } catch (error) {
-      console.error(`[ERROR] Error saving seeker preferences for user ${seekerId}:`, error);
       // Không throw error để không ảnh hưởng đến flow tìm phòng
     }
   }
@@ -401,8 +496,11 @@ export class RoommatePreferencesService {
     // Lưu preferences của Seeker (tự động lưu/update mỗi khi tìm phòng)
     await this.saveSeekerPreferences(seekerId, findRoommateDto);
     
-    // Lấy thông tin người tìm phòng (truyền seekerRequirements để lấy traits)
-    const seekerProfile = await this.getSeekerProfile(seekerId, findRoommateDto.personalInfo, findRoommateDto);
+    // Lấy seekerPreference để lấy tuổi và gender đã lưu
+    const seekerPreference = await this.seekerPreferenceModel.findOne({ userId: seekerId }).exec();
+    
+    // Lấy thông tin người tìm phòng (ưu tiên từ preferences, nếu không có thì từ verification)
+    const seekerProfile = await this.getSeekerProfile(seekerId, findRoommateDto.personalInfo, findRoommateDto, seekerPreference?.seekerAge, seekerPreference?.seekerGender);
     
     // ✅ Query từ roommatePreferences thay vì posts (ưu tiên)
     // Đảm bảo không bỏ sót, không phụ thuộc vào post status
@@ -434,9 +532,32 @@ export class RoommatePreferencesService {
           continue;
         }
 
+        // Kiểm tra xem seeker đã thuê phòng này chưa (có contract active)
+        const seekerContract = await this.contractModel.findOne({
+          roomId: preference.roomId,
+          'tenants.tenantId': seekerId,
+          status: 'active',
+        }).exec();
+
+        // Nếu seeker đã thuê phòng này rồi thì bỏ qua
+        if (seekerContract) {
+          continue;
+        }
+
         // Lấy personalInfo từ user/profile
         const userProfile = await this.userProfileModel.findOne({ userId: preference.userId }).exec();
         const personalInfo = await this.getPersonalInfoFromProfile(preference.userId, userProfile);
+        
+        // Sử dụng tuổi và gender từ preference nếu có, nếu không thì tính từ personalInfo
+        const posterAge = preference.posterAge ?? this.getAgeFromPersonalInfo(personalInfo);
+        const posterGender = preference.posterGender ?? personalInfo.gender;
+        
+        // Cập nhật personalInfo với tuổi và gender từ preference
+        const personalInfoWithAge = {
+          ...personalInfo,
+          age: posterAge,
+          gender: posterGender,
+        };
         
         // Tạo post object để sử dụng checkMatching
         const post = {
@@ -444,8 +565,10 @@ export class RoommatePreferencesService {
           userId: preference.userId,
           roomId: preference.roomId,
           requirements: preference.requirements,
-          personalInfo: personalInfo,
+          personalInfo: personalInfoWithAge,
           posterTraits: preference.posterTraits || [], // Lấy traits của Poster từ preference
+          posterAge: posterAge, // Lấy tuổi từ preference
+          posterGender: posterGender, // Lấy gender từ preference
         };
 
         // Kiểm tra matching
@@ -463,8 +586,8 @@ export class RoommatePreferencesService {
             roomId: preference.roomId,
             posterId: preference.userId,
             posterName: user.name,
-            posterAge: this.getAgeFromPersonalInfo(personalInfo),
-            posterGender: personalInfo.gender || 'other',
+            posterAge: preference.posterAge ?? this.getAgeFromPersonalInfo(personalInfo),
+            posterGender: preference.posterGender ?? personalInfo.gender,
             posterOccupation: personalInfo.occupation || '',
             roomNumber: room.roomNumber,
             buildingName: building?.name || '',
@@ -477,7 +600,6 @@ export class RoommatePreferencesService {
           });
         }
       } catch (error) {
-        console.error(`[ERROR] Error matching preference ${preference.preferenceId}:`, error);
         continue;
       }
     }
@@ -529,7 +651,9 @@ export class RoommatePreferencesService {
       return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
     }
 
-    const posterAge = this.getAgeFromPersonalInfo(post.personalInfo);
+    // Sử dụng tuổi từ post.posterAge nếu có, nếu không thì tính từ personalInfo
+    const posterAge = (post as any).posterAge ?? this.getAgeFromPersonalInfo(post.personalInfo);
+    // Sử dụng tuổi từ seekerProfile (đã được lấy từ seekerPreference hoặc request)
     const seekerAge = seekerProfile.age;
 
     // Normalize traits (case-insensitive)
@@ -593,7 +717,9 @@ export class RoommatePreferencesService {
     }
 
     // Giới tính: Poster gender khớp với Seeker requirement
-    if (seekerRequirements.gender === 'any' || post.personalInfo?.gender === seekerRequirements.gender) {
+    // Sử dụng posterGender từ preference (đã lưu từ verification)
+    const posterGender = (post as any).posterGender ?? post.personalInfo?.gender;
+    if (seekerRequirements.gender === 'any' || posterGender === seekerRequirements.gender) {
       condition2Score += 20;
     } else {
       return { isMatch: false, matchScore: 0, condition1, condition2: false };
@@ -632,34 +758,31 @@ export class RoommatePreferencesService {
 
   /**
    * Lấy thông tin người tìm phòng
+   * Tuổi và giới tính ưu tiên lấy từ preferences (đã lưu), nếu không có thì lấy từ verification
+   * Nếu không có verification thì throw error
    */
-  private async getSeekerProfile(seekerId: number, personalInfo?: any, seekerRequirements?: any): Promise<any> {
-    // Nếu có personalInfo từ request → Ưu tiên sử dụng
-    if (personalInfo && personalInfo.age) {
-      return {
-        age: personalInfo.age,
-        gender: personalInfo.gender || 'other',
-        // Sử dụng traits từ seekerRequirements (FE gửi) thay vì habits
-        traits: seekerRequirements?.traits || personalInfo.traits || [],
-      };
-    }
-
-    // Lấy từ verification nếu có
-    let age = 25;
-    let gender = 'other';
+  private async getSeekerProfile(seekerId: number, personalInfo?: any, seekerRequirements?: any, seekerAgeFromPreference?: number, seekerGenderFromPreference?: string): Promise<any> {
+    // Ưu tiên: 1. preferences (đã lưu), 2. verification
+    let age: number;
+    let gender: string;
     
-    try {
+    if (seekerAgeFromPreference && seekerGenderFromPreference) {
+      // Ưu tiên 1: Tuổi và gender từ seekerPreference (đã lưu)
+      age = seekerAgeFromPreference;
+      gender = seekerGenderFromPreference;
+    } else {
+      // Ưu tiên 2: Lấy từ verification
       const verification = await this.verificationModel.findOne({ userId: seekerId, status: 'approved' }).exec();
       
-      if (verification && verification.dateOfBirth) {
-        age = AgeUtils.calculateAge(verification.dateOfBirth);
-        gender = verification.gender || 'other';
+      if (!verification || !verification.dateOfBirth || !verification.gender) {
+        throw new BadRequestException('Vui lòng xác thực lại tài khoản để sử dụng tính năng này');
       }
-    } catch (error) {
-      // Verification không available, sử dụng mặc định
+      
+      age = AgeUtils.calculateAge(verification.dateOfBirth);
+      gender = verification.gender;
     }
     
-    // Sử dụng traits từ seekerRequirements (FE gửi) thay vì habits
+    // Sử dụng traits từ seekerRequirements (FE gửi)
     const traits = seekerRequirements?.traits || personalInfo?.traits || [];
     
     return {
@@ -718,7 +841,6 @@ export class RoommatePreferencesService {
     // Validate postId
     const postId = Number(preference.postId);
     if (isNaN(postId) || postId <= 0) {
-      console.error(`[ERROR] Invalid postId in preference: ${preference.postId}`);
       return null;
     }
 

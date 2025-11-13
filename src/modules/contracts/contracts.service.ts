@@ -18,6 +18,7 @@ import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { CreateRoomSharingRequestDto } from './dto/create-room-sharing-request.dto';
 import { ApproveRoomSharingDto } from './dto/approve-room-sharing.dto';
 import { RoommatePreference, RoommatePreferenceDocument } from '../roommate-preferences/schemas/roommate-preference.schema';
+import { Verification, VerificationDocument } from '../verifications/schemas/verification.schema';
 
 @Injectable()
 export class ContractsService {
@@ -32,6 +33,7 @@ export class ContractsService {
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
     @InjectModel(Building.name) private buildingModel: Model<BuildingDocument>,
     @InjectModel(RoommatePreference.name) private preferenceModel: Model<RoommatePreferenceDocument>,
+    @InjectModel(Verification.name) private verificationModel: Model<VerificationDocument>,
   ) {}
 
   // Rental Contract Management
@@ -75,6 +77,74 @@ export class ContractsService {
     }
     
     return contract as RentalContract;
+  }
+
+  /**
+   * Lấy thông tin hợp đồng đầy đủ để tạo PDF (bao gồm room, tenant details, verification)
+   */
+  async getEnrichedContractData(userId: number, contractId: number): Promise<any> {
+    const contract = await this.getUserContract(userId, contractId);
+    
+    // Lấy thông tin phòng
+    const room = await this.roomModel.findOne({ roomId: contract.roomId }).lean().exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // Lấy thông tin building
+    const building = room.buildingId ? await this.buildingModel.findOne({ buildingId: room.buildingId }).lean().exec() : null;
+
+    // Lấy thông tin chi tiết của từng tenant (bao gồm verification)
+    const tenantDetails = await Promise.all(
+      contract.tenants.map(async (tenant: any) => {
+        const user = await this.userModel.findOne({ userId: tenant.tenantId }).lean().exec();
+        const verification = user?.verificationId 
+          ? await this.verificationModel.findOne({ verificationId: user.verificationId }).lean().exec()
+          : null;
+
+        return {
+          tenantId: tenant.tenantId,
+          fullName: user?.name || 'N/A',
+          phone: user?.phone || 'N/A',
+          email: user?.email || 'N/A',
+          cccd: verification?.idNumber || 'N/A',
+          moveInDate: tenant.moveInDate,
+          status: tenant.status,
+        };
+      })
+    );
+
+    // Tính tổng số tháng
+    const startDate = new Date(contract.startDate);
+    const endDate = new Date(contract.endDate);
+    const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+    // Convert contract to plain object if it's a Mongoose document
+    const contractObj = contract && typeof contract === 'object' && 'toObject' in contract 
+      ? (contract as any).toObject() 
+      : contract;
+
+    return {
+      ...contractObj,
+      room: {
+        category: room.category,
+        chungCuInfo: room.chungCuInfo,
+        nhaNguyenCanInfo: room.nhaNguyenCanInfo,
+        floor: (room as any).floor,
+        furniture: room.furniture,
+        utilities: room.utilities,
+        roomNumber: room.roomNumber,
+        area: room.area,
+        buildingName: building?.name,
+        building: building ? {
+          id: building.buildingId,
+          name: building.name,
+          buildingType: building.buildingType,
+        } : null,
+      },
+      tenantDetails,
+      totalMonths: monthsDiff,
+    };
   }
 
   async updateContract(contractId: number, updateData: any): Promise<RentalContract> {
@@ -232,7 +302,6 @@ export class ContractsService {
         await this.autoCreateInvoiceFromRequest(request, contractId);
       } catch (error) {
         // Log lỗi nhưng vẫn cập nhật status của rental request
-        console.error('Error auto-creating contract/invoice:', error);
       }
     }
 
@@ -332,7 +401,6 @@ export class ContractsService {
       return contractId;
     } catch (error) {
       // Log lỗi nhưng không throw để không ảnh hưởng đến việc approve request
-      console.error('Error auto-creating contract:', error);
       throw error; // Throw để updateRentalRequestStatus biết có lỗi
     }
   }
@@ -377,7 +445,7 @@ export class ContractsService {
       await invoice.save();
 
     } catch (error) {
-      console.error('Error auto-creating invoice:', error);
+      // Error handling
     }
   }
 
@@ -419,7 +487,6 @@ export class ContractsService {
 
     } catch (error) {
       // Log lỗi nhưng không throw để không ảnh hưởng đến việc approve request
-      console.error('Error auto-adding tenant to room:', error);
     }
   }
 
@@ -721,7 +788,6 @@ export class ContractsService {
           await this.createMonthlyRentInvoice(contract.contractId, currentMonth, currentYear);
           created++;
         } catch (error) {
-          console.error(`Error creating monthly invoice for contract ${contract.contractId}:`, error.message);
           errors++;
         }
       }
@@ -729,25 +795,41 @@ export class ContractsService {
       return { created, errors };
 
     } catch (error) {
-      console.error('Error in createMonthlyInvoicesForAllContracts:', error);
       return { created, errors: errors + 1 };
     }
   }
 
   async getInvoicesByLandlord(landlordId: number): Promise<Invoice[]> {
-    return this.invoiceModel.find({ landlordId }).sort({ createdAt: -1 }).exec();
+    const invoices = await this.invoiceModel.find({ landlordId }).sort({ createdAt: -1 }).lean().exec();
+    // Đảm bảo response luôn có roomId và contractId
+    return invoices.map(invoice => ({
+      ...invoice,
+      roomId: invoice.roomId ?? null,
+      contractId: invoice.contractId ?? null,
+    })) as Invoice[];
   }
 
   async getInvoicesByTenant(tenantId: number): Promise<Invoice[]> {
-    return this.invoiceModel.find({ tenantId }).sort({ createdAt: -1 }).exec();
+    const invoices = await this.invoiceModel.find({ tenantId }).sort({ createdAt: -1 }).lean().exec();
+    // Đảm bảo response luôn có roomId và contractId
+    return invoices.map(invoice => ({
+      ...invoice,
+      roomId: invoice.roomId ?? null,
+      contractId: invoice.contractId ?? null,
+    })) as Invoice[];
   }
 
   async getInvoiceById(invoiceId: number): Promise<Invoice> {
-    const invoice = await this.invoiceModel.findOne({ invoiceId }).exec();
+    const invoice = await this.invoiceModel.findOne({ invoiceId }).lean().exec();
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
-    return invoice;
+    // Đảm bảo response luôn có roomId và contractId
+    return {
+      ...invoice,
+      roomId: invoice.roomId ?? null,
+      contractId: invoice.contractId ?? null,
+    } as Invoice;
   }
 
   async updateInvoiceStatus(invoiceId: number, status: string, paymentMethod?: string): Promise<Invoice> {
@@ -763,11 +845,16 @@ export class ContractsService {
       { invoiceId },
       updateData,
       { new: true }
-    ).exec();
+    ).lean().exec();
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
-    return invoice;
+    // Đảm bảo response luôn có roomId và contractId
+    return {
+      ...invoice,
+      roomId: invoice.roomId ?? null,
+      contractId: invoice.contractId ?? null,
+    } as Invoice;
   }
 
   /**
@@ -1481,7 +1568,6 @@ export class ContractsService {
       // Get room to get buildingId
       const room = await this.roomModel.findOne({ roomId: contract.roomId }).lean().exec();
       if (!room) {
-        console.error('Room not found for rental history');
         return;
       }
 
@@ -1516,7 +1602,7 @@ export class ContractsService {
         totalAmountPaid
       });
     } catch (error) {
-      console.error('Error creating rental history:', error);
+      // Error handling
     }
   }
 
@@ -1587,7 +1673,7 @@ export class ContractsService {
               }
             ).exec();
           } catch (error) {
-            console.error(`Error disabling roommate preferences for room ${contract.roomId}:`, error);
+            // Error handling
           }
 
           // 5. Tạo rental history cho tất cả tenants
@@ -1597,14 +1683,12 @@ export class ContractsService {
 
           expired++;
         } catch (error) {
-          console.error(`Error expiring contract ${contract.contractId}:`, error);
           errors++;
         }
       }
 
       return { expired, errors };
     } catch (error) {
-      console.error('Error in expireContracts:', error);
       return { expired, errors: errors + 1 };
     }
   }

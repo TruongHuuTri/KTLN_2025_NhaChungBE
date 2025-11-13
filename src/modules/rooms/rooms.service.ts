@@ -160,16 +160,32 @@ export class RoomsService {
     return this.roomModel.find(query).exec();
   }
 
-  async getRoomById(roomId: number, landlordId?: number): Promise<Room> {
+  async getRoomById(roomId: number, landlordId?: number, include?: string): Promise<any> {
     const query: any = { roomId };
     if (landlordId) {
       query.landlordId = landlordId;
     }
     
-    const room = await this.roomModel.findOne(query).exec();
+    const room = await this.roomModel.findOne(query).lean().exec();
     if (!room) {
       throw new NotFoundException('Room not found');
     }
+
+    // Nếu có query parameter include=building, lấy building data
+    if (include === 'building' && room.buildingId) {
+      const building = await this.buildingModel.findOne({ buildingId: room.buildingId }).lean().exec();
+      if (building) {
+        return {
+          ...room,
+          building: {
+            id: building.buildingId,
+            name: building.name,
+            buildingType: building.buildingType,
+          },
+        };
+      }
+    }
+
     return room;
   }
 

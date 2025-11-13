@@ -33,6 +33,12 @@ export class SeekerPreference {
   seekerTraits?: string[]; // Traits của chính Seeker (người tìm phòng)
 
   @Prop()
+  seekerAge?: number; // Tuổi của Seeker (người tìm phòng)
+
+  @Prop()
+  seekerGender?: string; // Giới tính của Seeker (người tìm phòng)
+
+  @Prop()
   createdAt: Date;
 
   @Prop()

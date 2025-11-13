@@ -64,9 +64,9 @@ export class RoomsController {
   }
 
   @Get('rooms/:id')
-  async getRoomById(@Request() req, @Param('id') roomId: number) {
+  async getRoomById(@Request() req, @Param('id') roomId: number, @Query('include') include?: string) {
     const landlordId = req.user.userId;
-    return this.roomsService.getRoomById(roomId, landlordId);
+    return this.roomsService.getRoomById(roomId, landlordId, include);
   }
 
   @Put('rooms/:id')
@@ -135,8 +135,8 @@ export class PublicRoomsController {
   }
 
   @Get(':id')
-  async getRoomById(@Param('id') roomId: number) {
-    return this.roomsService.getRoomById(roomId);
+  async getRoomById(@Param('id') roomId: number, @Query('include') include?: string) {
+    return this.roomsService.getRoomById(roomId, undefined, include);
   }
 
   // Room Sharing Request

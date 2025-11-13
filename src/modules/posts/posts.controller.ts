@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 import { LandlordGuard } from '../users/guards/landlord.guard';
 import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
@@ -40,6 +40,14 @@ export class PostsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async createPost(@Request() req, @Body() postData: CreatePostDto) {
+    // Chặn tenant tạo bài đăng ở ghép thủ công
+    // Cho phép nếu source là 'roommate_preference' (tự động tạo từ hệ thống)
+    if (postData.postType === 'tim-o-ghep' && req.user.role !== 'landlord') {
+      // Chỉ cho phép nếu là tự động tạo từ hệ thống
+      if (postData.source !== 'roommate_preference' && postData.isManaged !== true) {
+        throw new ForbiddenException('Bạn không thể đăng tin ở ghép thủ công. Hệ thống sẽ tự động tạo bài đăng khi bạn muốn tìm người ở ghép.');
+      }
+    }
     return this.postsService.createPost(req.user.userId, postData);
   }
 

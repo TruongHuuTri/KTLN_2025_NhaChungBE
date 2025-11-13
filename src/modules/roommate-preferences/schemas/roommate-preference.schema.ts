@@ -39,6 +39,12 @@ export class RoommatePreference {
   posterTraits?: string[]; // Traits của chính Poster (người đăng bài)
 
   @Prop()
+  posterAge?: number; // Tuổi của Poster (người đăng bài)
+
+  @Prop()
+  posterGender?: string; // Giới tính của Poster (người đăng bài)
+
+  @Prop()
   postId?: number; // ID của bài đăng được tạo tự động
 
   @Prop()
