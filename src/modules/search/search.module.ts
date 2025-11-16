@@ -34,7 +34,8 @@ import { AmenitiesService } from './amenities.service';
         const password = cfg.get<string>('ELASTIC_PASS');
         
         if (apiKey) {
-          // Dùng API Key (Elastic Cloud thường dùng cách này)
+          // Dùng API Key (có thể là encoded base64 hoặc id:key format)
+          // Client sẽ tự xử lý cả 2 format
           auth = { apiKey };
         } else if (username && password) {
           // Dùng Username/Password (local hoặc custom setup)
