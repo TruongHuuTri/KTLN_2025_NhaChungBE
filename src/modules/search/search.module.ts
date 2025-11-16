@@ -25,20 +25,31 @@ import { AmenitiesService } from './amenities.service';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
         const nodeUrl = cfg.get<string>('ELASTIC_NODE') ?? cfg.get<string>('ELASTIC_URL') ?? 'http://localhost:9200';
-        // Đảm bảo URL là http:// không phải https://
-        const httpUrl = nodeUrl.replace(/^https:\/\//, 'http://');
+        const isHttps = nodeUrl.startsWith('https://');
+        
+        // Hỗ trợ cả API Key và Username/Password
+        let auth: any = undefined;
+        const apiKey = cfg.get<string>('ELASTIC_API_KEY');
+        const username = cfg.get<string>('ELASTIC_USER');
+        const password = cfg.get<string>('ELASTIC_PASS');
+        
+        if (apiKey) {
+          // Dùng API Key (Elastic Cloud thường dùng cách này)
+          auth = { apiKey };
+        } else if (username && password) {
+          // Dùng Username/Password (local hoặc custom setup)
+          auth = { username, password };
+        }
         
         return new Client({
-          node: httpUrl,
-          auth:
-            cfg.get('ELASTIC_USER') && cfg.get('ELASTIC_PASS')
-              ? {
-                  username: cfg.get<string>('ELASTIC_USER')!,
-                  password: cfg.get<string>('ELASTIC_PASS')!,
-                }
-              : undefined,
-          // Bỏ header Accept vì có thể gây lỗi 400 với ES 8.x
-          tls: undefined, // Đảm bảo không dùng SSL
+          node: nodeUrl,
+          auth,
+          // Hỗ trợ cả HTTP (local) và HTTPS (Elastic Cloud)
+          tls: isHttps
+            ? {
+                rejectUnauthorized: true, // Verify SSL certificate
+              }
+            : undefined,
           requestTimeout: 5000,
           pingTimeout: 3000,
           maxRetries: 3,

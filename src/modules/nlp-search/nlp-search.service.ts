@@ -38,10 +38,19 @@ export class NlpSearchService {
     );
 
     // Khởi tạo Redis Client
-    this.redisClient = new Redis({
-      host: this.configService.get<string>('REDIS_HOST') as string,
-      port: Number(this.configService.get<number>('REDIS_PORT')),
-    });
+    // Hỗ trợ cả REDIS_URL (Render) hoặc REDIS_HOST + REDIS_PORT
+    // Tự động fallback về localhost nếu không có config (cho local development)
+    const redisUrl = this.configService.get<string>('REDIS_URL');
+    if (redisUrl) {
+      this.redisClient = new Redis(redisUrl);
+    } else {
+      const redisHost = this.configService.get<string>('REDIS_HOST') || 'localhost';
+      const redisPort = Number(this.configService.get<number>('REDIS_PORT')) || 6379;
+      this.redisClient = new Redis({
+        host: redisHost,
+        port: redisPort,
+      });
+    }
     this.redisClient.on('connect', () => console.log('✅ Connected to Redis'));
     this.redisClient.on('error', (err) => console.error('❌ Redis Client Error', err));
 

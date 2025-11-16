@@ -12,25 +12,37 @@ export class SearchBootstrapService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     const nodeUrl = this.config.get<string>('ELASTIC_NODE') ?? this.config.get<string>('ELASTIC_URL') ?? 'http://localhost:9200';
-    // Đảm bảo URL là http:// không phải https://
-    const httpUrl = nodeUrl.replace(/^https:\/\//, 'http://');
+    const isHttps = nodeUrl.startsWith('https://');
+    
+    // Hỗ trợ cả API Key và Username/Password
+    let auth: any = undefined;
+    const apiKey = this.config.get<string>('ELASTIC_API_KEY');
+    const username = this.config.get<string>('ELASTIC_USER') ?? this.config.get<string>('ELASTIC_USERNAME');
+    const password = this.config.get<string>('ELASTIC_PASS') ?? this.config.get<string>('ELASTIC_PASSWORD');
+    
+    if (apiKey) {
+      // Dùng API Key (Elastic Cloud thường dùng cách này)
+      auth = { apiKey };
+    } else if (username && password) {
+      // Dùng Username/Password (local hoặc custom setup)
+      auth = { username, password };
+    }
     
     this.client = new Client({
-      node: httpUrl,
-      auth: (this.config.get('ELASTIC_USERNAME') && this.config.get('ELASTIC_PASSWORD'))
-        ? { username: this.config.get('ELASTIC_USERNAME') as string, password: this.config.get('ELASTIC_PASSWORD') as string }
+      node: nodeUrl,
+      auth,
+      // Hỗ trợ cả HTTP (local) và HTTPS (Elastic Cloud)
+      tls: isHttps
+        ? {
+            rejectUnauthorized: true, // Verify SSL certificate
+          }
         : undefined,
-      // Bỏ header Accept vì có thể gây lỗi 400 với ES 8.x
-      // ES 8.x tự động negotiate content type
-      // Đảm bảo không dùng SSL
-      tls: undefined,
-      // Thêm timeout và retry
       requestTimeout: 5000,
       pingTimeout: 3000,
       maxRetries: 3,
     });
     this.indexAlias = this.config.get<string>('ELASTIC_INDEX_POSTS') ?? 'posts';
-    this.logger.log(`ES Client initialized with URL: ${httpUrl}`);
+    this.logger.log(`ES Client initialized with URL: ${nodeUrl}`);
   }
 
   async onModuleInit() {
