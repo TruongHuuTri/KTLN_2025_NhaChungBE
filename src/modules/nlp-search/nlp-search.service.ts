@@ -9,6 +9,7 @@ import { Room } from '../rooms/schemas/room.schema';
 import { SearchService, SearchPostsParams } from '../search/search.service';
 import { GeoCodeService } from '../search/geo-code.service';
 import { AmenitiesService } from '../search/amenities.service';
+import { ParsedNlpQuery } from './types';
 
 @Injectable()
 export class NlpSearchService {
@@ -158,19 +159,52 @@ export class NlpSearchService {
    */
   private normalizeQuery(query: string): string {
     if (!query) return '';
-    
-    // Remove extra spaces and normalize
-    let normalized = query.trim().replace(/\s+/g, ' ');
-    
-    // Remove common prefixes (stop words)
-    const words = normalized.toLowerCase().split(/\s+/);
-    const filtered = words.filter(w => !this.stopWords.has(w));
-    
-    if (filtered.length > 0) {
-      normalized = filtered.join(' ');
-    }
-    
-    return normalized.trim() || query.trim(); // Fallback to original if all filtered
+    return query
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  /**
+   * Phân loại query: simple (dùng heuristic) vs complex (dùng AI)
+   */
+  private isSimpleQuery(q: string): boolean {
+    const text = this.normalizeQuery(q);
+    const tokens = text.split(/\s+/);
+
+    // Query quá dài → coi là phức tạp
+    if (tokens.length > 14) return false;
+
+    // Có các từ này thì coi là phức tạp (cần AI)
+    const complexWords = [
+      'gần',
+      'bán kính',
+      'trong vòng',
+      'trong bán kính',
+      'mới đăng',
+      'trong 3 ngày',
+      'trong 7 ngày',
+      'gần trường',
+      'gần chợ',
+    ];
+    if (complexWords.some(w => text.includes(w))) return false;
+
+    // Có giá kiểu "7 triệu" / "3.5 triệu" / "3000000"
+    const hasPrice =
+      /\d+([.,]\d+)?\s*(trieu|triệu|tr|vnđ|vnd)/.test(text) ||
+      /\b\d{6,9}\b/.test(text); // số VND thẳng
+
+    // Có từ loại nhà
+    const hasCategoryWord =
+      text.includes('phòng trọ') ||
+      text.includes('chung cư') ||
+      text.includes('căn hộ') ||
+      text.includes('nhà nguyên căn');
+
+    // Có quận/huyện
+    const hasDistrictHint = text.includes('quận') || text.includes('huyện') || text.includes('q.');
+
+    return hasPrice || hasCategoryWord || hasDistrictHint;
   }
 
   // Extract ward name pattern like "phường <name>" (prefer code mapping over geocoding)
@@ -181,304 +215,343 @@ export class NlpSearchService {
     return null;
   }
 
-  async search(query: string): Promise<any> {
-    // Normalize query for consistent caching and parsing
-    const normalizedQuery = this.normalizeQuery(query);
-    const cacheKey = `search:nlp:${normalizedQuery.toLowerCase()}`;
+  /**
+   * Map district/ward names → codes (dùng GeoCodeService)
+   */
+  private enrichLocationWithCodes(parsed: ParsedNlpQuery): ParsedNlpQuery {
+    const out = { ...parsed };
 
-    // 1. Kiểm tra cache
-    const cachedResult = await this.redisClient.get(cacheKey);
-    if (cachedResult) {
-      this.logger.debug(`⚡️ Cache HIT for: ${normalizedQuery}`);
-      return JSON.parse(cachedResult);
-    }
-    this.logger.debug(`🤔 Cache MISS! Processing query: ${normalizedQuery}`);
-
-    // 1) Ưu tiên WardName/District → code; sau đó mới tới POI geocoding
-    let params: SearchPostsParams | null = null;
-    let aiSuccess = false;
-    let poiHandled = false;
-    let wardHandled = false;
-
-    try {
-      // Try resolve ward by name first (most precise, no geocoding)
-      const wardName = this.extractWardName(normalizedQuery);
-      if (wardName) {
-        const resolved = this.geo.resolveWardByName(wardName);
-        if (resolved) {
-          params = this.heuristicParse(normalizedQuery);
-          params.province_code = resolved.provinceCode;
-          params.ward_code = [resolved.wardCode];
-          wardHandled = true;
-          this.logger.debug(`Ward detected: "${wardName}" -> wardCode=${resolved.wardCode}, province=${resolved.provinceCode}`);
-        }
-      }
-
-      const poiNameEarly = this.extractPoiName(normalizedQuery);
-      if (!wardHandled && poiNameEarly) {
-        const coords = await this.geocodePoi(poiNameEarly.poiName, poiNameEarly.city);
-        if (coords) {
-          if (!params) params = this.heuristicParse(normalizedQuery);
-          params.lat = coords.lat;
-          params.lon = coords.lon;
-          if (!params.distance) params.distance = '3km';
-          // Lưu POI name để boost title/description
-          if (!params.poiKeywords) params.poiKeywords = [];
-          params.poiKeywords.push(poiNameEarly.poiName);
-          poiHandled = true;
-          this.logger.debug(`POI detected early: "${poiNameEarly.poiName}"${poiNameEarly.city ? ` (${poiNameEarly.city})` : ''} -> lat=${coords.lat}, lon=${coords.lon}, distance=${params.distance}`);
-        }
-      }
-    } catch {}
-
-    // Nếu chưa có ward/POI thì mới gọi AI để trích xuất tham số
-    if (!wardHandled && !poiHandled) {
-      try {
-        this.logger.debug(`🤖 Attempting AI parse for: "${normalizedQuery}"`);
-        params = await this.parseQueryWithAI(normalizedQuery);
-        aiSuccess = true;
-        this.logger.log(`✅ AI parsed successfully: ${JSON.stringify(params)}`);
-      } catch (e) {
-        this.logger.warn(`⚠️ AI parse failed, using heuristic fallback: ${e instanceof Error ? e.message : e}`);
-        params = this.heuristicParse(normalizedQuery);
-        this.logger.log(`✅ Heuristic parsed: ${JSON.stringify(params)}`);
+    // district → wardCodes bằng alias mapping
+    if (!out.wardCodes?.length && out.district) {
+      const codes = this.geo.expandDistrictAliasesToWardCodes(out.district);
+      if (codes && codes.length) {
+        out.wardCodes = codes;
       }
     }
 
-    // 2) Post-process: Validate and enrich AI output with heuristic backup
-    // This ensures we don't miss anything even if AI is incomplete
-    // Ensure params is not null before enriching
-    if (!params) {
-      params = this.heuristicParse(normalizedQuery);
-    }
-    params = this.enrichParamsWithHeuristic(params, normalizedQuery);
-    
-    // CRITICAL: Map address fields from AI to ward_code (highest priority)
-    // Priority: ward > district > city
-    if (!wardHandled) {
-      // If AI parsed ward name, resolve to ward_code
-      if (params.ward) {
-        const resolved = this.geo.resolveWardByName(params.ward);
-        if (resolved) {
-          params.province_code = resolved.provinceCode;
-          params.ward_code = [resolved.wardCode];
-          wardHandled = true;
-          this.logger.debug(`AI ward parsed: "${params.ward}" -> wardCode=${resolved.wardCode}`);
-        }
-      }
-      
-      // If AI parsed district name, expand to ward codes
-      if (!wardHandled && params.district) {
-        const expanded = this.geo.expandDistrictAliasesToWardCodes(params.district);
-        if (expanded && expanded.length) {
-          params.ward_code = expanded;
-          wardHandled = true;
-          this.logger.debug(`AI district parsed: "${params.district}" -> ${expanded.length} ward codes`);
-        }
-      }
-      
-      // Fallback: try expand from query text if no ward/district from AI
-      if (!wardHandled && params.q) {
-        const expanded = this.geo.expandDistrictAliasesToWardCodes(params.q);
-        if (expanded && expanded.length) {
-          params.ward_code = expanded;
-          this.logger.debug(`Expanded legacy districts from query to ${expanded.length} ward codes`);
-        }
+    // Nếu NLP parse ward name rõ, bạn có thể dùng resolveWardByName
+    if (!out.wardCodes?.length && out.ward) {
+      const resolved = this.geo.resolveWardByName(out.ward);
+      if (resolved) {
+        out.provinceCode = resolved.provinceCode;
+        out.wardCodes = [resolved.wardCode];
       }
     }
-    
-    // Ensure full-text search always has query text (fallback safety)
-    if (!params.q || !params.q.trim()) {
-      params.q = normalizedQuery;
-    }
 
-    // 2.1) Nếu chưa detect sớm, thử lần nữa (phòng khi AI/heuristic thay đổi text)
-    if (!wardHandled && !poiHandled) {
-      try {
-        const poiInfo = this.extractPoiName(normalizedQuery);
-        if (poiInfo) {
-          const coords = await this.geocodePoi(poiInfo.poiName, poiInfo.city);
-          if (coords) {
-            params.lat = coords.lat;
-            params.lon = coords.lon;
-            if (!params.distance) params.distance = '3km';
-            // Lưu POI name để boost title/description
-            if (!params.poiKeywords) params.poiKeywords = [];
-            params.poiKeywords.push(poiInfo.poiName);
-            this.logger.debug(`POI detected: "${poiInfo.poiName}"${poiInfo.city ? ` (${poiInfo.city})` : ''} -> lat=${coords.lat}, lon=${coords.lon}, distance=${params.distance}`);
-          }
-        }
-      } catch {}
-    }
-
-    // 2.2) Luôn extract POI keywords để boost title/description (kể cả khi không geocode được)
-    // Điều này giúp tìm các bài có title/description chứa POI name
-    try {
-      const poiInfo = this.extractPoiName(normalizedQuery);
-      if (poiInfo && poiInfo.poiName) {
-        if (!params.poiKeywords) params.poiKeywords = [];
-        // Chỉ thêm nếu chưa có (tránh duplicate)
-        if (!params.poiKeywords.includes(poiInfo.poiName)) {
-          params.poiKeywords.push(poiInfo.poiName);
-          this.logger.debug(`POI keyword added for title/description boost: "${poiInfo.poiName}"`);
-        }
-      }
-    } catch {}
-
-    // 2) Search ES with parsed params
-    try {
-      // DEBUG: Log parsed params để kiểm tra
-      this.logger.debug(`🔍 ES search params: ${JSON.stringify({
-        q: params.q?.substring(0, 50),
-        category: params.category,
-        postType: params.postType,
-        minPrice: params.minPrice,
-        maxPrice: params.maxPrice,
-        hasAmenities: !!params.amenities?.length,
-      })}`);
-      
-      const esResult = await this.searchService.searchPosts(params);
-      
-      // DEBUG: Log response để kiểm tra
-      this.logger.debug(`ES search result: total=${esResult.total}, items=${esResult.items?.length || 0}`);
-      
-      if (esResult.items && esResult.items.length > 0) {
-        const firstItem = esResult.items[0];
-        this.logger.debug(`First item: category=${firstItem.category}, price=${firstItem.price}, title=${firstItem.title?.substring(0, 50)}`);
-      } else {
-        // DEBUG: Nếu không có results, log để debug
-        this.logger.warn(`⚠️ No results found for query: "${normalizedQuery}" with params: ${JSON.stringify(params)}`);
-      }
-      
-      await this.redisClient.set(cacheKey, JSON.stringify(esResult), 'EX', 3600);
-      this.logger.log(`✅ ES search returned ${esResult.total} results`);
-      return esResult;
-    } catch (e) {
-      this.logger.warn(`ES search failed, falling back to Mongo pipeline: ${e instanceof Error ? e.message : e}`);
-    }
-
-    // 3) Fallback to Gemini -> Mongo aggregation (only if ES fails)
-    const aggregationPipeline = await this.getTextToAggregation(normalizedQuery);
-    if (!aggregationPipeline || aggregationPipeline.length === 0) {
-      this.logger.warn('Received empty pipeline from Gemini, returning empty result');
-      return { items: [], total: 0, page: 1, limit: 20 };
-    }
-
-    const userId = 'user:123:prefs';
-    await this.updateUserPreferences(userId, aggregationPipeline);
-
-    const processedPipeline = await this.handleGeocoding(aggregationPipeline);
-    let rawResultsFromDB: any[] = [];
-    try {
-      rawResultsFromDB = await this.roomModel.aggregate(processedPipeline).exec();
-    } catch (err) {
-      console.error('Aggregate execution error:', err);
-      throw err;
-    }
-
-    const rankedResults = await this.rankResults(userId, rawResultsFromDB);
-    await this.redisClient.set(cacheKey, JSON.stringify(rankedResults), 'EX', 3600);
-    return rankedResults;
+    return out;
   }
 
-  private async parseQueryWithAI(query: string): Promise<SearchPostsParams> {
-    // Try different model names - Gemini API model names may vary
-    // Based on @google/generative-ai v0.24.1 SDK
-    // User confirmed model name: gemini-2.5-flash
+  /**
+   * Build SearchPostsParams từ ParsedNlpQuery
+   */
+  private buildSearchParams(parsed: ParsedNlpQuery): SearchPostsParams {
+    const p: SearchPostsParams = {
+      q: parsed.q || parsed.raw,
+      postType: parsed.postType,
+      category: parsed.category,
+      city: parsed.city,
+      district: parsed.district,
+      ward: parsed.ward,
+      minPrice: parsed.minPrice,
+      maxPrice: parsed.maxPrice,
+      minArea: parsed.minArea,
+      maxArea: parsed.maxArea,
+      lat: parsed.lat,
+      lon: parsed.lon,
+      distance: parsed.distance,
+      amenities: parsed.amenities,
+      poiKeywords: parsed.poiKeywords,
+      province_code: parsed.provinceCode,
+      // Không dùng district_code vì mapping chỉ là helper, không có districtCodes thực sự
+      ward_code: parsed.wardCodes,
+    };
+
+    // Thời gian
+    if (parsed.minCreatedAt) {
+      // Chút nữa SearchService sẽ đọc để filter createdAt
+      (p as any).minCreatedAt = parsed.minCreatedAt;
+    }
+
+    return p;
+  }
+
+  /**
+   * 2-phase search theo giá (áp dụng cho mọi giá)
+   */
+  private async runSearchWithPricePhases(base: SearchPostsParams, limit = 12) {
+    // Phase 1: dùng range core (minPrice, maxPrice từ NLP)
+    const first = await this.searchService.searchPosts({
+      ...base,
+      page: 1,
+      limit,
+    });
+
+    // Nếu không có min/max hoặc đã đủ bài → trả luôn
+    if ((base.minPrice == null && base.maxPrice == null) || first.total >= limit) {
+      return first;
+    }
+
+    // Phase 2: mở rộng range — nhưng vẫn ưu tiên kết quả phase 1
+    let wideMin = base.minPrice ?? undefined;
+    let wideMax = base.maxPrice ?? undefined;
+    const factor = 0.3; // ±30%
+
+    if (wideMin != null) wideMin = Math.max(0, wideMin * (1 - factor));
+    if (wideMax != null) wideMax = wideMax * (1 + factor);
+
+    const expanded = await this.searchService.searchPosts({
+      ...base,
+      minPrice: wideMin,
+      maxPrice: wideMax,
+      page: 1,
+      limit: limit * 2,
+    });
+
+    const seen = new Set(first.items.map(i => i.postId));
+    const more = expanded.items.filter(i => !seen.has(i.postId));
+
+    return {
+      ...expanded,
+      total: Math.max(first.total, expanded.total),
+      items: [...first.items, ...more].slice(0, limit),
+    };
+  }
+
+  /**
+   * Query expansion khi zero results - mở rộng điều kiện tìm kiếm
+   */
+  private expandQueryForZeroResults(parsed: ParsedNlpQuery): ParsedNlpQuery {
+    const expanded = { ...parsed };
+
+    // Mở rộng giá ±50% nếu có
+    if (expanded.minPrice != null || expanded.maxPrice != null) {
+      if (expanded.minPrice != null) {
+        expanded.minPrice = Math.max(0, expanded.minPrice * 0.5);
+      }
+      if (expanded.maxPrice != null) {
+        expanded.maxPrice = expanded.maxPrice * 1.5;
+      }
+    }
+
+    // Mở rộng distance nếu có POI
+    if (expanded.distance) {
+      const currentKm = parseFloat(expanded.distance.replace('km', ''));
+      if (!Number.isNaN(currentKm)) {
+        expanded.distance = `${Math.min(currentKm * 2, 10)}km`; // max 10km
+      }
+    }
+
+    // Bỏ category filter nếu có (tìm tất cả loại)
+    // expanded.category = undefined; // Comment để giữ category
+
+    return expanded;
+  }
+
+  /**
+   * Semantic query expansion - tìm theo ý nghĩa, không chỉ keyword
+   */
+  private async semanticQueryExpansion(q: string): Promise<string[]> {
+    // Tạo các biến thể semantic của query
+    const expansions: string[] = [q];
+
+    // Ví dụ: "chung cư" → "căn hộ", "apartment"
+    const qLower = q.toLowerCase();
+    if (qLower.includes('chung cư')) {
+      expansions.push(q.replace(/chung cư/gi, 'căn hộ'));
+      expansions.push(q.replace(/chung cư/gi, 'apartment'));
+    }
+    if (qLower.includes('phòng trọ')) {
+      expansions.push(q.replace(/phòng trọ/gi, 'phòng cho thuê'));
+      expansions.push(q.replace(/phòng trọ/gi, 'room for rent'));
+    }
+
+    return expansions;
+  }
+
+  /**
+   * Hàm search(q) hoàn chỉnh (NlpSearchService) - VERSION 2.0: Thông minh hơn
+   */
+  async search(q: string) {
+    const normalized = this.normalizeQuery(q);
+
+    // 1. Cache
+    const cacheKey = `search:nlp:v2:${normalized}`;
+    const cached = await this.redisClient.get(cacheKey);
+    if (cached) {
+      this.logger.debug(`⚡️ Cache HIT for: ${normalized}`);
+      return JSON.parse(cached);
+    }
+    this.logger.debug(`🤔 Cache MISS! Processing query: ${normalized}`);
+
+    // 2. Simple vs Complex - THÔNG MINH HƠN
+    let parsed: ParsedNlpQuery | null;
+
+    if (this.isSimpleQuery(normalized)) {
+      this.logger.debug(`Simple query detected, using heuristic parser (FAST)`);
+      parsed = this.heuristicParse(q);
+    } else {
+      this.logger.debug(`Complex query detected, using AI parser (SMART)`);
+      const aiParsed = await this.aiParse(q);
+      if (aiParsed) {
+        parsed = aiParsed;
+      } else {
+        this.logger.warn(`AI parse failed, falling back to heuristic`);
+        parsed = this.heuristicParse(q); // fallback
+      }
+    }
+
+    // 3. Bổ sung location codes
+    parsed = this.enrichLocationWithCodes(parsed);
+
+    // 4. Handle POI geocoding nếu có
+    const poiInfo = this.extractPoiName(q);
+    if (poiInfo && poiInfo.poiName) {
+      const coords = await this.geocodePoi(poiInfo.poiName, poiInfo.city);
+      if (coords) {
+        parsed.lat = coords.lat;
+        parsed.lon = coords.lon;
+        if (!parsed.distance) parsed.distance = '3km';
+      }
+      // Luôn thêm POI keywords để boost title/description
+      if (!parsed.poiKeywords) parsed.poiKeywords = [];
+      if (!parsed.poiKeywords.includes(poiInfo.poiName)) {
+        parsed.poiKeywords.push(poiInfo.poiName);
+      }
+    }
+
+    // 5. Build SearchPostsParams
+    const params = this.buildSearchParams(parsed);
+
+    // 6. Chạy search 2-phase theo giá
+    let result = await this.runSearchWithPricePhases(params, 12);
+
+    // 7. ZERO RESULTS HANDLING - Query expansion thông minh
+    if (result.total === 0 || result.items.length === 0) {
+      this.logger.warn(`⚠️ Zero results, attempting query expansion...`);
+      
+      // Strategy 1: Mở rộng điều kiện
+      const expanded = this.expandQueryForZeroResults(parsed);
+      const expandedParams = this.buildSearchParams(expanded);
+      const expandedResult = await this.runSearchWithPricePhases(expandedParams, 12);
+      
+      if (expandedResult.total > 0) {
+        this.logger.log(`✅ Query expansion found ${expandedResult.total} results`);
+        result = {
+          ...expandedResult,
+          _expanded: true, // Flag để frontend biết đã expand
+          _originalQuery: q,
+        } as any;
+      } else {
+        // Strategy 2: Semantic expansion
+        const semanticQueries = await this.semanticQueryExpansion(q);
+        for (const semanticQ of semanticQueries.slice(1)) { // Skip original
+          const semanticParsed = this.heuristicParse(semanticQ);
+          const semanticParams = this.buildSearchParams(semanticParsed);
+          const semanticResult = await this.runSearchWithPricePhases(semanticParams, 12);
+          if (semanticResult.total > 0) {
+            this.logger.log(`✅ Semantic expansion found ${semanticResult.total} results`);
+            result = {
+              ...semanticResult,
+              _expanded: true,
+              _semantic: true,
+              _originalQuery: q,
+            } as any;
+            break;
+          }
+        }
+      }
+    }
+
+    // 8. Cache
+    await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+    this.logger.log(`✅ Search completed: ${result.total} results (expanded: ${(result as any)._expanded || false})`);
+
+    return result;
+  }
+
+  /**
+   * Prompt cho Gemini (dùng khi query phức tạp) - VERSION 2.0: Hỗ trợ NLP đầy đủ
+   */
+  private readonly GEMINI_SYSTEM_PROMPT = `
+Bạn là bộ parser NLP thông minh cho hệ thống tìm phòng trọ/chung cư tại Việt Nam.
+
+Hãy đọc câu tìm kiếm tiếng Việt và trả về JSON KHÔNG có giải thích, với dạng:
+
+{
+  "q": string,                     // câu query chuẩn để full-text search
+  "postType": "rent" | "roommate" | null,
+  "category": "phong-tro" | "chung-cu" | "nha-nguyen-can" | null,
+  "minPrice": number | null,       // VND
+  "maxPrice": number | null,
+  "district": string | null,
+  "ward": string | null,
+  "amenities": string[] | null,    // dùng keys: gym, ho_boi, ban_cong, ...
+  "excludeAmenities": string[] | null,  // tiện ích cần tránh: ["gym"] nếu user nói "không có gym"
+  "excludeDistricts": string[] | null,  // quận cần tránh: ["quận 1"] nếu user nói "tránh quận 1"
+  "poiKeywords": string[] | null,  // tên POI: ["Đại học Công nghiệp", "IUH"]
+  "radiusKm": number | null,
+  "minCreatedAtDaysAgo": number | null,  // ví dụ user nói "3 ngày gần đây" → 3
+  "priceComparison": "cheaper" | "more_expensive" | null  // "rẻ hơn" → "cheaper", "đắt hơn" → "more_expensive"
+}
+
+Yêu cầu NLP:
+- Dùng VND, không viết "7 triệu" trong minPrice, maxPrice. Ví dụ "7 triệu" → 6000000 đến 8000000.
+- Nếu người dùng chỉ nói "gần IUH" thì để minPrice,maxPrice = null.
+- amenities phải dùng key chuẩn: "gym", "ho_boi", "ban_cong", ...
+- Xử lý negative: "không có gym" → excludeAmenities: ["gym"], "tránh quận 1" → excludeDistricts: ["quận 1"]
+- Xử lý so sánh: "rẻ hơn" → priceComparison: "cheaper", "đắt hơn" → priceComparison: "more_expensive"
+- Xử lý điều kiện phức tạp: "gần trường nhưng không quá xa chợ" → parse cả 2 POI, ưu tiên trường
+- Nếu không chắc, để null.
+`;
+
+  /**
+   * AI parser - gọi Gemini để parse query phức tạp
+   */
+  private async aiParse(q: string): Promise<ParsedNlpQuery | null> {
     const modelNames = [
-      'gemini-2.5-flash',        // Latest flash model (confirmed by user)
-      'gemini-pro',              // Fallback: stable v1
-      'gemini-1.5-pro',          // Fallback: v1.5 pro
-      'gemini-1.5-flash',        // Fallback: v1.5 flash
+      'gemini-2.5-flash',
+      'gemini-pro',
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
     ];
     let model: GenerativeModel | null = null;
-    let modelName = this.cachedWorkingModel || modelNames[0];
     let lastError: Error | null = null;
     
-    // If we have a cached working model, try it first
+    // Try cached model first
     if (this.cachedWorkingModel) {
       try {
         model = this.genAI.getGenerativeModel({ model: this.cachedWorkingModel });
-        modelName = this.cachedWorkingModel;
         this.logger.debug(`Using cached working model: ${this.cachedWorkingModel}`);
       } catch (e) {
-        // Cache invalid, clear it
-        const oldModel = this.cachedWorkingModel;
         this.cachedWorkingModel = null;
-        this.logger.warn(`Cached model ${oldModel} failed, trying others...`);
       }
     }
     
-    // If no cached model or cached failed, try all models
+    // Try all models if no cached
     if (!model) {
       for (const name of modelNames) {
-        if (name === this.cachedWorkingModel) continue; // Skip already tried
-        
+        if (name === this.cachedWorkingModel) continue;
         try {
           model = this.genAI.getGenerativeModel({ model: name });
-          // Test with a minimal call to verify model works (only on first attempt)
           if (!this.cachedWorkingModel) {
-            const testResult = await model.generateContent('Hi');
-            await testResult.response;
-            // Cache working model
+            await model.generateContent('Hi');
             this.cachedWorkingModel = name;
-            this.logger.log(`✅ Found working Gemini model: ${name} (cached for future use)`);
+            this.logger.log(`✅ Found working Gemini model: ${name}`);
           }
-          modelName = name;
           break;
         } catch (e: any) {
           lastError = e;
-          const errorMsg = e?.message || e?.toString() || 'Unknown error';
-          // Check if it's a 404 (model not found) vs other errors
-          if (errorMsg.includes('404') || errorMsg.includes('not found')) {
-            this.logger.debug(`Model ${name} not found (404), trying next...`);
-          } else {
-            this.logger.warn(`Model ${name} failed: ${errorMsg.substring(0, 100)}`);
-          }
           continue;
         }
       }
     }
     
     if (!model) {
-      const errorDetails = lastError ? `Last error: ${lastError.message?.substring(0, 200)}` : 'No model available';
-      this.logger.error(`All Gemini models failed. ${errorDetails}`);
-      this.logger.warn('⚠️ AI parsing disabled. System will use heuristic parsing only.');
-      throw new Error(`Failed to initialize any Gemini model. Please check API key and model availability. ${errorDetails}`);
+      this.logger.error(`All Gemini models failed. ${lastError?.message || 'No model available'}`);
+      return null;
     }
     
-    const prompt = `
-Parse this Vietnamese real estate search query into JSON:
-
-"${query}"
-
-Return JSON with these fields (omit if not found):
-{
-  "q": "cleaned query text for full-text search",
-  "postType": "rent" | "roommate" | null,
-  "category": "phong-tro" | "chung-cu" | "nha-nguyen-can" | null,
-  "gender": "male" | "female" | null,
-  "minPrice": number (VND) | null,
-  "maxPrice": number (VND) | null,
-  "minArea": number (m2) | null,
-  "maxArea": number (m2) | null,
-  "district": string | null,
-  "ward": string | null,
-  "city": string | null,
-  "amenities": ["amenity_key"] | null
-}
-
-Examples:
-- "Tìm phòng chung cư tầm giá 6 triệu" → {"q": "phòng chung cư tầm giá 6 triệu", "postType": "rent", "category": "chung-cu", "minPrice": 5000000, "maxPrice": 7000000}
-- "phòng trọ 3 triệu" → {"q": "phòng trọ 3 triệu", "postType": "rent", "category": "phong-tro", "minPrice": 2000000, "maxPrice": 4000000}
-- "ở ghép nữ" → {"q": "ở ghép nữ", "postType": "roommate", "gender": "female"}
-
-Price: "X triệu" = X * 1000000 VND. "tầm X triệu" = range (X-1) to (X+1) triệu.
-Category: "chung cư"/"căn hộ" = "chung-cu", "phòng trọ" = "phong-tro", "nhà nguyên căn" = "nha-nguyen-can".
-Amenities: map Vietnamese terms to keys (e.g., "ban công" → "ban_cong", "hồ bơi" → "ho_boi").
-
-Return ONLY JSON, no markdown.
-    `.trim();
+    const prompt = this.GEMINI_SYSTEM_PROMPT + `\n\nCâu tìm kiếm: "${q}"\nChỉ trả JSON.`;
 
     try {
       const result = await model.generateContent(prompt);
@@ -489,204 +562,97 @@ Return ONLY JSON, no markdown.
       if (jsonMatch) text = jsonMatch[0];
       const parsed = JSON.parse(text);
       
-      // Extract amenities from query if not in parsed response
-      let extractedAmenities = parsed.amenities || [];
-      if (!extractedAmenities || extractedAmenities.length === 0) {
-        extractedAmenities = this.amenities.extractAmenities(query);
-      }
-      
-      // Clean query text for better matching
-      const cleanedQ = parsed.q ? this.normalizeQuery(parsed.q) : this.normalizeQuery(query);
-      
-      return {
-        q: cleanedQ || query, // Fallback to original if cleaning removes everything
-        postType: parsed.postType || undefined,
-        category: parsed.category || undefined, // CRITICAL: Must include category
-        gender: parsed.gender || undefined,
-        minPrice: parsed.minPrice || undefined,
-        maxPrice: parsed.maxPrice || undefined,
-        minArea: parsed.minArea || undefined,
-        maxArea: parsed.maxArea || undefined,
-        district: parsed.district || undefined,
-        ward: parsed.ward || undefined,
-        city: parsed.city || undefined,
-        amenities: extractedAmenities.length > 0 ? extractedAmenities : undefined,
+      const out: ParsedNlpQuery = {
+        raw: q,
+        q: parsed.q || this.normalizeQuery(q),
+        postType: parsed.postType || 'rent',
+        category: parsed.category || undefined,
+        minPrice: parsed.minPrice ?? undefined,
+        maxPrice: parsed.maxPrice ?? undefined,
+        district: parsed.district ?? undefined,
+        ward: parsed.ward ?? undefined,
+        amenities: parsed.amenities ?? undefined,
+        excludeAmenities: parsed.excludeAmenities ?? undefined,
+        excludeDistricts: parsed.excludeDistricts ?? undefined,
+        poiKeywords: parsed.poiKeywords ?? undefined,
+        priceComparison: parsed.priceComparison ?? undefined,
       };
-    } catch (error: any) {
-      this.logger.error(`AI parse error: ${error?.message || error}`);
-      throw error;
+
+      // Thời gian đăng
+      if (parsed.minCreatedAtDaysAgo != null) {
+        const days = Number(parsed.minCreatedAtDaysAgo);
+        if (!Number.isNaN(days) && days > 0) {
+          const d = new Date();
+          d.setDate(d.getDate() - days);
+          out.minCreatedAt = d.toISOString();
+        }
+      }
+
+      // Distance/radius
+      if (parsed.radiusKm != null) {
+        const km = Number(parsed.radiusKm);
+        if (!Number.isNaN(km) && km > 0) {
+          out.distance = `${km}km`;
+        }
+      }
+
+      return out;
+    } catch (err) {
+      this.logger.error('AI parse JSON fail', err);
+      return null;
     }
   }
 
   /**
-   * Enrich AI-parsed params with heuristic backup to ensure completeness
-   * This fills in any gaps that AI might have missed
+   * Heuristic parser (fallback / cho simple query)
+   * Trả về ParsedNlpQuery
    */
-  private enrichParamsWithHeuristic(aiParams: SearchPostsParams, originalQuery: string): SearchPostsParams {
-    const heuristicParams = this.heuristicParse(originalQuery);
-    
-    // Merge: AI params take priority, but fill in missing fields from heuristic
-    const enriched: SearchPostsParams = { ...aiParams };
-    
-    // If AI didn't extract category but heuristic did, use heuristic
-    if (!enriched.category && heuristicParams.category) {
-      enriched.category = heuristicParams.category;
-      this.logger.debug(`Enriched: Added category from heuristic: ${heuristicParams.category}`);
-    }
-    
-    // If AI didn't extract postType but heuristic did, use heuristic
-    if (!enriched.postType && heuristicParams.postType) {
-      enriched.postType = heuristicParams.postType;
-      this.logger.debug(`Enriched: Added postType from heuristic: ${heuristicParams.postType}`);
-    }
-    
-    // If AI didn't extract price range but heuristic did, use heuristic
-    if (!enriched.minPrice && !enriched.maxPrice && (heuristicParams.minPrice || heuristicParams.maxPrice)) {
-      enriched.minPrice = heuristicParams.minPrice;
-      enriched.maxPrice = heuristicParams.maxPrice;
-      this.logger.debug(`Enriched: Added price range from heuristic`);
-    }
-    
-    // If AI didn't extract gender but heuristic did, use heuristic
-    if (!enriched.gender && heuristicParams.gender) {
-      enriched.gender = heuristicParams.gender;
-      this.logger.debug(`Enriched: Added gender from heuristic: ${heuristicParams.gender}`);
-    }
-    
-    // Merge amenities (union, not replacement)
-    if (heuristicParams.amenities && heuristicParams.amenities.length > 0) {
-      const existing = enriched.amenities || [];
-      const merged = [...new Set([...existing, ...heuristicParams.amenities])];
-      if (merged.length > existing.length) {
-        enriched.amenities = merged;
-        this.logger.debug(`Enriched: Added amenities from heuristic`);
-      }
-    }
-    
-    // Ensure query text is preserved (use AI's cleaned version if available, else heuristic, else original)
-    enriched.q = enriched.q || heuristicParams.q || originalQuery;
-    
-    return enriched;
-  }
+  private heuristicParse(q: string): ParsedNlpQuery {
+    const text = this.normalizeQuery(q);
+    const result: ParsedNlpQuery = { raw: q, q: text };
 
-  private heuristicParse(q: string): SearchPostsParams {
-    const text = q.toLowerCase();
-    const params: SearchPostsParams = {};
-
-    // CRITICAL: Detect category FIRST (before generic postType)
-    // Priority order: specific categories > roommate > generic rent
-    if (text.includes('chung cư') || text.includes('chung cu') || text.includes('căn hộ') || text.includes('can ho')) {
-      params.postType = 'rent';
-      params.category = 'chung-cu';
-    } else if (text.includes('phòng trọ') || text.includes('phong tro')) {
-      params.postType = 'rent';
-      params.category = 'phong-tro';
-    } else if (text.includes('nhà nguyên căn') || text.includes('nha nguyen can')) {
-      params.postType = 'rent';
-      params.category = 'nha-nguyen-can';
-    } else if (text.includes('o ghep') || text.includes('ở ghép') || text.includes('oghep') || text.includes('roommate')) {
-      params.postType = 'roommate';
-      // No category for roommate
-    } else if (
-      text.includes('cho thue') || text.includes('cho thuê') || 
-      text.includes('thuê phòng') || text.includes('rent')
-    ) {
-      params.postType = 'rent';
-      // Generic rent, no specific category
+    // Category
+    if (text.includes('chung cư') || text.includes('căn hộ')) {
+      result.category = 'chung-cu';
+    } else if (text.includes('phòng trọ')) {
+      result.category = 'phong-tro';
+    } else if (text.includes('nhà nguyên căn') || text.includes('nguyên căn')) {
+      result.category = 'nha-nguyen-can';
     }
 
-    // Detect gender
-    if (text.includes('nu') || text.includes('nữ') || text.includes('female')) {
-      params.gender = 'female';
-    } else if (text.includes('nam') || text.includes('male')) {
-      params.gender = 'male';
+    // Post type
+    result.postType = 'rent'; // mặc định, sau này nếu có từ 'ở ghép' mới set roommate
+    if (text.includes('ở ghép') || text.includes('o ghep')) {
+      result.postType = 'roommate';
     }
 
-    // Comprehensive price extraction - handle ALL patterns
-    // IMPORTANT: Check for ANY number followed by "triệu" anywhere in query
-    // Pattern 1: "tầm X triệu" or "tam X trieu" or "khoảng X triệu" → range around X
-    let priceMatch = text.match(/(tam|tầm|khoang|khoảng)\s*(gia|giá)?\s*(\d+(?:[\.,]\d+)*)\s*(trieu|triệu)/);
+    // Giá: ví dụ "7 triệu", "3.5 triệu", "3tr"
+    const priceMatch =
+      text.match(/(\d+(?:[.,]\d+)?)\s*(trieu|triệu|tr)/) ||
+      text.match(/(\d{6,9})\s*(vnd|vnđ)?/);
     if (priceMatch) {
-      const num = Number(priceMatch[3].replace(/\./g, '').replace(/,/g, ''));
-      if (!isNaN(num) && num > 0) {
-        // "tầm 6 triệu" → range 5-7 triệu (flexible range ±1 triệu)
-        params.minPrice = Math.max(0, (num - 1) * 1_000_000);
-        params.maxPrice = (num + 1) * 1_000_000;
-        this.logger.debug(`💵 Price extracted (tầm): ${num} triệu → ${params.minPrice}-${params.maxPrice} VND`);
+      let n = priceMatch[1].replace(',', '.');
+      let value = parseFloat(n);
+
+      if (value < 1000) {
+        // coi là triệu
+        value = value * 1_000_000;
       }
-    } else {
-      // Pattern 2: "dưới X triệu"
-      priceMatch = text.match(/(duoi|dưới)\s*(\d+(?:[\.,]\d+)*)\s*(trieu|triệu)/);
-      if (priceMatch) {
-        const num = Number(priceMatch[2].replace(/\./g, '').replace(/,/g, ''));
-        if (!isNaN(num) && num > 0) {
-          params.maxPrice = num * 1_000_000;
-          this.logger.debug(`💵 Price extracted (dưới): ${num} triệu → max ${params.maxPrice} VND`);
-        }
-      } else {
-        // Pattern 3: "trên X triệu" or "từ X triệu"
-        priceMatch = text.match(/(tren|trên|tu|từ)\s+(\d+(?:[\.,]\d+)*)\s*(trieu|triệu)/);
-        if (priceMatch) {
-          const num = Number(priceMatch[2].replace(/\./g, '').replace(/,/g, ''));
-          if (!isNaN(num) && num > 0) {
-            params.minPrice = num * 1_000_000;
-            this.logger.debug(`💵 Price extracted (trên/từ): ${num} triệu → min ${params.minPrice} VND`);
-          }
-        } else {
-          // Pattern 4: "X triệu" (ANYWHERE in query, not just standalone)
-          // This is more flexible - catches "chung cư 6 triệu", "5 triệu", "phòng 3 triệu"
-          priceMatch = text.match(/(\d+(?:[\.,]\d+)*)\s*(trieu|triệu)/);
-          if (priceMatch) {
-            const num = Number(priceMatch[1].replace(/\./g, '').replace(/,/g, ''));
-            if (!isNaN(num) && num > 0) {
-              // Treat as range around X (flexible) - widen range for better matching
-              // "5 triệu" → 4-7 triệu (more flexible than ±1)
-              params.minPrice = Math.max(0, (num - 2) * 1_000_000); // Allow 2 triệu below
-              params.maxPrice = (num + 2) * 1_000_000; // Allow 2 triệu above
-              this.logger.debug(`💵 Price extracted (X triệu): ${num} triệu → ${params.minPrice}-${params.maxPrice} VND`);
-            }
-          }
-        }
-      }
+      const delta = value * 0.15; // ±15% range core
+      result.minPrice = Math.max(0, value - delta);
+      result.maxPrice = value + delta;
     }
 
-    // Pattern 5: "từ X đến Y triệu" (overrides previous if found)
-    const rangeMatch = text.match(/(tu|từ)\s*(\d+(?:[\.,]\d+)*)\s*(den|đến)\s*(\d+(?:[\.,]\d+)*)\s*(trieu|triệu)/);
-    if (rangeMatch) {
-      const min = Number(rangeMatch[2].replace(/\./g, '').replace(/,/g, ''));
-      const max = Number(rangeMatch[4].replace(/\./g, '').replace(/,/g, ''));
-      if (!isNaN(min) && min > 0) params.minPrice = min * 1_000_000;
-      if (!isNaN(max) && max > 0 && max >= min) params.maxPrice = max * 1_000_000;
+    // District name: đơn giản, bạn có thể refine thêm sau
+    const districtMatch = text.match(/quận\s+([a-z0-9\s]+)/);
+    if (districtMatch) {
+      result.district = districtMatch[1].trim();
     }
 
-    // Area extraction
-    const areaMatch = text.match(/(?:dien|diện)\s*(?:tich|tích)?\s*(tren|trên|duoi|dưới)?\s*(\d+(?:[\.,]\d+)*)\s*m2/);
-    if (areaMatch) {
-      const area = Number(areaMatch[2].replace(/\./g, '').replace(/,/g, ''));
-      if (!isNaN(area) && area > 0) {
-        if (areaMatch[1] === 'tren' || areaMatch[1] === 'trên') {
-          params.minArea = area;
-        } else if (areaMatch[1] === 'duoi' || areaMatch[1] === 'dưới') {
-          params.maxArea = area;
-        } else {
-          // Approximate range
-          params.minArea = Math.max(0, area - 5);
-          params.maxArea = area + 5;
-        }
-      }
-    }
+    // Amenities: dùng AmenitiesService để map từ text → key
+    result.amenities = this.amenities.extractAmenities(q);
 
-    // Clean query for full-text search
-    const cleanedQ = this.normalizeQuery(q);
-    params.q = cleanedQ || q; // Fallback to original
-    
-    // Extract amenities from query
-    const extractedAmenities = this.amenities.extractAmenities(q);
-    if (extractedAmenities.length > 0) {
-      params.amenities = extractedAmenities;
-    }
-    
-    return params;
+    return result;
   }
 
   private async getTextToAggregation(query: string): Promise<any[]> {

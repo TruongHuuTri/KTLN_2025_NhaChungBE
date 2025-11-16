@@ -16,13 +16,16 @@ export type SearchPostsParams = {
   postType?: 'rent' | 'roommate';
   gender?: 'male' | 'female' | 'any';
   province_code?: string;
-  district_code?: string | string[];
+  district_code?: string | string[]; // DEPRECATED: Không dùng vì mapping chỉ là helper, không có districtCodes thực sự
   ward_code?: string | string[];
   roommate?: boolean; // if true, mix rent+roommate but apply gender boost to roommate only
   searcherGender?: 'male' | 'female';
   amenities?: string[]; // Array of amenity keys (e.g., ["ban_cong", "gym"])
+  excludeAmenities?: string[]; // Amenities to exclude (e.g., ["gym"])
+  excludeDistricts?: string[]; // Districts to exclude (e.g., ["quận 1"])
   category?: string; // "phong-tro", "chung-cu", "nha-nguyen-can"
   poiKeywords?: string[]; // POI names extracted from query (e.g., ["đại học công nghiệp", "IUH"])
+  priceComparison?: 'cheaper' | 'more_expensive'; // Price comparison mode
 };
 
 @Injectable()
@@ -43,8 +46,12 @@ export class SearchService {
     const pageSize = Math.min(50, Math.max(1, Number(p.limit) || 12));
     const prefetch = Math.max(0, Math.min(3, Number(p.prefetch) || 0));
     const from = (page - 1) * pageSize;
+    
+    // Ngưỡng mở rộng: nếu kết quả ít hơn threshold này thì mới mở rộng sang các phường lân cận
+    const expansionThreshold = Math.max(30, pageSize * 2); // Ít nhất 30 hoặc 2 lần pageSize
 
     const must: any[] = [];
+    const filter: any[] = [];
     const hasGeo = p.lat != null && p.lon != null && !!p.distance;
     if (p.q && p.q.trim()) {
       // CRITICAL: If query is just a number + "triệu" (price only), don't enforce strict text matching
@@ -187,6 +194,47 @@ export class SearchService {
       }
     }
 
+    // Negative filters: exclude amenities (must_not)
+    if (p.excludeAmenities && p.excludeAmenities.length > 0) {
+      const excludeQueries = p.excludeAmenities.flatMap(amenityKey => {
+        const keywords = this.amenities.getAmenityKeywords(amenityKey);
+        return keywords.map(keyword => ({
+          multi_match: {
+            query: keyword,
+            type: 'best_fields',
+            fields: ['title.raw', 'description.raw'],
+            fuzziness: 'AUTO',
+          },
+        }));
+      });
+
+      if (excludeQueries.length > 0) {
+        filter.push({
+          bool: {
+            must_not: excludeQueries,
+          },
+        });
+      }
+    }
+
+    // Negative filters: exclude districts
+    if (p.excludeDistricts && p.excludeDistricts.length > 0) {
+      const excludeDistrictCodes: string[] = [];
+      for (const districtName of p.excludeDistricts) {
+        const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
+        if (codes) excludeDistrictCodes.push(...codes);
+      }
+      if (excludeDistrictCodes.length > 0) {
+        filter.push({
+          bool: {
+            must_not: {
+              terms: { 'address.wardCode': excludeDistrictCodes },
+            },
+          },
+        });
+      }
+    }
+
     // Boost POI keywords in title and description (e.g., "đại học công nghiệp", "IUH")
     // This helps find posts that mention the POI in title/description even if not geocoded nearby
     if (p.poiKeywords && p.poiKeywords.length > 0) {
@@ -219,37 +267,74 @@ export class SearchService {
 
     // CRITICAL: Chỉ lấy posts có status="active" và isActive=true
     // Indexer đã đảm bảo chỉ index active posts, nhưng vẫn filter để chắc chắn
-    const filter: any[] = [
+    filter.push(
       { term: { status: 'active' } },
       { term: { isActive: true } }
-    ];
+    );
     if (p.postType) filter.push({ term: { type: p.postType } });
     // Category sẽ được xử lý sau khi xác định wardCodes/districtCodes (xem dưới)
     if (p.postType === 'roommate' && p.gender && p.gender !== 'any') {
       filter.push({ term: { gender: p.gender } });
     }
+    
+    // Thời gian đăng (từ NLP parsing)
+    const anyParams = p as any;
+    if (anyParams.minCreatedAt) {
+      filter.push({
+        range: {
+          createdAt: { gte: anyParams.minCreatedAt },
+        },
+      });
+    }
     // Prefer code-based filters
     const toArr = (v?: string | string[]) => (Array.isArray(v) ? v : v ? [v] : []);
     if (p.province_code) filter.push({ term: { 'address.provinceCode': p.province_code } });
     const wardCodes = toArr(p.ward_code);
-    const districtCodes = toArr(p.district_code);
-    if (wardCodes.length) filter.push({ terms: { 'address.wardCode': wardCodes } });
-    if (districtCodes.length) filter.push({ terms: { 'address.districtCode': districtCodes } });
+    // Không dùng districtCodes vì mapping chỉ là helper, không có districtCodes thực sự
+    
+    // Lưu ward codes chính xác để boost và mở rộng sau nếu cần
+    let exactWardCodes: string[] = []; // Ward codes chính xác từ query
+    let expandedWardCodes: string[] = []; // Ward codes đã mở rộng (sẽ dùng nếu kết quả ít)
+    
+    // Phase 1: Tìm chính xác theo wardCodes (không mở rộng ngay)
+    if (wardCodes.length > 0) {
+      exactWardCodes = wardCodes;
+      // Chuẩn bị danh sách mở rộng (sẽ dùng nếu kết quả ít)
+      const allWardsInDistricts = new Set<string>();
+      for (const wardCode of wardCodes) {
+        const wardsInSameDistrict = this.geo.getWardsInSameDistrict(wardCode);
+        if (wardsInSameDistrict && wardsInSameDistrict.length > 0) {
+          wardsInSameDistrict.forEach(wc => allWardsInDistricts.add(wc));
+        } else {
+          // Nếu không tìm thấy quận, vẫn giữ ward code gốc
+          allWardsInDistricts.add(wardCode);
+        }
+      }
+      expandedWardCodes = Array.from(allWardsInDistricts);
+      
+      // Phase 1: Filter theo ward codes chính xác (chưa mở rộng)
+      filter.push({ terms: { 'address.wardCode': exactWardCodes } });
+    }
+    // Không filter theo districtCodes vì mapping chỉ là helper, không có districtCodes thực sự
     // Ưu tiên wardCode. Nếu client chỉ cung cấp district (tên) -> map sang wardCode
-    if (!wardCodes.length && !districtCodes.length && p.district) {
+    if (!wardCodes.length && p.district) {
       const expanded = this.geo.expandDistrictAliasesToWardCodes(p.district);
-      if (expanded && expanded.length) filter.push({ terms: { 'address.wardCode': expanded } });
+      if (expanded && expanded.length) {
+        // Khi map từ district, cũng áp dụng logic mở rộng tương tự
+        const districtWardCodes = expanded;
+        filter.push({ terms: { 'address.wardCode': districtWardCodes } });
+      }
     }
     // Legacy expansion: nếu không có ward_code, cố gắng mở rộng từ q
-    if (!wardCodes.length && !districtCodes.length && p.q) {
+    if (!wardCodes.length && p.q) {
       const expanded = this.geo.expandDistrictAliasesToWardCodes(p.q);
       if (expanded && expanded.length) filter.push({ terms: { 'address.wardCode': expanded } });
     }
     // Không filter theo tên city/district/ward để tránh lệ thuộc text; chỉ dùng code
     
-    // CRITICAL: Nếu có ward_code/district_code (địa chỉ) + category → category là boost thay vì filter
+    // CRITICAL: Nếu có ward_code (địa chỉ) + category → category là boost thay vì filter
     // Điều này cho phép ES trả về bài không có category nếu không có bài nào match, nhưng vẫn ưu tiên bài có category
-    const hasLocationFilter = wardCodes.length > 0 || districtCodes.length > 0 || p.district || p.city;
+    const hasLocationFilter = wardCodes.length > 0 || p.district || p.city;
     let categoryForBoost: string | undefined; // Lưu category để boost sau
     if (p.category && hasLocationFilter) {
       // Category là boost (không filter), sẽ boost trong function_score
@@ -260,21 +345,24 @@ export class SearchService {
     }
 
     if (p.minPrice != null || p.maxPrice != null) {
-      // CRITICAL: Make price filter more flexible when combined with category
-      // If both category and price are specified, widen the range slightly (±10%)
-      let minPrice = p.minPrice != null ? Number(p.minPrice) : undefined;
-      let maxPrice = p.maxPrice != null ? Number(p.maxPrice) : undefined;
-      
-      if (p.category && (minPrice != null || maxPrice != null)) {
-        // Widen range by 10% when category is also specified (more flexible matching)
-        if (minPrice != null) minPrice = Math.max(0, minPrice * 0.9); // Allow 10% below
-        if (maxPrice != null) maxPrice = maxPrice * 1.1; // Allow 10% above
-      }
-      
+      // ES chỉ tôn trọng minPrice / maxPrice từ NlpSearchService (không widen tự động)
       const priceFilter: any = {};
-      if (minPrice != null) priceFilter.gte = minPrice;
-      if (maxPrice != null) priceFilter.lte = maxPrice;
+      if (p.minPrice != null) priceFilter.gte = Number(p.minPrice);
+      if (p.maxPrice != null) priceFilter.lte = Number(p.maxPrice);
       
+      if (Object.keys(priceFilter).length > 0) {
+        filter.push({ range: { price: priceFilter } });
+      }
+    } else if (p.priceComparison) {
+      // Price comparison mode: cheaper hoặc more_expensive
+      // Tính giá trung bình từ ES aggregation (sẽ làm sau nếu cần)
+      // Tạm thời: cheaper = < 5 triệu, more_expensive = > 10 triệu
+      const priceFilter: any = {};
+      if (p.priceComparison === 'cheaper') {
+        priceFilter.lte = 5_000_000; // Dưới 5 triệu
+      } else if (p.priceComparison === 'more_expensive') {
+        priceFilter.gte = 10_000_000; // Trên 10 triệu
+      }
       if (Object.keys(priceFilter).length > 0) {
         filter.push({ range: { price: priceFilter } });
       }
@@ -329,6 +417,14 @@ export class SearchService {
       weight: 1.2,
     });
 
+    // Boost cho ward codes chính xác (ưu tiên phường chính xác khi mở rộng sang các phường lân cận)
+    if (exactWardCodes.length > 0) {
+      functions.push({
+        filter: { terms: { 'address.wardCode': exactWardCodes } },
+        weight: 3.0, // Boost cao cho phường chính xác
+      });
+    }
+
     // Category boosting when location filter is present (category is boost, not filter)
     if (categoryForBoost) {
       functions.push({
@@ -376,7 +472,47 @@ export class SearchService {
       },
     };
 
-    const resp = await this.es.search({ index: this.index, body });
+    // Phase 1: Tìm chính xác với exactWardCodes
+    let resp = await this.es.search({ index: this.index, body });
+    let totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+    
+    // Phase 2: Nếu kết quả ít hơn ngưỡng và có wardCodes, mở rộng sang các phường lân cận
+    if (totalHits < expansionThreshold && exactWardCodes.length > 0 && expandedWardCodes.length > exactWardCodes.length) {
+      // Tạo filter mới với expandedWardCodes (thay thế filter wardCode chính xác)
+      const expandedFilter = filter.map(f => {
+        // Tìm và thay thế filter wardCode chính xác bằng filter mở rộng
+        if (f.terms && f.terms['address.wardCode']) {
+          // Kiểm tra xem có phải là filter chính xác không (chỉ có exactWardCodes)
+          const currentWardCodes = Array.isArray(f.terms['address.wardCode']) 
+            ? f.terms['address.wardCode'] 
+            : [f.terms['address.wardCode']];
+          const isExactFilter = currentWardCodes.length === exactWardCodes.length &&
+            currentWardCodes.every(wc => exactWardCodes.includes(wc));
+          
+          if (isExactFilter) {
+            // Thay thế bằng filter mở rộng
+            return { terms: { 'address.wardCode': expandedWardCodes } };
+          }
+        }
+        return f;
+      });
+      
+      const expandedBody = {
+        ...body,
+        query: {
+          function_score: {
+            query: { bool: { must: must.length ? must : [{ match_all: {} }], filter: expandedFilter } },
+            functions,
+            boost_mode: 'sum',
+            score_mode: 'avg',
+          },
+        },
+      };
+      
+      resp = await this.es.search({ index: this.index, body: expandedBody });
+      totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+    }
+    
     const allWindowItems = (resp.hits?.hits || []).map((h: any) => {
       // Clean highlight to avoid frontend rendering issues
       const cleanHighlight: any = {};
@@ -439,7 +575,7 @@ export class SearchService {
     return {
       page,
       limit: pageSize,
-      total: typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0),
+      total: totalHits,
       items,
       prefetch: prefetchSlices,
     };
