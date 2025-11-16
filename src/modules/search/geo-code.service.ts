@@ -12,9 +12,22 @@ export class GeoCodeService {
   private wardNameKeyToCodes: Map<string, { provinceCode: string; districtCode?: string; wardCode: string }> = new Map();
   private wardCodeToDistrictKey: Map<string, string> = new Map(); // ward_code -> district_key
   private districtToWardCodes: Map<string, Set<string>> = new Map(); // district_key -> Set<ward_code>
+  private configLoaded = false; // Flag để đảm bảo chỉ load 1 lần
 
   constructor() {
-    this.loadConfig();
+    // Không load ngay, sẽ lazy load khi cần
+    // this.loadConfig(); // Đã tắt để giảm memory khi start
+  }
+
+  /**
+   * Đảm bảo config đã được load (lazy load)
+   * Chỉ load khi thực sự cần dùng
+   */
+  private ensureConfigLoaded(): void {
+    if (!this.configLoaded) {
+      this.loadConfig();
+      this.configLoaded = true;
+    }
   }
 
   private loadConfig(): void {
@@ -55,6 +68,7 @@ export class GeoCodeService {
 
   expandDistrictAliasesToWardCodes(text?: string): string[] | undefined {
     if (!text) return undefined;
+    this.ensureConfigLoaded(); // Lazy load khi cần
     const key = text.toLowerCase().trim();
     const s = this.aliasToWardCodes.get(key);
     if (!s || s.size === 0) return undefined;
@@ -63,6 +77,7 @@ export class GeoCodeService {
 
   resolveWardByName(wardName?: string): { provinceCode: string; wardCode: string } | undefined {
     if (!wardName) return undefined;
+    this.ensureConfigLoaded(); // Lazy load khi cần
     const entry = this.wardNameKeyToCodes.get(wardName.toLowerCase().trim());
     return entry ? { provinceCode: entry.provinceCode, wardCode: entry.wardCode } : undefined;
   }
@@ -74,6 +89,7 @@ export class GeoCodeService {
    */
   getWardsInSameDistrict(wardNameOrCode?: string): string[] | undefined {
     if (!wardNameOrCode) return undefined;
+    this.ensureConfigLoaded(); // Lazy load khi cần
     
     let wardCode: string | undefined;
     
