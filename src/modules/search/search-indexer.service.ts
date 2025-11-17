@@ -3,6 +3,7 @@ import { Client } from '@elastic/elasticsearch';
 import { ConfigService } from '@nestjs/config';
 import NodeGeocoder from 'node-geocoder';
 import { GeoCodeService } from './geo-code.service';
+import { AmenitiesService } from './amenities.service';
 
 @Injectable()
 export class SearchIndexerService {
@@ -14,6 +15,7 @@ export class SearchIndexerService {
     @Inject('ES_CLIENT') private readonly es: Client,
     private readonly cfg: ConfigService,
     private readonly geo: GeoCodeService,
+    private readonly amenities: AmenitiesService,
   ) {
     this.index = this.cfg.get<string>('ELASTIC_INDEX_POSTS') || 'posts';
     const geocoderOptions: NodeGeocoder.Options = {
@@ -70,22 +72,57 @@ export class SearchIndexerService {
       return 'rent';
     };
 
+    // Build full address from components if specificAddress/street is empty
+    let fullAddress = room?.address?.specificAddress || room?.address?.street || '';
+    if (!fullAddress && room?.address) {
+      // Build from components: street, ward, district, city
+      const parts = [
+        room.address?.street || '',
+        room.address?.wardName || room.address?.ward || '',
+        room.address?.districtName || '',
+        room.address?.provinceName || room.address?.city || '',
+      ].filter(Boolean);
+      fullAddress = parts.join(', ');
+    }
+    // Fallback to post.roomInfo.address if room not available
+    if (!fullAddress && post?.roomInfo?.address) {
+      const addr = post.roomInfo.address;
+      const parts = [
+        addr?.specificAddress || addr?.street || '',
+        addr?.wardName || addr?.ward || '',
+        addr?.districtName || '',
+        addr?.provinceName || addr?.city || '',
+      ].filter(Boolean);
+      fullAddress = parts.join(', ');
+    }
+
+    // Get images: prefer post.images, fallback to room.images
+    let images: string[] = [];
+    if (Array.isArray(post?.images) && post.images.length > 0) {
+      images = post.images;
+    } else if (Array.isArray(room?.images) && room.images.length > 0) {
+      images = room.images;
+    }
+
+    // Description là của room, fallback sang post.description nếu không có room
+    const description = room?.description || post?.description || '';
+
     const doc: any = {
       postId: post?.postId ?? null,
       title: post?.title ?? '',
-      description: post?.description ?? '',
+      description: description,
       category: post?.category ?? '',
       type: normalizeType(post?.postType ?? post?.type),
       status: post?.status ?? 'active',
       source: post?.source ?? '',
-      images: Array.isArray(post?.images) ? post.images : [],
-      price: Number(post?.roomInfo?.price ?? room?.price ?? post?.price ?? 0) || null,
-      area: Number(post?.roomInfo?.area ?? room?.area ?? post?.area ?? 0) || null,
+      images: images,
+      price: Number(post?.roomInfo?.basicInfo?.price ?? post?.roomInfo?.price ?? room?.price ?? post?.price ?? 0) || null,
+      area: Number(post?.roomInfo?.basicInfo?.area ?? post?.roomInfo?.area ?? room?.area ?? post?.area ?? 0) || null,
       address: {
-        full: room?.address?.specificAddress ?? room?.address?.street ?? '',
-        city: room?.address?.provinceName ?? '',
-        district: room?.address?.districtName ?? '',
-        ward: room?.address?.wardName ?? '',
+        full: fullAddress,
+        city: room?.address?.provinceName ?? post?.roomInfo?.address?.provinceName ?? '',
+        district: room?.address?.districtName ?? post?.roomInfo?.address?.districtName ?? '',
+        ward: room?.address?.wardName ?? post?.roomInfo?.address?.wardName ?? '',
       },
       coords: lon != null && lat != null ? { lon, lat } : null,
       createdAt: post?.createdAt ?? new Date(),
@@ -95,15 +132,40 @@ export class SearchIndexerService {
 
     // Enrich codes from wardName if available
     try {
-      const r = this.geo.resolveWardByName(doc.address?.ward);
-      if (r) {
-        doc.address.provinceCode = r.provinceCode;
-        doc.address.wardCode = r.wardCode;
+      // First try to get from room address
+      if (room?.address?.wardCode && room?.address?.provinceCode) {
+        doc.address.provinceCode = room.address.provinceCode;
+        doc.address.wardCode = room.address.wardCode;
+      }
+      // Then try from post.roomInfo.address
+      else if (post?.roomInfo?.address?.wardCode && post?.roomInfo?.address?.provinceCode) {
+        doc.address.provinceCode = post.roomInfo.address.provinceCode;
+        doc.address.wardCode = post.roomInfo.address.wardCode;
+      }
+      // Fallback: resolve from ward name
+      else if (doc.address?.ward) {
+        const r = this.geo.resolveWardByName(doc.address.ward);
+        if (r) {
+          doc.address.provinceCode = r.provinceCode;
+          doc.address.wardCode = r.wardCode;
+        }
       }
     } catch {}
 
     if (doc.type === 'roommate') {
       doc.gender = (post?.gender ?? 'any').toString().toLowerCase();
+    }
+
+    // Extract amenities from post title và room description
+    const titleText = doc.title || '';
+    const descText = doc.description || ''; // description là của room
+    // Combine post title và room description for amenity extraction
+    const combinedText = `${titleText} ${descText}`.trim();
+    if (combinedText) {
+      const extractedAmenities = this.amenities.extractAmenities(combinedText);
+      if (extractedAmenities.length > 0) {
+        doc.amenities = extractedAmenities;
+      }
     }
 
     return doc;

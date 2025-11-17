@@ -155,8 +155,14 @@ export class SearchService {
       }
     }
 
-    // Boost amenities matches in title and description
+    // Filter by amenities field (exact match on indexed amenities)
     if (p.amenities && p.amenities.length > 0) {
+      // First, add exact filter on amenities field (if post has indexed amenities)
+      filter.push({
+        terms: { amenities: p.amenities },
+      });
+      
+      // Also boost amenities matches in title and description (for posts without indexed amenities)
       const amenityQueries = p.amenities.map(amenityKey => {
         const keywords = this.amenities.getAmenityKeywords(amenityKey);
         if (keywords.length === 0) return null;
@@ -184,11 +190,12 @@ export class SearchService {
 
       if (amenityQueries.length > 0) {
         // Add as should clause with boost (OR logic across amenities)
+        // This helps find posts that mention amenities in text but haven't been indexed yet
         must.push({
           bool: {
             should: amenityQueries,
             minimum_should_match: 1,
-            boost: 2.0, // Boost amenities matches
+            boost: 1.5, // Lower boost since we already filter by amenities field
           },
         });
       }
@@ -196,6 +203,16 @@ export class SearchService {
 
     // Negative filters: exclude amenities (must_not)
     if (p.excludeAmenities && p.excludeAmenities.length > 0) {
+      // First, exclude by amenities field (exact match)
+      filter.push({
+        bool: {
+          must_not: {
+            terms: { amenities: p.excludeAmenities },
+          },
+        },
+      });
+      
+      // Also exclude by text matching (for posts without indexed amenities)
       const excludeQueries = p.excludeAmenities.flatMap(amenityKey => {
         const keywords = this.amenities.getAmenityKeywords(amenityKey);
         return keywords.map(keyword => ({

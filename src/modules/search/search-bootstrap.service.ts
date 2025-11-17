@@ -45,7 +45,58 @@ export class SearchBootstrapService implements OnModuleInit {
     this.logger.log(`ES Client initialized with URL: ${nodeUrl}`);
   }
 
+  /**
+   * Kiểm tra ICU plugin có sẵn không
+   * Nếu không có, THROW ERROR - ICU là BẮT BUỘC
+   */
+  private async checkIcuPlugin(): Promise<void> {
+    try {
+      // Test ICU tokenizer bằng cách analyze một đoạn text
+      const testResult = await this.client.indices.analyze({
+        body: {
+          tokenizer: 'icu_tokenizer',
+          text: 'hà nội đà nẵng',
+        },
+      } as any);
+
+      if (testResult && testResult.tokens) {
+        this.logger.log('✅ ICU plugin is available and working!');
+        return;
+      }
+      // Nếu không có tokens, throw error
+      throw new Error('ICU tokenizer test returned no tokens');
+    } catch (error: any) {
+      // ICU không có hoặc không hoạt động - THROW ERROR
+      this.logger.error('');
+      this.logger.error('❌❌❌ ICU PLUGIN IS REQUIRED FOR VIETNAMESE SEARCH! ❌❌❌');
+      this.logger.error('');
+      this.logger.error('📋 HOW TO ENABLE ICU ON ELASTIC CLOUD:');
+      this.logger.error('');
+      this.logger.error('   1. Go to: https://cloud.elastic.co');
+      this.logger.error('   2. Click: Support → Create ticket');
+      this.logger.error('   3. Subject: "Request to enable ICU Analysis Plugin"');
+      this.logger.error('   4. Message: "Please enable ICU Analysis Plugin (analysis-icu) for my deployment.');
+      this.logger.error('      This is required for Vietnamese text search to work properly."');
+      this.logger.error('   5. Wait for Elastic Cloud support to enable it (usually 1-2 business days)');
+      this.logger.error('   6. After they enable it, restart this application');
+      this.logger.error('');
+      this.logger.error('⚠️  Application will NOT start until ICU is enabled!');
+      this.logger.error('⚠️  This is intentional - Vietnamese search requires ICU!');
+      this.logger.error('');
+      
+      // Throw error để app không start
+      throw new Error(
+        'ICU plugin is required but not available. ' +
+        'Please enable ICU Analysis Plugin on Elastic Cloud and restart the application. ' +
+        'See logs above for instructions.'
+      );
+    }
+  }
+
   async onModuleInit() {
+    // Kiểm tra ICU plugin có sẵn không
+    await this.checkIcuPlugin();
+    
     // Đợi ES sẵn sàng với retry
     const maxRetries = 10;
     const retryDelay = 2000; // 2 giây
@@ -114,12 +165,24 @@ export class SearchBootstrapService implements OnModuleInit {
       }
     } catch {}
 
+    // ICU plugin RẤT QUAN TRỌNG cho tiếng Việt:
+    // - Tokenization tốt hơn (tách từ tiếng Việt chính xác)
+    // - Folding (chuyển đổi có dấu/không dấu: "hà nội" = "ha noi")
+    // - Unicode normalization
+    // 
+    // Lưu ý: Elastic Cloud có thể không cho phép cài plugin
+    // Nếu ICU không có, sẽ fallback về standard (kém tối ưu hơn cho tiếng Việt)
+    // 
+    // Thử ICU trước, nếu lỗi sẽ fallback tự động
+    let tokenizer = 'icu_tokenizer';
+    let foldingFilter = 'icu_folding';
+
     const settings = {
       analysis: {
         analyzer: {
-          vi_raw:        { type: 'custom', tokenizer: 'icu_tokenizer', filter: ['lowercase'] },
-          vi_fold:       { type: 'custom', tokenizer: 'icu_tokenizer', filter: synonyms.length ? ['lowercase','icu_folding','vi_synonyms'] : ['lowercase','icu_folding'] },
-          vi_fold_ngram: { type: 'custom', tokenizer: 'icu_tokenizer', filter: synonyms.length ? ['lowercase','icu_folding','vi_synonyms','vi_edge'] : ['lowercase','icu_folding','vi_edge'] },
+          vi_raw:        { type: 'custom', tokenizer, filter: ['lowercase'] },
+          vi_fold:       { type: 'custom', tokenizer, filter: synonyms.length ? ['lowercase', foldingFilter, 'vi_synonyms'] : ['lowercase', foldingFilter] },
+          vi_fold_ngram: { type: 'custom', tokenizer, filter: synonyms.length ? ['lowercase', foldingFilter, 'vi_synonyms', 'vi_edge'] : ['lowercase', foldingFilter, 'vi_edge'] },
         },
         filter: {
           vi_edge: { type: 'edge_ngram', min_gram: 2, max_gram: 15 },
@@ -165,7 +228,6 @@ export class SearchBootstrapService implements OnModuleInit {
             district:      { type: 'keyword', normalizer: 'kwd_fold' },
             ward:          { type: 'keyword', normalizer: 'kwd_fold' },
             provinceCode:  { type: 'keyword' },
-            districtCode:  { type: 'keyword' },
             wardCode:      { type: 'keyword' },
           }
         },
@@ -180,16 +242,55 @@ export class SearchBootstrapService implements OnModuleInit {
         isActive:  { type: 'boolean' },
         roomId:    { type: 'integer' },
         gender:    { type: 'keyword', normalizer: 'kwd_fold' },
+        amenities: { type: 'keyword' }, // Array of amenity keys (e.g., ["ban_cong", "gym"])
+        // Note: images không cần trong mappings vì không search được, chỉ index để trả về trong response
       }
     } as any;
 
-    await this.client.indices.putIndexTemplate({
-      name: templateName,
-      index_patterns: ['posts_v*'],
-      template: { settings, mappings },
-      priority: 500,
-      _meta: { owner: 'nhachung', purpose: 'posts index with ICU' },
-    });
+    try {
+      await this.client.indices.putIndexTemplate({
+        name: templateName,
+        index_patterns: ['posts_v*'],
+        template: { settings, mappings },
+        priority: 500,
+        _meta: { owner: 'nhachung', purpose: 'posts index with ICU for Vietnamese' },
+      });
+      this.logger.log('✅ Template created successfully with ICU tokenizer');
+    } catch (error: any) {
+      // Nếu lỗi do ICU không có, THROW ERROR - ICU là BẮT BUỘC
+      if (error?.message?.includes('icu_tokenizer') || 
+          error?.message?.includes('icu_folding') ||
+          error?.message?.includes('failed to find tokenizer')) {
+        
+        this.logger.error('');
+        this.logger.error('❌❌❌ ICU PLUGIN IS REQUIRED FOR VIETNAMESE SEARCH! ❌❌❌');
+        this.logger.error('');
+        this.logger.error('📋 HOW TO ENABLE ICU ON ELASTIC CLOUD:');
+        this.logger.error('');
+        this.logger.error('   1. Go to: https://cloud.elastic.co');
+        this.logger.error('   2. Click: Support → Create ticket');
+        this.logger.error('   3. Subject: "Request to enable ICU Analysis Plugin"');
+        this.logger.error('   4. Message: "Please enable ICU Analysis Plugin (analysis-icu) for my deployment.');
+        this.logger.error('      This is required for Vietnamese text search to work properly."');
+        this.logger.error('   5. Wait for Elastic Cloud support to enable it (usually 1-2 business days)');
+        this.logger.error('   6. After they enable it, restart this application');
+        this.logger.error('');
+        this.logger.error('⚠️  Application will NOT start until ICU is enabled!');
+        this.logger.error('⚠️  This is intentional - Vietnamese search requires ICU!');
+        this.logger.error('');
+        
+        // Throw error để app không start
+        throw new Error(
+          'ICU plugin is required but not available. ' +
+          'Please enable ICU Analysis Plugin on Elastic Cloud and restart the application. ' +
+          'See logs above for instructions.'
+        );
+      } else {
+        // Nếu lỗi khác, throw lại
+        this.logger.error(`Failed to create template: ${error?.message}`);
+        throw error;
+      }
+    }
   }
 
   private async ensureAliasAndIndex() {
