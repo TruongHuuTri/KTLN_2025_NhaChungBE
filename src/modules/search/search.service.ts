@@ -41,6 +41,46 @@ export class SearchService {
     this.index = this.cfg.get<string>('ELASTIC_INDEX_POSTS') || 'posts';
   }
 
+  // Helper: build response item từ ES hit
+  private buildResponseItem(h: any) {
+    const source = h._source || {};
+    const highlight = h.highlight || {};
+    
+    // Clean highlight: chỉ giữ title, description, address, loại bỏ fragments quá ngắn
+    const cleanHighlight: any = {};
+    const allowedKeys = ['title', 'description', 'address'];
+    Object.keys(highlight).forEach(key => {
+      if (allowedKeys.some(allowed => key.includes(allowed))) {
+        const values = Array.isArray(highlight[key]) ? highlight[key] : [highlight[key]];
+        const filtered = values.filter((val: string) => {
+          const trimmed = val.replace(/<em>.*?<\/em>/g, '').trim();
+          return trimmed.length > 3;
+        });
+        if (filtered.length > 0) {
+          cleanHighlight[key] = filtered;
+        }
+      }
+    });
+
+    return {
+      id: h._id,
+      score: h._score,
+      postId: source.postId,
+      roomId: source.roomId,
+      title: source.title,
+      description: source.description,
+      category: source.category,
+      type: source.type,
+      price: source.price,
+      area: source.area,
+      address: source.address,
+      images: source.images || [],
+      coords: source.coords,
+      createdAt: source.createdAt,
+      ...(Object.keys(cleanHighlight).length > 0 && { highlight: cleanHighlight }),
+    };
+  }
+
   async searchPosts(p: SearchPostsParams) {
     const page = Math.max(1, Number(p.page) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(p.limit) || 12));
@@ -530,53 +570,7 @@ export class SearchService {
       totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
     }
     
-    const allWindowItems = (resp.hits?.hits || []).map((h: any) => {
-      // Clean highlight to avoid frontend rendering issues
-      const cleanHighlight: any = {};
-      if (h.highlight) {
-        // Only include highlight for title, description, address fields
-        // Avoid rendering highlight fragments that might confuse frontend
-        Object.keys(h.highlight).forEach(key => {
-          if (key.includes('title') || key.includes('description') || key.includes('address')) {
-            // Further filter: remove any highlight fragments that might contain standalone words like "Giá"
-            const highlightValues = Array.isArray(h.highlight[key]) ? h.highlight[key] : [h.highlight[key]];
-            const filteredValues = highlightValues.filter((val: string) => {
-              // Remove highlights that are just single words or might be confusing
-              const trimmed = val.replace(/<em>.*?<\/em>/g, '').trim();
-              return trimmed.length > 3; // Only keep meaningful highlights
-            });
-            if (filteredValues.length > 0) {
-              cleanHighlight[key] = filteredValues;
-            }
-          }
-        });
-      }
-      
-      // Build clean item object - explicitly exclude any fields that might confuse frontend
-      const item: any = {
-        id: h._id,
-        score: h._score,
-        postId: h._source?.postId,
-        roomId: h._source?.roomId,
-        title: h._source?.title,
-        description: h._source?.description,
-        category: h._source?.category,
-        type: h._source?.type,
-        price: h._source?.price,
-        area: h._source?.area,
-        address: h._source?.address,
-        images: h._source?.images || [],
-        coords: h._source?.coords,
-        createdAt: h._source?.createdAt,
-      };
-      
-      // Only include highlight if it's meaningful
-      if (Object.keys(cleanHighlight).length > 0) {
-        item.highlight = cleanHighlight;
-      }
-      
-      return item;
-    });
+    const allWindowItems = (resp.hits?.hits || []).map((h: any) => this.buildResponseItem(h));
 
     // Slice current page items and prepare prefetch slices (each of pageSize items)
     const items = allWindowItems.slice(0, pageSize);

@@ -25,6 +25,15 @@ export class SearchIndexerService {
     this.geocoder = NodeGeocoder(geocoderOptions);
   }
 
+  // Helper: lấy giá trị số từ nhiều nguồn (ưu tiên theo thứ tự)
+  private getNumericValue(...values: any[]): number | null {
+    for (const v of values) {
+      const num = Number(v);
+      if (!isNaN(num) && num > 0) return num;
+    }
+    return null;
+  }
+
   async buildDoc(post: any, room?: any) {
     const coords = room?.address?.location?.coordinates;
     let lon = Array.isArray(coords) ? Number(coords[0]) : undefined;
@@ -72,29 +81,20 @@ export class SearchIndexerService {
       return 'rent';
     };
 
-    // Build full address from components if specificAddress/street is empty
-    let fullAddress = room?.address?.specificAddress || room?.address?.street || '';
-    if (!fullAddress && room?.address) {
-      // Build from components: street, ward, district, city
+    // Build full address: ưu tiên room, fallback post.roomInfo
+    const buildAddress = (addr: any) => {
+      if (!addr) return '';
+      const specific = addr.specificAddress || addr.street || '';
+      if (specific) return specific;
       const parts = [
-        room.address?.street || '',
-        room.address?.wardName || room.address?.ward || '',
-        room.address?.districtName || '',
-        room.address?.provinceName || room.address?.city || '',
+        addr.street || '',
+        addr.wardName || addr.ward || '',
+        addr.districtName || '',
+        addr.provinceName || addr.city || '',
       ].filter(Boolean);
-      fullAddress = parts.join(', ');
-    }
-    // Fallback to post.roomInfo.address if room not available
-    if (!fullAddress && post?.roomInfo?.address) {
-      const addr = post.roomInfo.address;
-      const parts = [
-        addr?.specificAddress || addr?.street || '',
-        addr?.wardName || addr?.ward || '',
-        addr?.districtName || '',
-        addr?.provinceName || addr?.city || '',
-      ].filter(Boolean);
-      fullAddress = parts.join(', ');
-    }
+      return parts.join(', ');
+    };
+    const fullAddress = buildAddress(room?.address) || buildAddress(post?.roomInfo?.address) || '';
 
     // Get images: prefer post.images, fallback to room.images
     let images: string[] = [];
@@ -116,13 +116,13 @@ export class SearchIndexerService {
       status: post?.status ?? 'active',
       source: post?.source ?? '',
       images: images,
-      price: Number(post?.roomInfo?.basicInfo?.price ?? post?.roomInfo?.price ?? room?.price ?? post?.price ?? 0) || null,
-      area: Number(post?.roomInfo?.basicInfo?.area ?? post?.roomInfo?.area ?? room?.area ?? post?.area ?? 0) || null,
+      price: this.getNumericValue(post?.roomInfo?.basicInfo?.price, post?.roomInfo?.price, room?.price, post?.price),
+      area: this.getNumericValue(post?.roomInfo?.basicInfo?.area, post?.roomInfo?.area, room?.area, post?.area),
       address: {
         full: fullAddress,
-        city: room?.address?.provinceName ?? post?.roomInfo?.address?.provinceName ?? '',
-        district: room?.address?.districtName ?? post?.roomInfo?.address?.districtName ?? '',
-        ward: room?.address?.wardName ?? post?.roomInfo?.address?.wardName ?? '',
+        city: room?.address?.provinceName || post?.roomInfo?.address?.provinceName || '',
+        district: room?.address?.districtName || post?.roomInfo?.address?.districtName || '',
+        ward: room?.address?.wardName || post?.roomInfo?.address?.wardName || '',
       },
       coords: lon != null && lat != null ? { lon, lat } : null,
       createdAt: post?.createdAt ?? new Date(),
@@ -130,20 +130,13 @@ export class SearchIndexerService {
       roomId: post?.roomId ?? null,
     };
 
-    // Enrich codes from wardName if available
+    // Enrich codes: ưu tiên room, fallback post.roomInfo, cuối cùng resolve từ ward name
     try {
-      // First try to get from room address
-      if (room?.address?.wardCode && room?.address?.provinceCode) {
-        doc.address.provinceCode = room.address.provinceCode;
-        doc.address.wardCode = room.address.wardCode;
-      }
-      // Then try from post.roomInfo.address
-      else if (post?.roomInfo?.address?.wardCode && post?.roomInfo?.address?.provinceCode) {
-        doc.address.provinceCode = post.roomInfo.address.provinceCode;
-        doc.address.wardCode = post.roomInfo.address.wardCode;
-      }
-      // Fallback: resolve from ward name
-      else if (doc.address?.ward) {
+      const addr = room?.address || post?.roomInfo?.address;
+      if (addr?.wardCode && addr?.provinceCode) {
+        doc.address.provinceCode = addr.provinceCode;
+        doc.address.wardCode = addr.wardCode;
+      } else if (doc.address?.ward) {
         const r = this.geo.resolveWardByName(doc.address.ward);
         if (r) {
           doc.address.provinceCode = r.provinceCode;
