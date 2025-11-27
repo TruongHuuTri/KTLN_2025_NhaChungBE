@@ -242,7 +242,53 @@ export class SearchBootstrapService implements OnModuleInit {
         isActive:  { type: 'boolean' },
         roomId:    { type: 'integer' },
         gender:    { type: 'keyword', normalizer: 'kwd_fold' },
-        amenities: { type: 'keyword' }, // Array of amenity keys (e.g., ["ban_cong", "gym"])
+        amenities: { type: 'keyword' }, // Array of amenity keys (e.g., ["ban_cong", "gym"]),
+
+        // --- START: Các trường mở rộng cho search & filter ---
+        // Thông tin phòng
+        deposit:     { type: 'integer' },
+        bedrooms:    { type: 'integer' },
+        bathrooms:   { type: 'integer' },
+        furniture:   { type: 'keyword', normalizer: 'kwd_fold' },
+
+        // Thông tin toà nhà / loại BĐS
+        buildingName: {
+          type: 'text',
+          fields: {
+            raw:  { type: 'text', analyzer: 'vi_raw',  search_analyzer: 'vi_raw' },
+            fold: { type: 'text', analyzer: 'vi_fold', search_analyzer: 'vi_fold' },
+            ng:   { type: 'text', analyzer: 'vi_fold_ngram', search_analyzer: 'vi_fold' },
+            kwd:  { type: 'keyword', normalizer: 'kwd_fold' }
+          }
+        },
+        blockOrTower:   { type: 'keyword', normalizer: 'kwd_fold' },
+        floorNumber:    { type: 'integer' },
+        propertyType:   { type: 'keyword', normalizer: 'kwd_fold' },
+        legalStatus:    { type: 'keyword', normalizer: 'kwd_fold' },
+        direction:      { type: 'keyword', normalizer: 'kwd_fold' },
+        
+        // Thông tin nhà nguyên căn
+        totalFloors:    { type: 'integer' },
+        landArea:       { type: 'float' },
+        usableArea:     { type: 'float' },
+
+        // Descriptions tách biệt
+        postDescription: {
+          type: 'text',
+          fields: {
+            raw:  { type: 'text', analyzer: 'vi_raw',  search_analyzer: 'vi_raw' },
+            fold: { type: 'text', analyzer: 'vi_fold', search_analyzer: 'vi_fold' },
+          }
+        },
+        roomDescription: {
+          type: 'text',
+          fields: {
+            raw:  { type: 'text', analyzer: 'vi_raw',  search_analyzer: 'vi_raw' },
+            fold: { type: 'text', analyzer: 'vi_fold', search_analyzer: 'vi_fold' },
+          }
+        }
+        // --- END: Các trường mở rộng ---
+
         // Note: images không cần trong mappings vì không search được, chỉ index để trả về trong response
       }
     } as any;

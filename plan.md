@@ -1,71 +1,83 @@
-Ý tưởng train/learn từ dữ liệu thực tế
-1. Extract keywords từ title/description
-Mục tiêu: tự động phát hiện keywords phổ biến
-Phương pháp:
-Phân tích tất cả title/description hiện có
-Đếm tần suất từ khóa (TF-IDF hoặc simple frequency)
-Tìm keywords liên quan đến amenities, location, features
-Ví dụ: "ban công", "gần siêu thị", "có thang máy" xuất hiện nhiều → bổ sung vào synonyms
-2. Learn amenities patterns
-Mục tiêu: tự động phát hiện amenities mới từ description
-Phương pháp:
-Scan description để tìm patterns:
-"có X" → X là amenity
-"gần Y" → Y là location/amenity
-"X riêng" → X là private amenity
-Ví dụ: "có ban công riêng", "gần gym", "có hồ bơi" → extract "ban công", "gym", "hồ bơi"
-Tự động bổ sung vào amenities.json nếu chưa có
-3. Learn location patterns
-Mục tiêu: phát hiện cách viết địa chỉ khác nhau
-Phương pháp:
-Extract location mentions từ title/description
-Map với address chính thức trong DB
-Tìm patterns: "Q1", "quận 1", "quận một" → normalize về "quận 1"
-Tự động bổ sung synonyms cho locations
-4. Learn user language patterns
-Mục tiêu: hiểu cách người dùng viết để cải thiện NLP parsing
-Phương pháp:
-Phân tích query patterns từ title/description
-Ví dụ: "phòng trọ 3 triệu" vs "3 triệu phòng trọ" → học order patterns
-"dưới 5 triệu" vs "5 triệu trở xuống" → học cách diễn đạt giá
-Update NLP prompt với examples từ real data
-5. Learn common phrases
-Mục tiêu: phát hiện cụm từ phổ biến
-Phương pháp:
-N-gram analysis (2-3 words)
-Ví dụ: "gần trường đại học", "gần bệnh viện", "gần chợ"
-Tạo phrase dictionary để boost matching
-Có thể dùng cho ES phrase matching
-6. Auto-suggest improvements
-Mục tiêu: tự động suggest cải thiện
-Phương pháp:
-So sánh title/description với search queries
-Tìm mismatches: query có keywords nhưng không match description
-Suggest thêm synonyms hoặc keywords vào description
-7. Quality scoring
-Mục tiêu: đánh giá chất lượng title/description
-Phương pháp:
-Title có keywords rõ ràng → score cao
-Description đầy đủ amenities → score cao
-Có location cụ thể → score cao
-Suggest improvements cho posts có score thấp
-Cách triển khai (ý tưởng)
-Phase 1: Batch analysis
-// Analyze tất cả posts/rooms hiện có1. Extract keywords từ title/description2. Find common amenities patterns3. Find location variations4. Generate suggestions cho synonyms/amenities
-Phase 2: Continuous learning
-// Mỗi khi có post/room mới1. Analyze title/description2. Extract keywords/amenities3. Update suggestions4. Auto-suggest synonyms nếu thiếu
-Phase 3: Query-description matching
-// So sánh queries với descriptions1. Track queries không match2. Find keywords trong queries nhưng không có trong descriptions3. Suggest thêm keywords vào descriptions
-Phase 4: Auto-improvement
-// Tự động cải thiện1. Update synonyms.txt từ findings2. Update amenities.json từ patterns3. Update NLP prompt với examples mới4. Suggest improvements cho posts
-Lợi ích
-Tự động học từ dữ liệu thực tế
-Phát hiện patterns mới tự động
-Cải thiện search quality theo thời gian
-Giảm công sức manual config
-Adapt với cách viết mới của người dùng
-Tools/techniques có thể dùng
-Text mining: TF-IDF, keyword extraction
-NLP: NER cho location, pattern matching
-Machine learning: Clustering cho similar phrases (tùy chọn)
-Statistics: Frequency analysis, correlation analysis
+Mục tiêu tổng
+Đích đến:
+Tìm “chung cư Gò Vấp” cho ra đúng thứ tự Tier như bạn mô tả (King/Queen/Bishop/Pawn).
+Kết quả luôn đủ “dày” (≥ 3–4 trang) bằng soft ranking (nới điều kiện dần), không bó chết bằng hard filter.
+Card FE đủ data (phòng ngủ/tắm, nội thất, pháp lý, building…) lấy trực tiếp từ ES.
+Bước 1: Hoàn thiện Document trong ES
+1.1. Mở rộng buildDoc (SearchIndexerService)
+Thêm vào doc ES các field sau (flatten, dễ query/boost):
+Thông tin phòng: roomBedrooms, roomBathrooms, roomFurniture, roomDeposit, roomUtilities (các flag chính hoặc summary), roomDescriptionRaw.
+Thông tin tòa nhà/chung cư: buildingName, buildingBlock, buildingFloor, buildingLegalStatus, buildingPropertyType.
+Nhà nguyên căn: houseBedrooms, houseBathrooms, houseLegalStatus, housePropertyType, houseFloors, houseAreaLand, houseAreaUsable.
+Loại hóa category chi tiết: ngoài category hiện tại (phong-tro, chung-cu, nha-nguyen-can), thêm categoryDetail nếu cần (ví dụ can-ho-dv, studio…).
+1.2. Cập nhật template ES (SearchBootstrapService.ensureTemplate)
+Tạo mapping cho các field mới:
+keyword + normalizer: kwd_fold cho buildingName, buildingBlock, buildingLegalStatus, buildingPropertyType, roomFurniture.
+integer/float cho roomBedrooms, roomBathrooms, các diện tích, số tầng…
+Nếu muốn search theo tên tòa nhà: cho buildingName thêm subfield text với analyzer vi_fold + vi_fold_ngram tương tự title.
+Không cần đổi analyzer cho title/description/address (BM25 vẫn giữ nguyên).
+1.3. Reindex
+Chạy POST /api/search/reindex/posts sau khi deploy để backfill toàn bộ document với field mới.
+Bước 2: Thiết kế lại chiến lược Ranking (Tier + Soft)
+2.1. Thiết kế “Tầng điểm” trong function_score
+Trong SearchService.searchPosts:
+Giữ multi_match + BM25 như hiện tại (đây là “lõi relevance”).
+Dùng function_score.functions để tạo Tier rõ ràng:
+Tier 1 – King: Chung cư + đúng phường (ward)
+filter: type='rent' + category='chung-cu' + address.wardCode in exactWardCodes
+weight: rất cao, ví dụ weight: 50–80.
+Khi cộng với BM25, thường > 1000 (tùy base score, nhưng mục tiêu là “vượt trội”).
+Tier 2 – Queen: Chung cư + gần đó (bán kính, hoặc ward mở rộng)
+filter: category='chung-cu' + geo_distance gần (hoặc address.wardCode in expandedWardCodes).
+weight: trung bình cao, ví dụ 20–40.
+Tier 3 – Bishop: Phòng trọ nhưng đúng phường
+filter: category='phong-tro' + address.wardCode in exactWardCodes.
+weight: thấp hơn Tier 2, ví dụ 10–20.
+Tier 4 – Pawn: Còn lại
+Không cần explicit filter; đây là phần không match filter trên, sẽ nằm lại với trọng số chỉ từ BM25 + decay “newness/geo” hiện có.
+Có thể chuyển boost_mode từ 'sum' sang 'multiply' hoặc 'max' tùy muốn, nhưng với mô hình “tier + BM25”, sum vẫn ổn: BM25 quyết định trong cùng tầng, weight quyết định giữa các tầng.
+2.2. Soft ranking thay cho hard filter
+Mục tiêu: luôn cố gắng có ≥ 3–4 trang (≥ 36–48 kết quả), nhưng vẫn ưu tiên mạnh theo thứ tự:
+Đúng ward + đúng category (Tier 1/3).
+Đúng ward + category khác / ward lân cận (Tier 2).
+Rộng dần ra district/city nếu chưa đủ.
+Cụ thể:
+Thêm tham số mới (từ NlpSearchService sang SearchService):
+strict?: boolean (mặc định false cho NLP search).
+minResults?: number hoặc đơn giản minPages?: number (ví dụ 3, với limit=12 → 36 bản ghi).
+Áp dụng trong searchPosts:
+Phase 1 (Strict): giữ filter hẹp như hiện tại (exact ward, price range, category nếu được chỉ định).
+Nếu totalHits < minResults và strict=false:
+Relax 1: thay filter wardCode = exactWardCodes bằng wardCode in expandedWardCodes (phường cùng quận). (Đã có cơ chế này, chỉ cần buộc dùng khi totalHits thấp hơn minResults, không chỉ expansionThreshold cứng).
+Nếu vẫn thiếu:
+Relax 2:
+Bỏ filter category (chuyển sang boost function_score như đã làm với categoryForBoost).
+Có thể nới price (±10–20%) nếu query không chứa điều kiện giá chặt.
+Nếu vẫn thiếu:
+Relax 3: bỏ bớt constraint còn lại (ví dụ chỉ giữ status/isActive + basic geo), accept mọi loại phòng trong vùng lớn hơn.
+Mỗi lần relax, giữ nguyên multi_match để BM25 luôn quyết định trong tập mới (soft ranking).
+Bước 3: Bổ sung filter & query theo trường mới
+Trong SearchService.searchPosts:
+3.1. Filter mới (khi client truyền):
+minBedrooms, maxBedrooms → range trên roomBedrooms / houseBedrooms.
+minBathrooms, maxBathrooms.
+legalStatus (keyword).
+furnished / furniture → term hoặc terms trên roomFurniture.
+buildingName → nếu filter cứng, dùng term trên buildingName.kwd; nếu “search theo tòa nhà”, dùng multi_match với field buildingName.text^X.
+3.2. Boost tiện ích & nội thất
+Với amenities đã index: giữ terms filter + function_score boost như hiện tại.
+Với “nội thất đầy đủ”: định nghĩa bộ keyword → map vào amenities hoặc roomFurnitureNormalized, vừa filter vừa boost.
+Bước 4: Cập nhật FE + Contract API
+4.1. Response
+Đảm bảo SearchService.buildResponseItem trả luôn các field FE cần:
+bedrooms, bathrooms, buildingName, furniture, legalStatus, roomDescriptionRaw nếu muốn hiển thị snippet.
+Có thể expose _score trong dev mode để debug ranking.
+4.2. FE
+Đọc các field mới từ response, bỏ default “0 phòng ngủ/0 phòng tắm”.
+Tùy chỉnh UI cho filter nâng cao (phòng ngủ/tắm, nội thất, pháp lý, loại nhà…).
+Bước 5: Lộ trình triển khai
+Branch mới: implement mở rộng buildDoc + mapping template + field mới trong SearchService.buildResponseItem (chưa đổi ranking).
+Reindex trên môi trường dev/staging, test card hiển thị đủ data.
+Thêm function_score Tier + soft ranking (Tier 1–4, strict/relax). Log _score, tierTag (field phụ trong response nếu muốn debug).
+Test A/B với một số query mẫu: “chung cư gò vấp”, “phòng trọ bình thạnh”… So sánh thứ tự vs kỳ vọng.
+Khi ổn, deploy lên prod, chạy lại reindex/posts, monitor log NlpSearchController (total, itemsCount, sample).

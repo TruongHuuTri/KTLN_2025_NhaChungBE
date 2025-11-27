@@ -149,11 +149,68 @@ export class SearchIndexerService {
       doc.gender = (post?.gender ?? 'any').toString().toLowerCase();
     }
 
-    // Extract amenities from post title và room description
+    // --- START: Mở rộng document với các trường từ room ---
+
+    // 1. Thông tin cơ bản của phòng (ưu tiên từ room, fallback post.roomInfo)
+    const roomInfo = room || post?.roomInfo;
+    doc.deposit = this.getNumericValue(roomInfo?.deposit);
+    doc.furniture = roomInfo?.furniture || '';
+
+    // 2. Thông tin chi tiết theo category (Chung cư / Nhà nguyên căn)
+    let bedrooms = 0;
+    let bathrooms = 0;
+    let legalStatus = '';
+    let propertyType = '';
+    let buildingName = '';
+    let blockOrTower = '';
+    let floorNumber = 0;
+    let direction = '';
+    let totalFloors = 0;
+    let landArea = 0;
+    let usableArea = 0;
+
+    if (room?.category === 'chung-cu' && room.chungCuInfo) {
+      const info = room.chungCuInfo;
+      bedrooms = info.bedrooms || 0;
+      bathrooms = info.bathrooms || 0;
+      legalStatus = info.legalStatus || '';
+      propertyType = info.propertyType || '';
+      buildingName = info.buildingName || '';
+      blockOrTower = info.blockOrTower || '';
+      floorNumber = info.floorNumber || 0;
+      direction = info.direction || '';
+    } else if (room?.category === 'nha-nguyen-can' && room.nhaNguyenCanInfo) {
+      const info = room.nhaNguyenCanInfo;
+      bedrooms = info.bedrooms || 0;
+      bathrooms = info.bathrooms || 0;
+      legalStatus = info.legalStatus || '';
+      propertyType = info.propertyType || '';
+      direction = info.direction || '';
+      totalFloors = info.totalFloors || 0;
+      landArea = info.landArea || 0;
+      usableArea = info.usableArea || room.area || 0; // fallback to main area
+    }
+
+    doc.bedrooms = bedrooms;
+    doc.bathrooms = bathrooms;
+    doc.legalStatus = legalStatus;
+    doc.propertyType = propertyType;
+    doc.buildingName = buildingName;
+    doc.blockOrTower = blockOrTower;
+    doc.floorNumber = floorNumber;
+    doc.direction = direction;
+    doc.totalFloors = totalFloors;
+    doc.landArea = landArea;
+    doc.usableArea = usableArea > 0 ? usableArea : doc.area;
+
+    // 3. Tách riêng description của post và room để có thể boost khác nhau
+    doc.postDescription = post?.description || '';
+    doc.roomDescription = room?.description || '';
+
+    // 4. Extract amenities from post title và room description
     const titleText = doc.title || '';
-    const descText = doc.description || ''; // description là của room
-    // Combine post title và room description for amenity extraction
-    const combinedText = `${titleText} ${descText}`.trim();
+    // description là của room, đã được gán ở trên
+    const combinedText = `${titleText} ${doc.roomDescription}`.trim();
     if (combinedText) {
       const extractedAmenities = this.amenities.extractAmenities(combinedText);
       if (extractedAmenities.length > 0) {
