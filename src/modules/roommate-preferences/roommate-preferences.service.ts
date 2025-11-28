@@ -109,6 +109,8 @@ export class RoommatePreferencesService {
       posterTraits: preference.posterTraits || [],
       posterAge: posterAge,
       posterGender: posterGender,
+      posterSmoking: preference.posterSmoking || null,
+      posterPets: preference.posterPets || null,
     };
   }
 
@@ -162,6 +164,13 @@ export class RoommatePreferencesService {
       // Lưu tuổi và gender của Poster
       preference.posterAge = posterAge;
       preference.posterGender = posterGender;
+      // Lưu smoking và pets của Poster
+      if ((preferenceData as any).posterSmoking !== undefined) {
+        preference.posterSmoking = (preferenceData as any).posterSmoking;
+      }
+      if ((preferenceData as any).posterPets !== undefined) {
+        preference.posterPets = (preferenceData as any).posterPets;
+      }
       preference.updatedAt = new Date();
     } else {
       // Tạo preference mới
@@ -175,34 +184,46 @@ export class RoommatePreferencesService {
         posterTraits: (preferenceData as any).posterTraits || [],
         posterAge: posterAge,
         posterGender: posterGender,
+        posterSmoking: (preferenceData as any).posterSmoking || undefined,
+        posterPets: (preferenceData as any).posterPets || undefined,
       });
     }
 
-    // Nếu enabled = true, tự động tạo bài đăng
-    if (preference.enabled && preferenceData.requirements) {
-      const post = await this.autoCreatePost(userId, roomId, preferenceData.requirements);
-      preference.postId = post.postId;
-      await preference.save();
-      return { preference, post };
-    } else if (preference.enabled && preference.postId) {
-      // Nếu đã có bài đăng, chỉ cập nhật requirements nếu có
-      const postId = Number(preference.postId);
-      if (!isNaN(postId) && postId > 0) {
-        if (preferenceData.requirements) {
-          await this.updatePostRequirements(postId, preferenceData.requirements);
+    // Xử lý bài đăng: Kiểm tra đã có postId trước (quan trọng: kiểm tra TRƯỚC khi save preference)
+    if (preference.enabled) {
+      if (preference.postId) {
+        // Đã có bài đăng → Cập nhật requirements và personalInfo
+        const postId = Number(preference.postId);
+        if (!isNaN(postId) && postId > 0) {
+          if (preferenceData.requirements) {
+            await this.updatePostRequirements(postId, preferenceData.requirements);
+          }
+          // Cập nhật thêm posterSmoking, posterPets vào bài đăng
+          await this.updatePostPersonalInfo(postId, preference);
+          await preference.save();
+          const post = await this.postModel.findOne({ postId }).exec();
+          return { preference, post };
         }
+      } else if (preferenceData.requirements) {
+        // Chưa có bài đăng → Tạo mới
+        // Truyền thêm posterTraits, posterSmoking, posterPets vào requirements để lưu vào post
+        const requirementsWithPosterInfo = {
+          ...preferenceData.requirements,
+          posterTraits: (preferenceData as any).posterTraits,
+          posterSmoking: (preferenceData as any).posterSmoking,
+          posterPets: (preferenceData as any).posterPets,
+        };
+        const post = await this.autoCreatePost(userId, roomId, requirementsWithPosterInfo);
+        preference.postId = post.postId;
         await preference.save();
-        const post = await this.postModel.findOne({ postId }).exec();
         return { preference, post };
       }
-    } else if (!preference.enabled && preference.postId) {
+    } else if (preference.postId) {
       // Nếu disabled, ẩn bài đăng
       const postId = Number(preference.postId);
       if (!isNaN(postId) && postId > 0) {
         await this.hidePost(postId);
       }
-      await preference.save();
-      return { preference };
     }
 
     await preference.save();
@@ -234,6 +255,14 @@ export class RoommatePreferencesService {
     // Lấy thông tin từ profile hoặc user
     const personalInfo = await this.getPersonalInfoFromProfile(userId, userProfile);
 
+    // Cập nhật personalInfo với posterSmoking và posterPets nếu có trong requirements
+    if (requirements.posterSmoking) {
+      personalInfo.smoking = requirements.posterSmoking;
+    }
+    if (requirements.posterPets) {
+      personalInfo.pets = requirements.posterPets;
+    }
+
     // Tạo title tự động
     const building = await this.getBuildingInfo(room.buildingId);
     const title = `Tìm người ở ghép phòng ${room.roomNumber}${building ? ` - ${building.name}` : ''}`;
@@ -254,6 +283,8 @@ export class RoommatePreferencesService {
         gender: requirements.gender,
         traits: requirements.traits || [],
         maxPrice: requirements.maxPrice,
+        smokingPreference: requirements.smokingPreference || 'any',
+        petsPreference: requirements.petsPreference || 'any',
       },
       isManaged: true,
       source: 'roommate_preference',
@@ -284,6 +315,9 @@ export class RoommatePreferencesService {
     // Lấy occupation từ profile nếu có
     const occupation = userProfile?.occupation || '';
 
+    // Lấy pets từ profile (có thể là boolean)
+    const pets = userProfile?.pets ? 'has_pets' : 'no_pets';
+
     // Tạo mặc định cho các trường còn lại
     return {
       fullName,
@@ -292,6 +326,8 @@ export class RoommatePreferencesService {
       occupation,
       lifestyle: 'normal',
       cleanliness: 'normal',
+      pets: pets,
+      // smoking không có trong userProfile, sẽ lấy từ preferences hoặc để undefined
     };
   }
 
@@ -310,16 +346,57 @@ export class RoommatePreferencesService {
    * Cập nhật requirements của bài đăng
    */
   private async updatePostRequirements(postId: number, requirements: any): Promise<void> {
+    const updateData: any = {
+      'requirements.ageRange': requirements.ageRange,
+      'requirements.gender': requirements.gender,
+      'requirements.traits': requirements.traits || [],
+      'requirements.maxPrice': requirements.maxPrice,
+      updatedAt: new Date(),
+    };
+
+    // Cập nhật smoking và pets preference nếu có
+    if (requirements.smokingPreference !== undefined) {
+      updateData['requirements.smokingPreference'] = requirements.smokingPreference;
+    }
+    if (requirements.petsPreference !== undefined) {
+      updateData['requirements.petsPreference'] = requirements.petsPreference;
+    }
+
     await this.postModel.findOneAndUpdate(
       { postId },
-      {
-        'requirements.ageRange': requirements.ageRange,
-        'requirements.gender': requirements.gender,
-        'requirements.traits': requirements.traits || [],
-        'requirements.maxPrice': requirements.maxPrice,
-        updatedAt: new Date(),
-      },
+      updateData,
     ).exec();
+  }
+
+  /**
+   * Cập nhật personal info của bài đăng (posterTraits, posterSmoking, posterPets)
+   */
+  private async updatePostPersonalInfo(postId: number, preference: RoommatePreference): Promise<void> {
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    // Cập nhật personalInfo nếu có thay đổi
+    if (preference.posterTraits !== undefined) {
+      // PersonalInfo trong Post không có posterTraits, nên không cần cập nhật
+      // Nhưng có thể cập nhật personalInfo.smoking và personalInfo.pets nếu cần
+    }
+
+    // Cập nhật personalInfo.smoking và personalInfo.pets nếu có
+    if (preference.posterSmoking !== undefined) {
+      updateData['personalInfo.smoking'] = preference.posterSmoking;
+    }
+    if (preference.posterPets !== undefined) {
+      updateData['personalInfo.pets'] = preference.posterPets;
+    }
+
+    // Chỉ update nếu có dữ liệu
+    if (Object.keys(updateData).length > 1) {
+      await this.postModel.findOneAndUpdate(
+        { postId },
+        updateData,
+      ).exec();
+    }
   }
 
   /**
@@ -388,6 +465,8 @@ export class RoommatePreferencesService {
       seekerTraits: seekerPreference.seekerTraits || [],
       seekerAge: seekerAge,
       seekerGender: seekerGender,
+      seekerSmoking: seekerPreference.seekerSmoking || null,
+      seekerPets: seekerPreference.seekerPets || null,
       updatedAt: seekerPreference.updatedAt,
     };
   }
@@ -422,6 +501,8 @@ export class RoommatePreferencesService {
       gender: seekerPreference.requirements.gender as 'male' | 'female' | 'any',
       traits: seekerPreference.seekerTraits || seekerPreference.requirements.traits || [],
       maxPrice: seekerPreference.requirements.maxPrice,
+      smokingPreference: seekerPreference.requirements.smokingPreference || 'any',
+      petsPreference: seekerPreference.requirements.petsPreference || 'any',
       personalInfo: {
         fullName: personalInfo.fullName,
         // Hiển thị tuổi và gender từ preferences (đã lưu từ verification) nhưng không cho sửa
@@ -429,6 +510,8 @@ export class RoommatePreferencesService {
         occupation: personalInfo.occupation,
         lifestyle: personalInfo.lifestyle,
         cleanliness: personalInfo.cleanliness,
+        smoking: seekerPreference.seekerSmoking || personalInfo.smoking,
+        pets: seekerPreference.seekerPets || personalInfo.pets,
       },
     };
 
@@ -448,6 +531,8 @@ export class RoommatePreferencesService {
         gender: findRoommateDto.gender,
         traits: findRoommateDto.traits || [],
         maxPrice: findRoommateDto.maxPrice,
+        smokingPreference: findRoommateDto.smokingPreference || 'any',
+        petsPreference: findRoommateDto.petsPreference || 'any',
       };
 
       const seekerTraits = findRoommateDto.traits || [];
@@ -462,6 +547,11 @@ export class RoommatePreferencesService {
       const seekerAge = AgeUtils.calculateAge(verification.dateOfBirth);
       const seekerGender = verification.gender;
 
+      // Lấy smoking và pets từ personalInfo hoặc userProfile
+      const userProfile = await this.userProfileModel.findOne({ userId: seekerId }).exec();
+      const seekerSmoking = findRoommateDto.personalInfo?.smoking || undefined;
+      const seekerPets = findRoommateDto.personalInfo?.pets || (userProfile?.pets !== undefined ? (userProfile.pets ? 'has_pets' : 'no_pets') : undefined);
+
       if (seekerPreference) {
         // Cập nhật preferences
         seekerPreference.requirements = requirements as any;
@@ -469,6 +559,13 @@ export class RoommatePreferencesService {
         // Lưu tuổi và gender của Seeker
         seekerPreference.seekerAge = seekerAge;
         seekerPreference.seekerGender = seekerGender;
+        // Lưu smoking và pets của Seeker
+        if (seekerSmoking) {
+          seekerPreference.seekerSmoking = seekerSmoking;
+        }
+        if (seekerPets) {
+          seekerPreference.seekerPets = seekerPets;
+        }
         seekerPreference.updatedAt = new Date();
         await seekerPreference.save();
       } else {
@@ -481,6 +578,8 @@ export class RoommatePreferencesService {
           seekerTraits,
           seekerAge: seekerAge,
           seekerGender: seekerGender,
+          seekerSmoking: seekerSmoking || undefined,
+          seekerPets: seekerPets || undefined,
         });
         await seekerPreference.save();
       }
@@ -551,6 +650,8 @@ export class RoommatePreferencesService {
         // Sử dụng tuổi và gender từ preference nếu có, nếu không thì tính từ personalInfo
         const posterAge = preference.posterAge ?? this.getAgeFromPersonalInfo(personalInfo);
         const posterGender = preference.posterGender ?? personalInfo.gender;
+        const posterSmoking = preference.posterSmoking ?? personalInfo.smoking;
+        const posterPets = preference.posterPets ?? personalInfo.pets;
         
         // Cập nhật personalInfo với tuổi và gender từ preference
         const personalInfoWithAge = {
@@ -569,6 +670,8 @@ export class RoommatePreferencesService {
           posterTraits: preference.posterTraits || [], // Lấy traits của Poster từ preference
           posterAge: posterAge, // Lấy tuổi từ preference
           posterGender: posterGender, // Lấy gender từ preference
+          posterSmoking: posterSmoking, // Lấy smoking từ preference
+          posterPets: posterPets, // Lấy pets từ preference
         };
 
         // Kiểm tra matching
@@ -663,6 +766,12 @@ export class RoommatePreferencesService {
     // Poster traits: lấy từ preference.posterTraits (đã lưu trong roommatePreferences)
     const postPersonalTraits = this.normalizeTraits((post as any).posterTraits || []);
 
+    // Lấy thông tin smoking và pets
+    const posterSmoking = (post as any).posterSmoking ?? post.personalInfo?.smoking ?? undefined;
+    const posterPets = (post as any).posterPets ?? (post.personalInfo?.pets ? (typeof post.personalInfo.pets === 'string' ? post.personalInfo.pets : (post.personalInfo.pets ? 'has_pets' : 'no_pets')) : undefined);
+    const seekerSmoking = seekerProfile.smoking ?? undefined;
+    const seekerPets = seekerProfile.pets ? (typeof seekerProfile.pets === 'string' ? seekerProfile.pets : 'has_pets') : 'no_pets';
+
     // 1. Kiểm tra người thuê B đáp ứng yêu cầu của bài đăng A
     let condition1Score = 0;
 
@@ -700,6 +809,30 @@ export class RoommatePreferencesService {
     if (seekerRequirements.maxPrice >= postRequirements.maxPrice) {
       condition1Score += 20;
     } else {
+      return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
+    }
+
+    // Smoking: Seeker smoking phù hợp với Post requirement
+    const postSmokingReq = postRequirements.smokingPreference || 'any';
+    if (postSmokingReq === 'any') {
+      // Không tính điểm nhưng không fail
+    } else if (!seekerSmoking) {
+      // Seeker chưa cung cấp thông tin smoking → Bỏ qua (backward compatibility)
+    } else if (postSmokingReq === 'non_smoker' && seekerSmoking !== 'non_smoker') {
+      return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
+    } else if (postSmokingReq === 'smoker' && seekerSmoking !== 'smoker') {
+      return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
+    }
+
+    // Pets: Seeker pets phù hợp với Post requirement
+    const postPetsReq = postRequirements.petsPreference || 'any';
+    if (postPetsReq === 'any') {
+      // Không tính điểm nhưng không fail
+    } else if (!seekerPets) {
+      // Seeker chưa cung cấp thông tin pets → Bỏ qua (backward compatibility)
+    } else if (postPetsReq === 'no_pets' && seekerPets !== 'no_pets') {
+      return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
+    } else if (postPetsReq === 'has_pets' && seekerPets !== 'has_pets') {
       return { isMatch: false, matchScore: 0, condition1: false, condition2: false };
     }
 
@@ -749,6 +882,30 @@ export class RoommatePreferencesService {
       return { isMatch: false, matchScore: 0, condition1, condition2: false };
     }
 
+    // Smoking: Poster smoking phù hợp với Seeker requirement
+    const seekerSmokingReq = seekerRequirements.smokingPreference || 'any';
+    if (seekerSmokingReq === 'any') {
+      // Không tính điểm nhưng không fail
+    } else if (!posterSmoking) {
+      // Poster chưa cung cấp thông tin smoking → Bỏ qua (backward compatibility)
+    } else if (seekerSmokingReq === 'non_smoker' && posterSmoking !== 'non_smoker') {
+      return { isMatch: false, matchScore: 0, condition1, condition2: false };
+    } else if (seekerSmokingReq === 'smoker' && posterSmoking !== 'smoker') {
+      return { isMatch: false, matchScore: 0, condition1, condition2: false };
+    }
+
+    // Pets: Poster pets phù hợp với Seeker requirement
+    const seekerPetsReq = seekerRequirements.petsPreference || 'any';
+    if (seekerPetsReq === 'any') {
+      // Không tính điểm nhưng không fail
+    } else if (!posterPets) {
+      // Poster chưa cung cấp thông tin pets → Bỏ qua (backward compatibility)
+    } else if (seekerPetsReq === 'no_pets' && posterPets !== 'no_pets') {
+      return { isMatch: false, matchScore: 0, condition1, condition2: false };
+    } else if (seekerPetsReq === 'has_pets' && posterPets !== 'has_pets') {
+      return { isMatch: false, matchScore: 0, condition1, condition2: false };
+    }
+
     // Tính điểm tổng (trung bình của 2 chiều)
     matchScore = Math.round((condition1Score + condition2Score) / 2);
     condition2 = true;
@@ -785,10 +942,28 @@ export class RoommatePreferencesService {
     // Sử dụng traits từ seekerRequirements (FE gửi)
     const traits = seekerRequirements?.traits || personalInfo?.traits || [];
     
+    // Lấy smoking và pets từ personalInfo hoặc seekerPreference
+    const seekerPreference = await this.seekerPreferenceModel.findOne({ userId: seekerId }).exec();
+    const smoking = personalInfo?.smoking || seekerPreference?.seekerSmoking || undefined;
+    const pets = personalInfo?.pets 
+      ? (personalInfo.pets === 'has_pets' ? 'has_pets' : 'no_pets')
+      : (seekerPreference?.seekerPets || undefined);
+    
+    // Nếu không có trong personalInfo hoặc seekerPreference, lấy từ userProfile
+    let petsFromProfile: string | undefined = undefined;
+    if (!pets) {
+      const userProfile = await this.userProfileModel.findOne({ userId: seekerId }).exec();
+      if (userProfile?.pets !== undefined) {
+        petsFromProfile = userProfile.pets ? 'has_pets' : 'no_pets';
+      }
+    }
+    
     return {
       age,
       gender,
       traits,
+      smoking: smoking,
+      pets: pets || petsFromProfile || undefined,
     };
   }
 

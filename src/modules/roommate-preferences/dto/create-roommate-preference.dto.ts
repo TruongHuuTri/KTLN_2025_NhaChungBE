@@ -17,6 +17,14 @@ export class RequirementsDto {
   @IsNumber()
   @Min(0)
   maxPrice: number;
+
+  @IsOptional()
+  @IsEnum(['smoker', 'non_smoker', 'any'])
+  smokingPreference?: 'smoker' | 'non_smoker' | 'any';
+
+  @IsOptional()
+  @IsEnum(['has_pets', 'no_pets', 'any'])
+  petsPreference?: 'has_pets' | 'no_pets' | 'any';
 }
 
 export class CreateRoommatePreferenceDto {
@@ -32,5 +40,13 @@ export class CreateRoommatePreferenceDto {
   @IsArray()
   @IsString({ each: true })
   posterTraits?: string[]; // Traits của chính Poster (người đăng bài)
+
+  @IsOptional()
+  @IsEnum(['smoker', 'non_smoker'])
+  posterSmoking?: 'smoker' | 'non_smoker'; // Hút thuốc của Poster
+
+  @IsOptional()
+  @IsEnum(['has_pets', 'no_pets'])
+  posterPets?: 'has_pets' | 'no_pets'; // Thú cưng của Poster
 }
 

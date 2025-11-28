@@ -16,6 +16,12 @@ export class SeekerRequirements {
 
   @Prop({ required: true })
   maxPrice: number;
+
+  @Prop({ enum: ['smoker', 'non_smoker', 'any'], default: 'any' })
+  smokingPreference?: string; // Yêu cầu về hút thuốc
+
+  @Prop({ enum: ['has_pets', 'no_pets', 'any'], default: 'any' })
+  petsPreference?: string; // Yêu cầu về thú cưng
 }
 
 @Schema({ timestamps: true, collection: 'seeker_preferences' })
@@ -37,6 +43,12 @@ export class SeekerPreference {
 
   @Prop()
   seekerGender?: string; // Giới tính của Seeker (người tìm phòng)
+
+  @Prop({ enum: ['smoker', 'non_smoker'] })
+  seekerSmoking?: string; // Hút thuốc của Seeker (người tìm phòng)
+
+  @Prop({ enum: ['has_pets', 'no_pets'] })
+  seekerPets?: string; // Thú cưng của Seeker (người tìm phòng)
 
   @Prop()
   createdAt: Date;

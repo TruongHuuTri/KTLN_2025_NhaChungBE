@@ -16,6 +16,12 @@ export class Requirements {
 
   @Prop({ required: true })
   maxPrice: number;
+
+  @Prop({ enum: ['smoker', 'non_smoker', 'any'], default: 'any' })
+  smokingPreference?: string; // Yêu cầu về hút thuốc
+
+  @Prop({ enum: ['has_pets', 'no_pets', 'any'], default: 'any' })
+  petsPreference?: string; // Yêu cầu về thú cưng
 }
 
 @Schema({ timestamps: true, collection: 'roommate_preferences' })
@@ -43,6 +49,12 @@ export class RoommatePreference {
 
   @Prop()
   posterGender?: string; // Giới tính của Poster (người đăng bài)
+
+  @Prop({ enum: ['smoker', 'non_smoker'] })
+  posterSmoking?: string; // Hút thuốc của Poster (người đăng bài)
+
+  @Prop({ enum: ['has_pets', 'no_pets'] })
+  posterPets?: string; // Thú cưng của Poster (người đăng bài)
 
   @Prop()
   postId?: number; // ID của bài đăng được tạo tự động

@@ -25,6 +25,14 @@ export class PersonalInfoDto {
   @IsOptional()
   @IsEnum(['very_clean', 'clean', 'normal', 'flexible'])
   cleanliness?: 'very_clean' | 'clean' | 'normal' | 'flexible';
+
+  @IsOptional()
+  @IsEnum(['smoker', 'non_smoker'])
+  smoking?: 'smoker' | 'non_smoker';
+
+  @IsOptional()
+  @IsEnum(['has_pets', 'no_pets'])
+  pets?: 'has_pets' | 'no_pets';
 }
 
 export class FindRoommateDto {
@@ -43,6 +51,14 @@ export class FindRoommateDto {
   @IsNumber()
   @Min(0)
   maxPrice: number;
+
+  @IsOptional()
+  @IsEnum(['smoker', 'non_smoker', 'any'])
+  smokingPreference?: 'smoker' | 'non_smoker' | 'any';
+
+  @IsOptional()
+  @IsEnum(['has_pets', 'no_pets', 'any'])
+  petsPreference?: 'has_pets' | 'no_pets' | 'any';
 
   @IsOptional()
   @ValidateNested()
