@@ -49,5 +49,15 @@ export interface ParsedNlpQuery {
   // Điều kiện phức tạp
   mustHave?: string[];     // điều kiện bắt buộc
   preferHave?: string[];   // điều kiện ưu tiên
+
+  // --- START: Các trường mới cho filter nâng cao ---
+  minBedrooms?: number;
+  maxBedrooms?: number;
+  minBathrooms?: number;
+  maxBathrooms?: number;
+  furniture?: string; // 'full', 'basic', 'none'
+  legalStatus?: string; // 'co-so-hong', 'cho-so'
+  propertyType?: string;
+  // --- END: Các trường mới ---
 }
 
