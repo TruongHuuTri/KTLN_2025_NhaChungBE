@@ -1,8 +1,10 @@
-import { Controller, Get, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Query, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { NlpSearchService } from './nlp-search.service';
 
 @Controller('search')
 export class NlpSearchController {
+    private readonly logger = new Logger(NlpSearchController.name);
+
     constructor(private readonly nlpSearchService: NlpSearchService) {}
 
     @Get('nlp')
@@ -17,19 +19,21 @@ export class NlpSearchController {
         try {
             const results = await this.nlpSearchService.search(query);
             
-            // DEBUG: Log response structure để kiểm tra
-            console.log('[NlpSearchController] Response structure:', {
-                total: results.total,
-                itemsCount: results.items?.length || 0,
-                firstItemKeys: results.items?.[0] ? Object.keys(results.items[0]) : [],
-                firstItemSample: results.items?.[0] ? {
-                    id: results.items[0].id,
-                    postId: results.items[0].postId,
-                    title: results.items[0].title?.substring(0, 50),
-                    hasHighlight: !!results.items[0].highlight,
-                    highlightKeys: results.items[0].highlight ? Object.keys(results.items[0].highlight) : [],
-                } : null,
-            });
+            // DEBUG: Log response structure để kiểm tra (chỉ trong dev mode)
+            if (process.env.NODE_ENV === 'development') {
+                this.logger.debug('[NlpSearchController] Response structure:', {
+                    total: results.total,
+                    itemsCount: results.items?.length || 0,
+                    firstItemKeys: results.items?.[0] ? Object.keys(results.items[0]) : [],
+                    firstItemSample: results.items?.[0] ? {
+                        id: results.items[0].id,
+                        postId: results.items[0].postId,
+                        title: results.items[0].title?.substring(0, 50),
+                        hasHighlight: !!results.items[0].highlight,
+                        highlightKeys: results.items[0].highlight ? Object.keys(results.items[0].highlight) : [],
+                    } : null,
+                });
+            }
             
             return {
                 statusCode: HttpStatus.OK,
@@ -37,8 +41,7 @@ export class NlpSearchController {
                 data: results,
             };
         } catch (error: any) {
-            // eslint-disable-next-line no-console
-            console.error('Top-level search error:', error);
+            this.logger.error('Top-level search error:', error);
             throw new HttpException(
                 error.message || 'An internal server error occurred.',
                 HttpStatus.INTERNAL_SERVER_ERROR,

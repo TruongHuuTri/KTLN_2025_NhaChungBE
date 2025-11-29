@@ -1,4 +1,4 @@
-import { Controller, Post, Query, Param, Inject } from '@nestjs/common';
+import { Controller, Post, Query, Param, Inject, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Client } from '@elastic/elasticsearch';
@@ -7,6 +7,7 @@ import { SearchIndexerService } from './search-indexer.service';
 
 @Controller('search')
 export class ReindexController {
+  private readonly logger = new Logger(ReindexController.name);
   private readonly index: string;
 
   constructor(
@@ -78,8 +79,7 @@ export class ReindexController {
 
       count += batch.length;
       if (count % 1000 === 0) {
-        // eslint-disable-next-line no-console
-        console.log(`[Reindex] processed: ${count}, indexed: ${indexed}, skipped: ${skipped}`);
+        this.logger.log(`[Reindex] processed: ${count}, indexed: ${indexed}, skipped: ${skipped}`);
       }
     }
 
@@ -111,7 +111,7 @@ export class ReindexController {
 
       const hits = resp.hits?.hits || [];
       if (hits.length === 0) {
-        console.log('[Cleanup] No pending posts found in ES');
+        this.logger.log('[Cleanup] No pending posts found in ES');
         return;
       }
 
@@ -129,9 +129,9 @@ export class ReindexController {
         }),
       );
 
-      console.log(`[Cleanup] Deleted ${hits.length} pending/inactive posts from ES`);
+      this.logger.log(`[Cleanup] Deleted ${hits.length} pending/inactive posts from ES`);
     } catch (err: any) {
-      console.error(`[Cleanup] Error cleaning pending posts: ${err?.message || err}`);
+      this.logger.error(`[Cleanup] Error cleaning pending posts: ${err?.message || err}`);
     }
   }
 

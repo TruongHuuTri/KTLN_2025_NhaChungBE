@@ -36,8 +36,8 @@ export class NlpSearchService {
       const redisPort = Number(this.configService.get<number>('REDIS_PORT')) || 6379;
       this.redisClient = new Redis({ host: redisHost, port: redisPort });
     }
-    this.redisClient.on('connect', () => console.log('✅ Connected to Redis'));
-    this.redisClient.on('error', (err) => console.error('❌ Redis Client Error', err));
+    this.redisClient.on('connect', () => this.logger.log('✅ Connected to Redis'));
+    this.redisClient.on('error', (err) => this.logger.error('❌ Redis Client Error', err));
 
     const options: NodeGeocoder.Options = {
       provider: 'mapbox',
@@ -52,7 +52,7 @@ export class NlpSearchService {
     let city: string | undefined;
     const cityMatch = q.match(/(?:tp|thành phố|thanh pho)\s*(hồ chí minh|ho chi minh|hcm)/i);
     if (cityMatch) city = 'Ho Chi Minh City, Vietnam';
-
+    
     const nearMatch = q.match(/\b(gần|gan)\s+([^,]+?)(?:\s*(?:q\d|quận|huyện|tp|thành phố)\b|$)/i);
     if (nearMatch && nearMatch[2]) return { poiName: nearMatch[2].trim(), city };
 
@@ -79,17 +79,17 @@ export class NlpSearchService {
     let geocodeQuery = poiName;
     if (city) geocodeQuery = `${poiName}, ${city}`;
     else geocodeQuery = `${poiName}, Ho Chi Minh City, Vietnam`;
-
+    
     const cacheKey = `geo:poi:${geocodeQuery.toLowerCase()}`;
     try {
       const cache = await this.redisClient.get(cacheKey);
       if (cache) {
         const { lat, lon } = JSON.parse(cache);
         if (this.isValidHcmcCoords(lat, lon)) return { lat, lon };
-        await this.redisClient.del(cacheKey);
+          await this.redisClient.del(cacheKey);
       }
     } catch {}
-
+    
     try {
       const results = await this.geocoder.geocode(geocodeQuery);
       if (results && results.length > 0) {
@@ -107,7 +107,7 @@ export class NlpSearchService {
         if (Number.isFinite(lat) && Number.isFinite(lon) && this.isValidHcmcCoords(lat, lon)) {
           await this.redisClient.set(cacheKey, JSON.stringify({ lat, lon }), 'EX', 60 * 60 * 3);
           this.logger.debug(`Geocoded POI "${poiName}" -> lat=${lat}, lon=${lon}`);
-          return { lat, lon };
+            return { lat, lon };
         }
       }
     } catch (e) {
@@ -124,13 +124,28 @@ export class NlpSearchService {
   private isSimpleQuery(q: string): boolean {
     const text = this.normalizeQuery(q);
     const tokens = text.split(/\s+/);
-    if (tokens.length > 14) return false;
-    const complexWords = ['gần', 'bán kính', 'trong vòng', 'mới đăng', 'gần trường', 'gần chợ'];
-    if (complexWords.some(w => text.includes(w))) return false;
+    
+    // Query quá dài → complex
+    if (tokens.length > 20) return false;
+    
+    // Có logic phức tạp (và, hoặc, nhưng) → complex
+    if (/(?:và|hoặc|nhưng|tuy nhiên|ngoài ra)/.test(text)) return false;
+    
+    // Có từ ngữ cảnh phức tạp (sang trọng, tiện nghi, tương tự) → complex
+    if (/(?:sang trọng|tiện nghi|tương tự|như|giống|tương đương)/.test(text)) return false;
+    
+    // Có pattern rõ ràng → simple
     const hasPrice = /\d+([.,]\d+)?\s*(trieu|triệu|tr|vnđ|vnd)/.test(text) || /\b\d{6,9}\b/.test(text);
-    const hasCategoryWord = text.includes('phòng trọ') || text.includes('chung cư') || text.includes('căn hộ') || text.includes('nhà nguyên căn');
-    const hasDistrictHint = text.includes('quận') || text.includes('huyện') || text.includes('q.');
-    return hasPrice || hasCategoryWord || hasDistrictHint;
+    const hasCategoryWord = /(?:phòng trọ|chung cư|căn hộ|nhà nguyên căn)/.test(text);
+    const hasDistrictHint = /(?:quận|huyện|q\.|q\s+\d+)/.test(text);
+    const hasWardHint = /(?:phường|p\.|p\s+\d+)/.test(text);
+    const hasBedroomBathroom = /(?:\d+\s*(?:phòng ngủ|pn|phòng tắm|pt|wc))/.test(text);
+    const hasFurniture = /(?:nội thất|furniture|full|basic|none)/.test(text);
+    const hasLegalStatus = /(?:sổ hồng|so hong|pháp lý)/.test(text);
+    
+    // Nếu có ít nhất 1 pattern rõ ràng → simple
+    const patternCount = [hasPrice, hasCategoryWord, hasDistrictHint, hasWardHint, hasBedroomBathroom, hasFurniture, hasLegalStatus].filter(Boolean).length;
+    return patternCount >= 1; // Chỉ cần 1 pattern là đủ để dùng heuristic
   }
 
   private enrichLocationWithCodes(parsed: ParsedNlpQuery): ParsedNlpQuery {
@@ -288,9 +303,9 @@ Yêu cầu NLP:
         if (name === this.cachedWorkingModel) continue;
         try {
           model = this.genAI.getGenerativeModel({ model: name });
-          await model.generateContent('Hi');
-          this.cachedWorkingModel = name;
-          this.logger.log(`✅ Found working Gemini model: ${name}`);
+            await model.generateContent('Hi');
+            this.cachedWorkingModel = name;
+            this.logger.log(`✅ Found working Gemini model: ${name}`);
           break;
         } catch (e: any) { continue; }
       }
@@ -299,7 +314,7 @@ Yêu cầu NLP:
       this.logger.error('All Gemini models failed.');
       return null;
     }
-
+    
     const prompt = this.GEMINI_SYSTEM_PROMPT + `\n\nCâu tìm kiếm: "${q}"\nChỉ trả JSON.`;
     try {
       const result = await model.generateContent(prompt);
@@ -308,7 +323,7 @@ Yêu cầu NLP:
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) text = jsonMatch[0];
       const parsed = JSON.parse(text);
-
+      
       const out: ParsedNlpQuery = {
         raw: q,
         q: parsed.q || this.normalizeQuery(q),
@@ -354,39 +369,109 @@ Yêu cầu NLP:
     const text = this.normalizeQuery(q);
     const result: ParsedNlpQuery = { raw: q, q: text };
 
-    if (text.includes('chung cư') || text.includes('căn hộ')) result.category = 'chung-cu';
-    else if (text.includes('phòng trọ')) result.category = 'phong-tro';
-    else if (text.includes('nhà nguyên căn') || text.includes('nguyên căn')) result.category = 'nha-nguyen-can';
+    // Category
+    if (/chung\s*c[ưu]|căn\s*hộ|cc/i.test(text)) result.category = 'chung-cu';
+    else if (/phòng\s*trọ|pt/i.test(text)) result.category = 'phong-tro';
+    else if (/nhà\s*nguyên\s*căn|nguyên\s*căn/i.test(text)) result.category = 'nha-nguyen-can';
 
-    result.postType = (text.includes('ở ghép') || text.includes('o ghep')) ? 'roommate' : 'rent';
+    // Post type
+    result.postType = /(?:ở\s*ghép|o\s*ghep|og|share)/.test(text) ? 'roommate' : 'rent';
 
-    const priceMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(trieu|triệu|tr)/) || text.match(/(\d{6,9})\s*(vnd|vnđ)?/);
-    if (priceMatch) {
-      let value = parseFloat(priceMatch[1].replace(',', '.'));
-      if (value < 1000) value *= 1_000_000;
-      const delta = value * 0.15;
-      result.minPrice = Math.max(0, value - delta);
-      result.maxPrice = value + delta;
+    // Price: "7 triệu", "5-8 triệu", "từ 5 đến 8 triệu", "5tr đến 8tr"
+    const priceRangeMatch = text.match(/(?:từ|from)?\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu|tr|triệu đồng)\s*(?:đến|to|-|~)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu|tr|triệu đồng)?/);
+    if (priceRangeMatch) {
+      let min = parseFloat(priceRangeMatch[1].replace(',', '.'));
+      let max = parseFloat(priceRangeMatch[2].replace(',', '.'));
+      if (min < 1000) min *= 1_000_000;
+      if (max < 1000) max *= 1_000_000;
+      result.minPrice = Math.max(0, min * 0.95);
+      result.maxPrice = max * 1.05;
+    } else {
+      const priceMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu|tr|triệu đồng|vnđ|vnd)/) || text.match(/\b(\d{6,9})\b/);
+      if (priceMatch) {
+        let value = parseFloat(priceMatch[1].replace(',', '.'));
+        if (value < 1000) value *= 1_000_000;
+        const delta = value * 0.15;
+        result.minPrice = Math.max(0, value - delta);
+        result.maxPrice = value + delta;
+      }
     }
 
-    const districtMatch = text.match(/quận\s+([a-z0-9\s]+)/);
-    if (districtMatch) result.district = districtMatch[1].trim();
+    // Price hints: "giá rẻ" = max 5tr, "giá cao" = min 10tr, "tầm trung" = 5-10tr
+    if (/giá\s*rẻ|rẻ|rẻ tiền/i.test(text) && !result.maxPrice) {
+      result.maxPrice = 5_000_000;
+    } else if (/giá\s*cao|đắt|đắt đỏ/i.test(text) && !result.minPrice) {
+      result.minPrice = 10_000_000;
+    } else if (/tầm\s*trung|trung bình/i.test(text) && !result.minPrice && !result.maxPrice) {
+      result.minPrice = 5_000_000;
+      result.maxPrice = 10_000_000;
+    }
 
-    // --- START: Heuristic cho các trường mới ---
-    const bedroomsMatch = text.match(/(\d+)\s*(phong ngu|pn)/);
-    if (bedroomsMatch) result.minBedrooms = parseInt(bedroomsMatch[1], 10);
+    // District: "quận 7", "q.7", "q7"
+    const districtMatch = text.match(/(?:quận|q\.|q\s*)\s*(\d+|[a-z0-9\s]+)/);
+    if (districtMatch) {
+      const districtValue = districtMatch[1].trim();
+      if (/^\d+$/.test(districtValue)) {
+        result.district = `quận ${districtValue}`;
+      } else {
+        result.district = districtValue;
+      }
+    }
 
-    const bathroomsMatch = text.match(/(\d+)\s*(phong tam|pt|wc)/);
-    if (bathroomsMatch) result.minBathrooms = parseInt(bathroomsMatch[1], 10);
+    // Ward: "phường X", "p.X"
+    const wardMatch = text.match(/(?:phường|p\.|p\s*)\s*([a-z0-9\s]+)/);
+    if (wardMatch) {
+      result.ward = wardMatch[1].trim();
+    }
 
-    if (text.includes('full nội thất') || text.includes('đầy đủ nội thất')) result.furniture = 'full';
-    else if (text.includes('nội thất cơ bản')) result.furniture = 'basic';
-    else if (text.includes('không nội thất') || text.includes('phòng trống')) result.furniture = 'none';
+    // Bedrooms: "2 phòng ngủ", "2pn", "2 pn"
+    const bedroomsMatch = text.match(/(\d+)\s*(?:phòng\s*ngủ|pn|bedroom)/i);
+    if (bedroomsMatch) {
+      result.minBedrooms = parseInt(bedroomsMatch[1], 10);
+    }
 
-    if (text.includes('sổ hồng') || text.includes('so hong')) result.legalStatus = 'co-so-hong';
-    // --- END: Heuristic cho các trường mới ---
+    // Bathrooms: "1 phòng tắm", "1pt", "1 wc"
+    const bathroomsMatch = text.match(/(\d+)\s*(?:phòng\s*tắm|pt|wc|bathroom)/i);
+    if (bathroomsMatch) {
+      result.minBathrooms = parseInt(bathroomsMatch[1], 10);
+    }
 
+    // Furniture
+    if (/full\s*nội\s*thất|đầy\s*đủ\s*nội\s*thất|nội\s*thất\s*đầy\s*đủ/i.test(text)) {
+      result.furniture = 'full';
+    } else if (/nội\s*thất\s*cơ\s*bản|cơ\s*bản/i.test(text)) {
+      result.furniture = 'basic';
+    } else if (/(?:không|ko|khong)\s*nội\s*thất|phòng\s*trống|trống/i.test(text)) {
+      result.furniture = 'none';
+    }
+
+    // Legal status
+    if (/(?:có|co)\s*sổ\s*hồng|sổ\s*hồng|so\s*hong/i.test(text)) {
+      result.legalStatus = 'co-so-hong';
+    } else if (/chờ\s*sổ|cho\s*so/i.test(text)) {
+      result.legalStatus = 'cho-so';
+    }
+
+    // Time: "mới đăng", "đăng gần đây", "3 ngày trước"
+    const timeMatch = text.match(/(?:mới\s*đăng|đăng\s*gần\s*đây|(\d+)\s*ngày\s*trước)/i);
+    if (timeMatch) {
+      const days = timeMatch[1] ? parseInt(timeMatch[1], 10) : 7;
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      result.minCreatedAt = d.toISOString();
+    }
+
+    // Area: "30m2", "30 m²", "30 mét vuông"
+    const areaMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mét\s*vuông|m\s*vuông)/i);
+    if (areaMatch) {
+      const area = parseFloat(areaMatch[1].replace(',', '.'));
+      result.minArea = area * 0.9;
+      result.maxArea = area * 1.1;
+    }
+
+    // Amenities (đã có service riêng)
     result.amenities = this.amenities.extractAmenities(q);
+
     return result;
   }
 }

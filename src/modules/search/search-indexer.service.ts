@@ -34,6 +34,66 @@ export class SearchIndexerService {
     return null;
   }
 
+  // Helper: Extract building name từ text (title, address, description)
+  // Pattern: "Chung cư X", "Tòa nhà X", "X Tower", "X City", "X Residence", v.v.
+  private extractBuildingNameFromText(text: string): string {
+    if (!text || typeof text !== 'string') return '';
+    
+    const normalized = text.trim();
+    if (!normalized) return '';
+
+    // Pattern 1: "Chung cư [Tên]" hoặc "chung cư [Tên]"
+    const chungCuMatch = normalized.match(/(?:chung\s*c[ưu]|cc)\s+([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐa-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]+?)(?:\s|,|$|phường|quận|đường|street)/i);
+    if (chungCuMatch && chungCuMatch[1]) {
+      const name = chungCuMatch[1].trim();
+      // Loại bỏ các từ thông thường không phải tên tòa nhà
+      if (name.length > 3 && !/^(tại|ở|từ|về|cho|mua|bán|thuê|cho thuê)$/i.test(name)) {
+        return name;
+      }
+    }
+
+    // Pattern 2: "Tòa nhà [Tên]" hoặc "tòa nhà [Tên]"
+    const toaNhaMatch = normalized.match(/(?:tòa\s*nhà|tower|building)\s+([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐa-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]+?)(?:\s|,|$|phường|quận|đường|street)/i);
+    if (toaNhaMatch && toaNhaMatch[1]) {
+      const name = toaNhaMatch[1].trim();
+      if (name.length > 3 && !/^(tại|ở|từ|về|cho|mua|bán|thuê|cho thuê)$/i.test(name)) {
+        return name;
+      }
+    }
+
+    // Pattern 3: Tên tòa nhà phổ biến (Vinhomes, Masteri, Sunrise, Diamond, v.v.)
+    const commonBuildings = [
+      'Vinhomes', 'Masteri', 'Sunrise', 'Diamond', 'The Manor', 'The Vista', 
+      'The Nassim', 'The Estella', 'The Grand', 'The Park', 'The Sun', 
+      'Saigon Pearl', 'Estella', 'Grand', 'Park', 'Sun',
+      'Central Park', 'Centre Point', 'City', 'Residence', 'Tower'
+    ];
+    
+    for (const building of commonBuildings) {
+      const regex = new RegExp(`\\b${building.replace(/\s+/g, '\\s+')}\\b`, 'i');
+      if (regex.test(normalized)) {
+        return building;
+      }
+    }
+
+    // Pattern 4: Tên có chữ hoa đầu (có thể là tên riêng)
+    const capitalizedMatch = normalized.match(/\b([A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐa-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]+(?:\s+[A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][A-ZÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐa-zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]+)*)\b/);
+    if (capitalizedMatch && capitalizedMatch[1]) {
+      const name = capitalizedMatch[1].trim();
+      // Chỉ lấy nếu có ít nhất 2 từ và không phải là từ thông thường
+      const words = name.split(/\s+/);
+      if (words.length >= 2 && name.length > 5) {
+        const commonWords = ['Chung', 'Cư', 'Tòa', 'Nhà', 'Phường', 'Quận', 'Đường', 'Street', 'Vietnam'];
+        const hasCommonWord = words.some(w => commonWords.includes(w));
+        if (!hasCommonWord) {
+          return name;
+        }
+      }
+    }
+
+    return '';
+  }
+
   async buildDoc(post: any, room?: any) {
     const coords = room?.address?.location?.coordinates;
     let lon = Array.isArray(coords) ? Number(coords[0]) : undefined;
@@ -189,6 +249,28 @@ export class SearchIndexerService {
       totalFloors = info.totalFloors || 0;
       landArea = info.landArea || 0;
       usableArea = info.usableArea || room.area || 0; // fallback to main area
+    }
+
+    // 2.1. Extract buildingName từ các nguồn khác nếu chưa có
+    // Ưu tiên: chungCuInfo.buildingName > title > fullAddress > roomDescription
+    if (!buildingName || buildingName.trim() === '') {
+      // Thử extract từ title
+      const titleBuildingName = this.extractBuildingNameFromText(post?.title || '');
+      if (titleBuildingName) {
+        buildingName = titleBuildingName;
+      } else {
+        // Thử extract từ fullAddress
+        const addressBuildingName = this.extractBuildingNameFromText(fullAddress);
+        if (addressBuildingName) {
+          buildingName = addressBuildingName;
+        } else {
+          // Thử extract từ room description
+          const descBuildingName = this.extractBuildingNameFromText(room?.description || '');
+          if (descBuildingName) {
+            buildingName = descBuildingName;
+          }
+        }
+      }
     }
 
     doc.bedrooms = bedrooms;

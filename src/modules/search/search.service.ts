@@ -100,6 +100,12 @@ export class SearchService {
       propertyType: source.propertyType,
       buildingName: source.buildingName,
       blockOrTower: source.blockOrTower,
+      floorNumber: source.floorNumber,
+      direction: source.direction,
+      totalFloors: source.totalFloors,
+      landArea: source.landArea,
+      usableArea: source.usableArea,
+      deposit: source.deposit,
       // --- END: Trả về các trường mới ---
       ...(Object.keys(cleanHighlight).length > 0 && { highlight: cleanHighlight }),
     };
@@ -111,32 +117,32 @@ export class SearchService {
     const prefetch = Math.max(0, Math.min(3, Number(p.prefetch) || 0));
     const from = (page - 1) * pageSize;
     const minResults = p.minResults ?? pageSize * 3; // Mặc định mong muốn có 3 trang kết quả
-
+    
     // --- 1. Xây dựng Query cơ bản (Text Search) ---
     const must: any[] = [];
     if (p.q && p.q.trim()) {
-      must.push({
-        multi_match: {
-          query: p.q,
-          type: 'most_fields',
-          fields: [
-            'address.full.raw^6',
-            'address.full.fold^5',
+        must.push({
+                multi_match: {
+                  query: p.q,
+                  type: 'most_fields',
+                  fields: [
+                    'address.full.raw^6',
+                    'address.full.fold^5',
             'buildingName.raw^5',
             'buildingName.fold^4',
-            'title.raw^3',
-            'title.fold^2.5',
-            'title.ng^2',
+                    'title.raw^3',
+                    'title.fold^2.5',
+                    'title.ng^2',
             'roomDescription.raw^2',
             'roomDescription.fold^1.5',
             'postDescription.fold^1',
-          ],
-          fuzziness: 'AUTO',
-          operator: 'or',
-        },
-      });
-    }
-
+                  ],
+                  fuzziness: 'AUTO',
+                  operator: 'or',
+          },
+        });
+      }
+      
     // Boost POI keywords trong title/description
     if (p.poiKeywords && p.poiKeywords.length > 0) {
       const poiQueries = p.poiKeywords.map(poiName => ({
@@ -145,7 +151,7 @@ export class SearchService {
           type: 'best_fields',
           fields: ['title.raw^6', 'roomDescription.raw^5', 'title.ng^4', 'roomDescription.fold^3', 'address.full.raw^2'],
           fuzziness: 'AUTO',
-        },
+          },
       }));
       must.push({ bool: { should: poiQueries, minimum_should_match: 1, boost: 3.0 } });
     }
@@ -200,10 +206,39 @@ export class SearchService {
       if (p.furniture) filter.push({ term: { furniture: p.furniture } });
       if (p.legalStatus) filter.push({ term: { legalStatus: p.legalStatus } });
       if (p.propertyType) filter.push({ term: { propertyType: p.propertyType } });
+      
+      // Filter buildingName: 
+      // - Nếu buildingName xuất hiện trong query text → chỉ dùng text search (multi_match)
+      // - Nếu buildingName được truyền riêng (không có trong query) → dùng exact filter
+      if (p.buildingName && p.buildingName.trim()) {
+        const buildingNameLower = p.buildingName.toLowerCase().trim();
+        const queryText = (p.q || '').toLowerCase();
+        // Nếu buildingName không xuất hiện trong query text → dùng exact filter
+        if (!queryText.includes(buildingNameLower)) {
+          filter.push({ term: { 'buildingName.kwd': buildingNameLower } });
+        }
+        // Nếu có trong query text, multi_match đã xử lý trong must (không cần filter thêm)
+      }
 
       // Các filter cũ
       if (p.minPrice != null || p.maxPrice != null) {
         filter.push({ range: { price: { gte: p.minPrice, lte: p.maxPrice } } });
+      } else if ((p as any).priceComparison) {
+        // Price comparison mode: cheaper hoặc more_expensive
+        const priceFilter: any = {};
+        if ((p as any).priceComparison === 'cheaper') {
+          priceFilter.lte = 5_000_000; // Dưới 5 triệu
+        } else if ((p as any).priceComparison === 'more_expensive') {
+          priceFilter.gte = 10_000_000; // Trên 10 triệu
+        }
+        if (Object.keys(priceFilter).length > 0) {
+          filter.push({ range: { price: priceFilter } });
+        }
+      }
+      
+      // Thời gian đăng (từ NLP parsing)
+      if ((p as any).minCreatedAt) {
+        filter.push({ range: { createdAt: { gte: (p as any).minCreatedAt } } });
       }
       if (p.minArea != null || p.maxArea != null) {
         filter.push({ range: { area: { gte: p.minArea, lte: p.maxArea } } });
@@ -220,25 +255,25 @@ export class SearchService {
       // Exclude amenities
       if (p.excludeAmenities && p.excludeAmenities.length > 0) {
         filter.push({ bool: { must_not: { terms: { amenities: p.excludeAmenities } } } });
-      }
+    }
 
       // Exclude districts
-      if (p.excludeDistricts && p.excludeDistricts.length > 0) {
-        const excludeDistrictCodes: string[] = [];
-        for (const districtName of p.excludeDistricts) {
-          const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
-          if (codes) excludeDistrictCodes.push(...codes);
-        }
-        if (excludeDistrictCodes.length > 0) {
-          filter.push({ bool: { must_not: { terms: { 'address.wardCode': excludeDistrictCodes } } } });
-        }
+    if (p.excludeDistricts && p.excludeDistricts.length > 0) {
+      const excludeDistrictCodes: string[] = [];
+      for (const districtName of p.excludeDistricts) {
+        const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
+        if (codes) excludeDistrictCodes.push(...codes);
       }
+      if (excludeDistrictCodes.length > 0) {
+          filter.push({ bool: { must_not: { terms: { 'address.wardCode': excludeDistrictCodes } } } });
+      }
+    }
 
       // Roommate gender filter
-      if (p.postType === 'roommate' && p.gender && p.gender !== 'any') {
-        filter.push({ term: { gender: p.gender } });
-      }
-
+    if (p.postType === 'roommate' && p.gender && p.gender !== 'any') {
+      filter.push({ term: { gender: p.gender } });
+    }
+    
       return filter;
     };
 
@@ -283,15 +318,15 @@ export class SearchService {
       // Tier 2 (Queen): Chung cư + phường lân cận (KHÔNG bao gồm phường chính xác) -> weight: 40
       const nearbyOnlyWardCodes = expandedWardCodes.filter(wc => !exactWardCodes.includes(wc));
       if (nearbyOnlyWardCodes.length > 0) {
-        functions.push({
+      functions.push({
           filter: { bool: { must: [{ term: { category: 'chung-cu' } }, { terms: { 'address.wardCode': nearbyOnlyWardCodes } }] } },
           weight: 40,
-        });
+    });
       }
 
       // Tier 3 (Bishop): Phòng trọ + đúng phường -> weight: 20
-      if (exactWardCodes.length > 0) {
-        functions.push({
+    if (exactWardCodes.length > 0) {
+      functions.push({
           filter: { bool: { must: [{ term: { category: 'phong-tro' } }, { terms: { 'address.wardCode': exactWardCodes } }] } },
           weight: 20,
         });
@@ -300,19 +335,19 @@ export class SearchService {
       // Boost cho category nếu đang ở chế độ soft ranking
       if (p.category && isCategoryBoost) {
         functions.push({ filter: { term: { category: p.category } }, weight: 15 });
-      }
-
+    }
+    
       // Roommate boosting by searcher gender
-      if (p.roommate && (p.searcherGender === 'male' || p.searcherGender === 'female')) {
-        functions.push({
-          filter: { bool: { must: [{ term: { type: 'roommate' } }, { term: { gender: p.searcherGender } }] } },
-          weight: 2.0,
-        });
-        functions.push({
-          filter: { bool: { must: [{ term: { type: 'roommate' } }], must_not: [{ term: { gender: p.searcherGender } }] } },
-          weight: 0.6,
-        });
-      }
+    if (p.roommate && (p.searcherGender === 'male' || p.searcherGender === 'female')) {
+      functions.push({
+        filter: { bool: { must: [{ term: { type: 'roommate' } }, { term: { gender: p.searcherGender } }] } },
+        weight: 2.0,
+      });
+      functions.push({
+        filter: { bool: { must: [{ term: { type: 'roommate' } }], must_not: [{ term: { gender: p.searcherGender } }] } },
+        weight: 0.6,
+      });
+    }
 
       // Các boost cũ: geo-distance và độ mới
       if (p.lat != null && p.lon != null) {
@@ -332,8 +367,8 @@ export class SearchService {
       else if (p.sort === 'price_desc') sort = [{ price: 'desc' }, { _score: 'desc' }];
       else if (p.sort === 'nearest' && p.lat != null && p.lon != null) {
         sort = [{ _geo_distance: { coords: { lat: p.lat, lon: p.lon }, order: 'asc', unit: 'm' } }];
-      }
-
+          }
+      
       const body = {
         track_total_hits: true,
         from,
@@ -378,6 +413,44 @@ export class SearchService {
       totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
     }
 
+    // Phase 4 (Relax 3): Bỏ bớt constraint, chỉ giữ status/isActive + basic geo (nếu có)
+    // Nới price range ±15% nếu có price filter ban đầu và query không chứa điều kiện giá chặt
+    if (totalHits < minResults && !p.strict) {
+      const minimalFilters: any[] = [
+        { term: { status: 'active' } },
+        { term: { isActive: true } },
+      ];
+      
+      // Nới price range nếu có price filter ban đầu và không phải là price comparison mode
+      if ((p.minPrice != null || p.maxPrice != null) && !(p as any).priceComparison) {
+        const priceRange: any = {};
+        if (p.minPrice != null) {
+          // Giảm minPrice 15% (cho phép rẻ hơn một chút)
+          priceRange.gte = Math.max(0, Math.floor(p.minPrice * 0.85));
+        }
+        if (p.maxPrice != null) {
+          // Tăng maxPrice 15% (cho phép đắt hơn một chút)
+          priceRange.lte = Math.floor(p.maxPrice * 1.15);
+        }
+        if (Object.keys(priceRange).length > 0) {
+          minimalFilters.push({ range: { price: priceRange } });
+        }
+      }
+      
+      // Giữ geo filter nếu có (quan trọng cho UX)
+      if (p.lat != null && p.lon != null && p.distance) {
+        minimalFilters.push({ geo_distance: { distance: p.distance, coords: { lat: p.lat, lon: p.lon } } });
+      }
+      // Giữ province filter nếu có (vẫn giới hạn trong tỉnh/thành phố)
+      if (p.province_code) {
+        minimalFilters.push({ term: { 'address.provinceCode': p.province_code } });
+      }
+      currentFilters = minimalFilters;
+      // Giữ functions để vẫn có ranking
+      resp = await executeSearch(currentFilters, currentFunctions);
+      totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+    }
+    
     // --- 5. Xử lý và trả về kết quả ---
     const allWindowItems = (resp.hits?.hits || []).map((h: any) => this.buildResponseItem(h));
     const items = allWindowItems.slice(0, pageSize);
@@ -396,6 +469,8 @@ export class SearchService {
       total: totalHits,
       items,
       prefetch: prefetchSlices,
+      // Expose _score trong dev mode để debug ranking (có thể bật/tắt bằng env var)
+      ...(process.env.NODE_ENV === 'development' && { _debug: { minResults, strict: p.strict || false } }),
     };
   }
 }
