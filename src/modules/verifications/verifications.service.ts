@@ -307,6 +307,45 @@ export class VerificationsService {
     };
   }
 
+  /**
+   * Cập nhật giấy phép kinh doanh cho verification của user hiện tại
+   */
+  async updateBusinessLicense(userId: number, businessLicense: string): Promise<Verification> {
+    // Tìm verification của user
+    const verification = await this.verificationModel.findOne({ userId }).exec();
+    
+    if (!verification) {
+      throw new NotFoundException('Không tìm thấy hồ sơ xác thực. Vui lòng nộp hồ sơ xác thực trước.');
+    }
+
+    // Upload business license lên S3
+    const businessLicenseUrl = await this.s3Service.uploadFileToS3(
+      businessLicense,
+      `business_license`,
+      userId,
+      UploadFolder.documents
+    );
+
+    // Cập nhật business license
+    const updatedVerification = await this.verificationModel.findOneAndUpdate(
+      { userId },
+      { 
+        businessLicense: businessLicenseUrl,
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).exec();
+
+    return updatedVerification!;
+  }
+
+  /**
+   * Lấy verification của user hiện tại
+   */
+  async getMyVerification(userId: number): Promise<Verification | null> {
+    return this.verificationModel.findOne({ userId }).exec();
+  }
+
   private async getNextVerificationId(): Promise<number> {
     const lastVerification = await this.verificationModel.findOne().sort({ verificationId: -1 }).exec();
     return lastVerification ? lastVerification.verificationId + 1 : 1;

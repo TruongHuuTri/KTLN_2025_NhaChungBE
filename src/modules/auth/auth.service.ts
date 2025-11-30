@@ -175,4 +175,36 @@ export class AuthService {
       expiresIn: 300,
     };
   }
+
+  /**
+   * Refresh token cho user đã đăng ký (trong registration flow)
+   * Cho phép lấy lại token nếu bị mất trong quá trình đăng ký
+   */
+  async refreshRegistrationToken(email: string) {
+    // Tìm user theo email
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản với email này');
+    }
+
+    // Kiểm tra user đã verify email chưa
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Vui lòng xác thực email trước');
+    }
+
+    // Tạo JWT mới
+    const payload = { sub: user.userId, email: user.email, role: user.role };
+    const access_token = await this.jwtService.signAsync(payload);
+
+    return {
+      access_token,
+      expires_in: 86400, // 24 hours
+      user: {
+        userId: user.userId,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    };
+  }
 }

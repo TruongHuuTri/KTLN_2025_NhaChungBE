@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Put,
+  Patch,
   Param,
   Query,
   UseGuards,
@@ -14,6 +15,7 @@ import {
 import { VerificationsService } from './verifications.service';
 import { CreateVerificationDto } from './dto/create-verification.dto';
 import { UpdateVerificationDto } from './dto/update-verification.dto';
+import { UpdateBusinessLicenseDto } from './dto/update-business-license.dto';
 import { JwtAuthGuard } from '../users/guards/jwt-auth.guard';
 import { AdminJwtGuard } from '../admin/guards/admin-jwt.guard';
 
@@ -54,6 +56,36 @@ export class VerificationsController {
     const limitNum = parseInt(limit || '10', 10);
 
     return this.verificationsService.findAll(status, pageNum, limitNum);
+  }
+
+  /**
+   * Lấy verification của user hiện tại
+   * Phải đứng trước route có parameter để tránh routing conflict
+   */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMyVerification(@Request() req: any) {
+    const userId = req.user.sub;
+    const verification = await this.verificationsService.getMyVerification(userId);
+    
+    if (!verification) {
+      return {
+        message: 'Chưa có hồ sơ xác thực',
+        verification: null,
+      };
+    }
+
+    const verificationData = verification as any;
+    return {
+      verification: {
+        verificationId: verificationData.verificationId,
+        userId: verificationData.userId,
+        status: verificationData.status,
+        submittedAt: verificationData.submittedAt,
+        businessLicense: verificationData.businessLicense,
+        updatedAt: verificationData.updatedAt,
+      },
+    };
   }
 
   @Get('user/:userId')
@@ -98,6 +130,36 @@ export class VerificationsController {
         reviewedBy: updatedVerification.reviewedBy,
         adminNote: updatedVerification.adminNote,
         faceMatchResult: updatedVerification.faceMatchResult,  // Thêm faceMatchResult vào admin response
+      },
+    };
+  }
+
+  /**
+   * Cập nhật giấy phép kinh doanh cho verification của user hiện tại
+   */
+  @Patch('me/business-license')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateBusinessLicense(
+    @Request() req: any,
+    @Body() updateBusinessLicenseDto: UpdateBusinessLicenseDto,
+  ) {
+    const userId = req.user.sub; // userId from JWT token
+    const verification = await this.verificationsService.updateBusinessLicense(
+      userId,
+      updateBusinessLicenseDto.businessLicense,
+    );
+
+    const updatedVerification = verification as any;
+    return {
+      success: true,
+      message: 'Cập nhật giấy phép kinh doanh thành công',
+      verification: {
+        verificationId: updatedVerification.verificationId,
+        userId: updatedVerification.userId,
+        status: updatedVerification.status,
+        businessLicense: updatedVerification.businessLicense,
+        updatedAt: updatedVerification.updatedAt,
       },
     };
   }

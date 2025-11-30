@@ -44,4 +44,12 @@ export class AuthController {
   async resendOTP(@Body() body: { email: string }) {
     return this.authService.resendOTP(body.email);
   }
+
+  /**
+   * Refresh token cho user đã đăng ký (trong registration flow)
+   */
+  @Post('refresh-registration-token')
+  async refreshRegistrationToken(@Body() body: { email: string }) {
+    return this.authService.refreshRegistrationToken(body.email);
+  }
 }

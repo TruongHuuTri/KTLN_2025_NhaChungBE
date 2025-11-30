@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserProfile, UserProfileDocument } from './schemas/user-profile.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateUserProfileDto } from './dto/create-user-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { AgeUtils } from '../../shared/utils/age.utils';
 
 @Injectable()
 export class UserProfilesService {
@@ -47,25 +46,57 @@ export class UserProfilesService {
     // Cập nhật completion percentage
     await this.updateCompletionPercentage((savedProfile._id as any).toString());
 
-    return savedProfile;
+    // Normalize response để đảm bảo các field array luôn là mảng
+    return this.normalizeProfileResponse(savedProfile);
   }
 
   /**
    * Lấy profile theo userId
+   * Đảm bảo trả về đầy đủ thông tin, các field array luôn là mảng (không null/undefined)
    */
   async findByUserId(userId: number): Promise<UserProfile> {
     const profile = await this.userProfileModel.findOne({ userId });
     if (!profile) {
       throw new NotFoundException('Profile không tồn tại');
     }
-    return profile;
+    
+    // Normalize profile để đảm bảo các field array luôn là mảng
+    return this.normalizeProfileResponse(profile);
+  }
+
+  /**
+   * Normalize profile response để đảm bảo các field array luôn là mảng
+   * Đảm bảo preferredWards, roomType, contactMethod luôn là array (có thể rỗng)
+   */
+  private normalizeProfileResponse(profile: UserProfileDocument): UserProfile {
+    const normalized = profile.toObject ? profile.toObject() : { ...profile };
+    
+    // Danh sách các field array cần normalize
+    const arrayFields: Array<keyof Pick<UserProfile, 'preferredWards' | 'roomType' | 'contactMethod'>> = [
+      'preferredWards',
+      'roomType',
+      'contactMethod',
+    ];
+    
+    // Đảm bảo tất cả field array luôn là mảng
+    arrayFields.forEach(field => {
+      if (!Array.isArray(normalized[field])) {
+        (normalized as any)[field] = [];
+      }
+    });
+    
+    return normalized as UserProfile;
   }
 
   /**
    * Lấy profile theo profileId
    */
   async findByProfileId(profileId: number): Promise<UserProfile | null> {
-    return this.userProfileModel.findOne({ profileId });
+    const profile = await this.userProfileModel.findOne({ profileId });
+    if (!profile) {
+      return null;
+    }
+    return this.normalizeProfileResponse(profile);
   }
 
   /**
@@ -77,14 +108,41 @@ export class UserProfilesService {
       throw new NotFoundException('Profile không tồn tại');
     }
 
-    // Cập nhật thông tin (giữ nguyên dữ liệu FE gửi)
-    Object.assign(profile, updateUserProfileDto);
+    // Kiểm tra nếu preferredCity thay đổi
+    // Nếu thành phố thay đổi, cần clear preferredWards cũ vì các phường cũ không còn hợp lệ với thành phố mới
+    // Đặc biệt: Có thể có phường/xã trùng tên ở các thành phố khác nhau (ví dụ: "Bình Minh" ở cả Vĩnh Long và Hà Nội)
+    const cityChanged = updateUserProfileDto.preferredCity !== undefined && 
+                     updateUserProfileDto.preferredCity !== profile.preferredCity;
+    
+    // Lưu preferredWards từ request để xử lý sau
+    const requestedWards = updateUserProfileDto.preferredWards;
+    
+    if (cityChanged) {
+      // Khi thành phố thay đổi, LUÔN clear preferredWards cũ
+      // IGNORE preferredWards trong request (nếu có) để tránh lưu phường cũ từ thành phố cũ
+      // Frontend phải gửi preferredWards trong request riêng sau khi đã set preferredCity
+      profile.preferredWards = [];
+      
+      // Tạo object mới không có preferredWards để Object.assign không ghi đè
+      const { preferredWards, ...updateDtoWithoutWards } = updateUserProfileDto;
+      Object.assign(profile, updateDtoWithoutWards);
+    } else {
+      // Nếu thành phố KHÔNG thay đổi, update bình thường (bao gồm cả preferredWards nếu có)
+      Object.assign(profile, updateUserProfileDto);
+    }
+    
+    // Đảm bảo preferredWards luôn là mảng sau khi update
+    if (!Array.isArray(profile.preferredWards)) {
+      profile.preferredWards = [];
+    }
+    
     const updatedProfile = await profile.save();
 
     // Cập nhật completion percentage
     await this.updateCompletionPercentage((updatedProfile._id as any).toString());
 
-    return updatedProfile;
+    // Normalize response để đảm bảo các field array luôn là mảng
+    return this.normalizeProfileResponse(updatedProfile);
   }
 
   /**
@@ -101,7 +159,9 @@ export class UserProfilesService {
    * Lấy tất cả profiles (admin)
    */
   async findAll(): Promise<UserProfile[]> {
-    return this.userProfileModel.find().exec();
+    const profiles = await this.userProfileModel.find().exec();
+    // Normalize tất cả profiles để đảm bảo các field array luôn là mảng
+    return profiles.map(profile => this.normalizeProfileResponse(profile));
   }
 
   /**
@@ -144,9 +204,11 @@ export class UserProfilesService {
    * Lấy profiles theo completion percentage
    */
   async findByCompletion(minPercentage: number): Promise<UserProfile[]> {
-    return this.userProfileModel.find({ 
+    const profiles = await this.userProfileModel.find({ 
       completionPercentage: { $gte: minPercentage } 
     }).exec();
+    // Normalize tất cả profiles để đảm bảo các field array luôn là mảng
+    return profiles.map(profile => this.normalizeProfileResponse(profile));
   }
 
   /**
@@ -155,6 +217,8 @@ export class UserProfilesService {
    */
   async findByRole(role: string): Promise<UserProfile[]> {
     // Tất cả profiles đều là user profiles
-    return this.userProfileModel.find().exec();
+    const profiles = await this.userProfileModel.find().exec();
+    // Normalize tất cả profiles để đảm bảo các field array luôn là mảng
+    return profiles.map(profile => this.normalizeProfileResponse(profile));
   }
 }
