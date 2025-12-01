@@ -286,7 +286,18 @@ export class SearchBootstrapService implements OnModuleInit {
             raw:  { type: 'text', analyzer: 'vi_raw',  search_analyzer: 'vi_raw' },
             fold: { type: 'text', analyzer: 'vi_fold', search_analyzer: 'vi_fold' },
           }
+        },
+
+        // --- START: Semantic vector field cho Hybrid Search ---
+        // Lưu embedding (Google Gemini) cho nội dung (title + description).
+        // Lưu ý: dims phải khớp với model embedding (text-embedding-004 hiện tại là 768).
+        contentEmbedding: {
+          type: 'dense_vector',
+          dims: 768,
+          index: true,
+          similarity: 'cosine'
         }
+        // --- END: Semantic vector field ---
         // --- END: Các trường mở rộng ---
 
         // Note: images không cần trong mappings vì không search được, chỉ index để trả về trong response

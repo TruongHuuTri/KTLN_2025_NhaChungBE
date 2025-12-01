@@ -10,6 +10,7 @@ import { ReindexController } from './reindex.controller';
 import { SearchBootstrapService } from './search-bootstrap.service';
 import { GeoCodeService } from './geo-code.service';
 import { AmenitiesService } from './amenities.service';
+import { EmbeddingService } from './embedding.service';
 
 @Module({
   imports: [ConfigModule, MongooseModule],
@@ -20,6 +21,7 @@ import { AmenitiesService } from './amenities.service';
     SearchBootstrapService,
     GeoCodeService,
     AmenitiesService,
+    EmbeddingService,
     {
       provide: 'ES_CLIENT',
       inject: [ConfigService],
@@ -59,7 +61,7 @@ import { AmenitiesService } from './amenities.service';
     },
   ],
   controllers: [SearchController, ReindexController],
-  exports: ['ES_CLIENT', SearchService, SearchIndexerService, GeoCodeService, AmenitiesService],
+  exports: ['ES_CLIENT', SearchService, SearchIndexerService, GeoCodeService, AmenitiesService, EmbeddingService],
 })
 export class SearchModule {}
 

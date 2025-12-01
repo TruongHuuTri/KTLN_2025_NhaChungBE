@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Client } from '@elastic/elasticsearch';
 import { GeoCodeService } from './geo-code.service';
 import { AmenitiesService } from './amenities.service';
+import { EmbeddingService } from './embedding.service';
 
 // Mở rộng SearchPostsParams để hỗ trợ filter mới và soft ranking
 export type SearchPostsParams = {
@@ -42,6 +43,31 @@ export type SearchPostsParams = {
   strict?: boolean; // Nếu true, không nới lỏng điều kiện tìm kiếm
   minResults?: number; // Số kết quả tối thiểu mong muốn
   // --- END: Tham số điều khiển soft ranking ---
+
+  // --- START: Các trường bổ sung từ NLP/Personalization ---
+  /**
+   * So sánh mức giá tương đối (ví dụ: \"phòng rẻ hơn\", \"phòng cao cấp\")
+   * Được set bởi NLP parser, dùng để build range price tương đối.
+   */
+  priceComparison?: 'cheaper' | 'more_expensive';
+
+  /**
+   * Giới hạn thời gian đăng tin từ NLP parser (ISO string).
+   * Ví dụ: \"tin mới đăng 7 ngày gần đây\".
+   */
+  minCreatedAt?: string;
+
+  /**
+   * UserId phục vụ personalization (sau dùng cho UserPreferenceService).
+   */
+  userId?: number;
+  /**
+   * Chế độ search (dùng cho thử nghiệm hybrid sau này).
+   * - 'bm25': chỉ dùng BM25 + function_score (mặc định hiện tại).
+   * - 'hybrid': BM25 + vector + RRF (nếu được gọi qua endpoint riêng).
+   */
+  mode?: 'bm25' | 'hybrid';
+  // --- END: Các trường bổ sung từ NLP/Personalization ---
 };
 
 @Injectable()
@@ -53,8 +79,19 @@ export class SearchService {
     private readonly cfg: ConfigService,
     private readonly geo: GeoCodeService,
     private readonly amenities: AmenitiesService,
+    private readonly embeddingService: EmbeddingService,
   ) {
     this.index = this.cfg.get<string>('ELASTIC_INDEX_POSTS') || 'posts';
+  }
+
+  /**
+   * Helper: Extract total hits từ ES response (hỗ trợ cả ES 7.x và 8.x format).
+   */
+  private extractTotalHits(resp: any): number {
+    if (typeof resp.hits?.total === 'object' && resp.hits.total?.value != null) {
+      return resp.hits.total.value;
+    }
+    return typeof resp.hits?.total === 'number' ? resp.hits.total : 0;
   }
 
   // Cập nhật buildResponseItem để trả về các trường dữ liệu mới
@@ -62,7 +99,7 @@ export class SearchService {
     const source = h._source || {};
     const highlight = h.highlight || {};
     
-    const cleanHighlight: any = {};
+    const cleanHighlight: Record<string, string[]> = {};
     const allowedKeys = ['title', 'description', 'address', 'buildingName'];
     Object.keys(highlight).forEach(key => {
       if (allowedKeys.some(allowed => key.includes(allowed))) {
@@ -114,10 +151,12 @@ export class SearchService {
   async searchPosts(p: SearchPostsParams) {
     const page = Math.max(1, Number(p.page) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(p.limit) || 12));
-    const prefetch = Math.max(0, Math.min(3, Number(p.prefetch) || 0));
+    // Mặc định preload thêm 3 trang (4 trang tổng cộng) nếu FE không truyền prefetch
+    const rawPrefetch = p.prefetch ?? 3;
+    const prefetch = Math.max(0, Math.min(3, Number(rawPrefetch) || 0));
     const from = (page - 1) * pageSize;
     const minResults = p.minResults ?? pageSize * 3; // Mặc định mong muốn có 3 trang kết quả
-    
+    const size = Math.min(50, pageSize * (1 + prefetch));
     // --- 1. Xây dựng Query cơ bản (Text Search) ---
     const must: any[] = [];
     if (p.q && p.q.trim()) {
@@ -223,12 +262,12 @@ export class SearchService {
       // Các filter cũ
       if (p.minPrice != null || p.maxPrice != null) {
         filter.push({ range: { price: { gte: p.minPrice, lte: p.maxPrice } } });
-      } else if ((p as any).priceComparison) {
+      } else if (p.priceComparison) {
         // Price comparison mode: cheaper hoặc more_expensive
         const priceFilter: any = {};
-        if ((p as any).priceComparison === 'cheaper') {
+        if (p.priceComparison === 'cheaper') {
           priceFilter.lte = 5_000_000; // Dưới 5 triệu
-        } else if ((p as any).priceComparison === 'more_expensive') {
+        } else if (p.priceComparison === 'more_expensive') {
           priceFilter.gte = 10_000_000; // Trên 10 triệu
         }
         if (Object.keys(priceFilter).length > 0) {
@@ -237,8 +276,8 @@ export class SearchService {
       }
       
       // Thời gian đăng (từ NLP parsing)
-      if ((p as any).minCreatedAt) {
-        filter.push({ range: { createdAt: { gte: (p as any).minCreatedAt } } });
+      if (p.minCreatedAt) {
+        filter.push({ range: { createdAt: { gte: p.minCreatedAt } } });
       }
       if (p.minArea != null || p.maxArea != null) {
         filter.push({ range: { area: { gte: p.minArea, lte: p.maxArea } } });
@@ -369,10 +408,10 @@ export class SearchService {
         sort = [{ _geo_distance: { coords: { lat: p.lat, lon: p.lon }, order: 'asc', unit: 'm' } }];
           }
       
-      const body = {
+      const body: any = {
         track_total_hits: true,
         from,
-        size: Math.min(50, pageSize * (1 + prefetch)),
+        size,
         sort,
         query: {
           function_score: {
@@ -387,6 +426,34 @@ export class SearchService {
           fields: { 'address.full.*': {}, 'title.*': {}, 'buildingName.*': {}, 'roomDescription.*': {} },
         },
       };
+
+      // Tự động bật Hybrid (BM25 + Vector + RRF) khi có text query.
+      // FE KHÔNG cần (và không nên) điều khiển mode; hệ thống tự quyết định.
+      if (p.q && p.q.trim()) {
+        try {
+          const queryEmbedding = await this.embeddingService.createEmbedding(p.q, 'query');
+          if (queryEmbedding && queryEmbedding.length > 0) {
+            body.knn = {
+              field: 'contentEmbedding',
+              query_vector: queryEmbedding,
+              k: Math.min(size * 3, 200),
+              num_candidates: 1000,
+            };
+            body.rank = {
+              rrf: {
+                window_size: 100,
+                rank_constant: 20,
+              },
+            };
+          }
+        } catch (e: any) {
+          // Log warning nhưng fallback về BM25 only
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.warn('[SearchService] Hybrid vector branch failed, fallback BM25 only:', e?.message || e);
+          }
+        }
+      }
       return this.es.search({ index: this.index, body } as any);
     };
 
@@ -396,13 +463,13 @@ export class SearchService {
     let currentFilters = buildFilters(true, exactWardCodes);
     let currentFunctions = buildFunctions(false);
     resp = await executeSearch(currentFilters, currentFunctions);
-    totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+    totalHits = this.extractTotalHits(resp);
 
     // Phase 2 (Relax 1): Mở rộng ra các phường lân cận
     if (totalHits < minResults && !p.strict && expandedWardCodes.length > 0) {
       currentFilters = buildFilters(true, expandedWardCodes);
       resp = await executeSearch(currentFilters, currentFunctions);
-      totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+      totalHits = this.extractTotalHits(resp);
     }
 
     // Phase 3 (Relax 2): Bỏ filter category, chuyển thành boost
@@ -410,7 +477,7 @@ export class SearchService {
       currentFilters = buildFilters(false, expandedWardCodes.length > 0 ? expandedWardCodes : exactWardCodes);
       currentFunctions = buildFunctions(true);
       resp = await executeSearch(currentFilters, currentFunctions);
-      totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+      totalHits = this.extractTotalHits(resp);
     }
 
     // Phase 4 (Relax 3): Bỏ bớt constraint, chỉ giữ status/isActive + basic geo (nếu có)
@@ -422,7 +489,7 @@ export class SearchService {
       ];
       
       // Nới price range nếu có price filter ban đầu và không phải là price comparison mode
-      if ((p.minPrice != null || p.maxPrice != null) && !(p as any).priceComparison) {
+      if ((p.minPrice != null || p.maxPrice != null) && !p.priceComparison) {
         const priceRange: any = {};
         if (p.minPrice != null) {
           // Giảm minPrice 15% (cho phép rẻ hơn một chút)
@@ -448,7 +515,7 @@ export class SearchService {
       currentFilters = minimalFilters;
       // Giữ functions để vẫn có ranking
       resp = await executeSearch(currentFilters, currentFunctions);
-      totalHits = typeof resp.hits?.total === 'object' ? (resp.hits.total as any).value ?? 0 : (resp.hits?.total ?? 0);
+      totalHits = this.extractTotalHits(resp);
     }
     
     // --- 5. Xử lý và trả về kết quả ---

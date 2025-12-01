@@ -46,6 +46,25 @@ export class NlpSearchService {
     this.geocoder = NodeGeocoder(options);
   }
 
+  private withTimeout<T>(promiseFactory: () => Promise<T>, ms: number, context: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.logger.warn(`NlpSearchService timeout (${ms}ms) in context: ${context}`);
+        reject(new Error(`NlpSearchService timeout in ${context}`));
+      }, ms);
+
+      promiseFactory()
+        .then((result) => {
+          clearTimeout(timer);
+          resolve(result);
+        })
+        .catch((err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  }
+
   private extractPoiName(query: string): { poiName: string; city?: string } | null {
     if (!query) return null;
     const q = query.toLowerCase();
@@ -195,9 +214,77 @@ export class NlpSearchService {
       // --- END: Truyền các tham số mới ---
     };
     if (parsed.minCreatedAt) {
-      (p as any).minCreatedAt = parsed.minCreatedAt;
+      p.minCreatedAt = parsed.minCreatedAt;
+    }
+    if (parsed.priceComparison) {
+      p.priceComparison = parsed.priceComparison;
+    }
+    if (parsed.excludeAmenities?.length) {
+      p.excludeAmenities = parsed.excludeAmenities;
+    }
+    if (parsed.excludeDistricts?.length) {
+      p.excludeDistricts = parsed.excludeDistricts;
     }
     return p;
+  }
+
+  /**
+   * Parse NLP query thành SearchPostsParams (không gọi Elasticsearch).
+   * Dùng chung cho:
+   * - /search/nlp endpoint hiện tại
+   * - Hybrid search / personalization trong tương lai.
+   */
+  async parseQuery(rawQuery: string): Promise<SearchPostsParams> {
+    const normalized = this.normalizeQuery(rawQuery);
+    const cacheKey = `nlp:parsed:v1:${normalized}`;
+
+    try {
+      const cached = await this.redisClient.get(cacheKey);
+      if (cached) {
+        this.logger.debug(`⚡️ Parse cache HIT for: ${normalized}`);
+        return JSON.parse(cached) as SearchPostsParams;
+      }
+    } catch {
+      // ignore cache errors, tiếp tục parse
+    }
+
+    this.logger.debug(`🤔 Parse cache MISS, parsing query: ${normalized}`);
+
+    let parsed: ParsedNlpQuery | null;
+    if (this.isSimpleQuery(normalized)) {
+      this.logger.debug(`Simple query detected, using heuristic parser (FAST)`);
+      parsed = this.heuristicParse(rawQuery);
+    } else {
+      this.logger.debug(`Complex query detected, using AI parser (SMART)`);
+      const aiParsed = await this.aiParse(rawQuery);
+      parsed = aiParsed || this.heuristicParse(rawQuery);
+    }
+
+    parsed = this.enrichLocationWithCodes(parsed);
+
+    const poiInfo = this.extractPoiName(rawQuery);
+    if (poiInfo?.poiName) {
+      const coords = await this.geocodePoi(poiInfo.poiName, poiInfo.city);
+      if (coords) {
+        parsed.lat = coords.lat;
+        parsed.lon = coords.lon;
+        if (!parsed.distance) parsed.distance = '3km';
+      }
+      if (!parsed.poiKeywords) parsed.poiKeywords = [];
+      if (!parsed.poiKeywords.includes(poiInfo.poiName)) {
+        parsed.poiKeywords.push(poiInfo.poiName);
+      }
+    }
+
+    const params = this.buildSearchParams(parsed);
+
+    try {
+      await this.redisClient.set(cacheKey, JSON.stringify(params), 'EX', 3600);
+    } catch {
+      // ignore cache errors
+    }
+
+    return params;
   }
 
   private async runSearchWithPricePhases(base: SearchPostsParams, limit = 12) {
@@ -216,6 +303,11 @@ export class NlpSearchService {
     return { ...expanded, total: Math.max(first.total, expanded.total), items: [...first.items, ...more].slice(0, limit) };
   }
 
+  /**
+   * Hàm search NLP V1 (giữ lại để backward-compatible cho các call cũ).
+   * - Chỉ nhận string q
+   * - Cache full kết quả theo query text
+   */
   async search(q: string) {
     const normalized = this.normalizeQuery(q);
     const cacheKey = `search:nlp:v3:${normalized}`;
@@ -226,37 +318,39 @@ export class NlpSearchService {
     }
     this.logger.debug(`🤔 Cache MISS! Processing query: ${normalized}`);
 
-    let parsed: ParsedNlpQuery | null;
-    if (this.isSimpleQuery(normalized)) {
-      this.logger.debug(`Simple query detected, using heuristic parser (FAST)`);
-      parsed = this.heuristicParse(q);
-    } else {
-      this.logger.debug(`Complex query detected, using AI parser (SMART)`);
-      const aiParsed = await this.aiParse(q);
-      parsed = aiParsed || this.heuristicParse(q);
-    }
-
-    parsed = this.enrichLocationWithCodes(parsed);
-
-    const poiInfo = this.extractPoiName(q);
-    if (poiInfo?.poiName) {
-      const coords = await this.geocodePoi(poiInfo.poiName, poiInfo.city);
-      if (coords) {
-        parsed.lat = coords.lat;
-        parsed.lon = coords.lon;
-        if (!parsed.distance) parsed.distance = '3km';
-      }
-      if (!parsed.poiKeywords) parsed.poiKeywords = [];
-      if (!parsed.poiKeywords.includes(poiInfo.poiName)) {
-        parsed.poiKeywords.push(poiInfo.poiName);
-      }
-    }
-
-    const params = this.buildSearchParams(parsed);
+    const params = await this.parseQuery(q);
     const result = await this.searchService.searchPosts(params);
 
     await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
     this.logger.log(`✅ Search completed: ${result.total} results`);
+    return result;
+  }
+
+  /**
+   * Hàm search NLP V2:
+   * - Parse query bằng NLP (có cache parse riêng) nếu có rawQuery.
+   * - Cho phép FE truyền thêm params (page, sort, chips filter...) để override kết quả parse.
+   * - Không cache full kết quả search (để tránh cache sai khi params khác nhau), chỉ tận dụng cache parse.
+   * - Nếu rawQuery rỗng, chỉ dùng extraParams (search thuần filter).
+   */
+  async searchWithParams(
+    rawQuery: string,
+    extraParams: Partial<SearchPostsParams> = {},
+  ) {
+    let baseParams: SearchPostsParams = {};
+    
+    // Chỉ parse NLP nếu có query text
+    if (rawQuery && rawQuery.trim()) {
+      baseParams = await this.parseQuery(rawQuery);
+    }
+
+    const merged: SearchPostsParams = {
+      ...baseParams,
+      ...extraParams,
+    };
+
+    const result = await this.searchService.searchPosts(merged);
+    this.logger.log(`✅ NLP search V2 completed: ${result.total} results`);
     return result;
   }
 
@@ -317,7 +411,11 @@ Yêu cầu NLP:
     
     const prompt = this.GEMINI_SYSTEM_PROMPT + `\n\nCâu tìm kiếm: "${q}"\nChỉ trả JSON.`;
     try {
-      const result = await model.generateContent(prompt);
+      const result = await this.withTimeout(
+        () => model.generateContent(prompt),
+        5000,
+        'ai-parse',
+      );
       const response = await result.response;
       let text = response.text().trim().replace(/```json\s*/g, '').replace(/```\s*/g, '');
       const jsonMatch = text.match(/\{[\s\S]*\}/);

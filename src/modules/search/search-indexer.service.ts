@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import NodeGeocoder from 'node-geocoder';
 import { GeoCodeService } from './geo-code.service';
 import { AmenitiesService } from './amenities.service';
+import { EmbeddingService } from './embedding.service';
 
 @Injectable()
 export class SearchIndexerService {
@@ -16,6 +17,7 @@ export class SearchIndexerService {
     private readonly cfg: ConfigService,
     private readonly geo: GeoCodeService,
     private readonly amenities: AmenitiesService,
+    private readonly embeddingService: EmbeddingService,
   ) {
     this.index = this.cfg.get<string>('ELASTIC_INDEX_POSTS') || 'posts';
     const geocoderOptions: NodeGeocoder.Options = {
@@ -291,7 +293,6 @@ export class SearchIndexerService {
 
     // 4. Extract amenities from post title và room description
     const titleText = doc.title || '';
-    // description là của room, đã được gán ở trên
     const combinedText = `${titleText} ${doc.roomDescription}`.trim();
     if (combinedText) {
       const extractedAmenities = this.amenities.extractAmenities(combinedText);
@@ -326,6 +327,40 @@ export class SearchIndexerService {
       document.postId = postId;
       document.status = 'active'; // Force active status
       document.isActive = true;   // Force isActive
+
+      // Tạo semantic embedding cho content (title + description) nếu có.
+      try {
+        const roomTypeText =
+          document.category === 'chung-cu'
+            ? 'chung cư'
+            : document.category === 'phong-tro'
+            ? 'phòng trọ'
+            : document.category === 'nha-nguyen-can'
+            ? 'nhà nguyên căn'
+            : '';
+
+        const amenitiesText = Array.isArray(document.amenities)
+          ? (document.amenities as string[]).join(', ')
+          : '';
+
+        const semanticTextParts = [
+          roomTypeText,
+          document.title || '',
+          amenitiesText,
+          document.roomDescription || document.description || '',
+        ].filter(Boolean);
+
+        const semanticText = semanticTextParts.join(' - ').trim();
+        if (semanticText) {
+          const embedding = await this.embeddingService.createEmbedding(semanticText, 'document');
+          if (embedding && embedding.length > 0) {
+            // Field này cần tồn tại trong ES mapping (dense_vector) trước khi reindex.
+            document.contentEmbedding = embedding;
+          }
+        }
+      } catch (e: any) {
+        this.logger.warn(`Tạo embedding cho post ${postId} thất bại, vẫn index BM25: ${e?.message || e}`);
+      }
 
       await this.es.index({
         index: this.index,
