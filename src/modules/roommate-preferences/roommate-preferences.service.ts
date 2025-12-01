@@ -501,8 +501,8 @@ export class RoommatePreferencesService {
       gender: seekerPreference.requirements.gender as 'male' | 'female' | 'any',
       traits: seekerPreference.seekerTraits || seekerPreference.requirements.traits || [],
       maxPrice: seekerPreference.requirements.maxPrice,
-      smokingPreference: seekerPreference.requirements.smokingPreference || 'any',
-      petsPreference: seekerPreference.requirements.petsPreference || 'any',
+      smokingPreference: (seekerPreference.requirements.smokingPreference || 'any') as 'smoker' | 'non_smoker' | 'any',
+      petsPreference: (seekerPreference.requirements.petsPreference || 'any') as 'has_pets' | 'no_pets' | 'any',
       personalInfo: {
         fullName: personalInfo.fullName,
         // Hiển thị tuổi và gender từ preferences (đã lưu từ verification) nhưng không cho sửa

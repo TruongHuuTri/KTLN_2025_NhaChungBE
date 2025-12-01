@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsArray, ValidateNested, IsEnum, IsNumber, Min } from 'class-validator';
+import { IsBoolean, IsOptional, IsArray, ValidateNested, IsEnum, IsNumber, Min, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RequirementsDto {

@@ -247,6 +247,12 @@ export class PersonalInfo {
 
   @Prop({ required: true })
   cleanliness: string;
+
+  @Prop({ enum: ['smoker', 'non_smoker'], required: false })
+  smoking?: 'smoker' | 'non_smoker';
+
+  @Prop({ enum: ['has_pets', 'no_pets'], required: false })
+  pets?: 'has_pets' | 'no_pets';
 }
 
 @Schema({ _id: false })
@@ -262,6 +268,12 @@ export class Requirements {
 
   @Prop({ required: true })
   maxPrice: number;
+
+  @Prop({ enum: ['smoker', 'non_smoker', 'any'], default: 'any', required: false })
+  smokingPreference?: 'smoker' | 'non_smoker' | 'any';
+
+  @Prop({ enum: ['has_pets', 'no_pets', 'any'], default: 'any', required: false })
+  petsPreference?: 'has_pets' | 'no_pets' | 'any';
 }
 
 @Schema({ timestamps: true, collection: 'posts' })
