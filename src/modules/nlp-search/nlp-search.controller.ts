@@ -31,17 +31,6 @@ export class NlpSearchController {
     async nlpSearch(@Query() q: any) {
         const query = q.q?.trim() || '';
         
-        // Kiểm tra: phải có ít nhất q hoặc một số filter cơ bản
-        const hasFilters = q.category || q.postType || q.minPrice || q.maxPrice || 
-                          q.district || q.ward || q.amenities || q.lat || q.lon;
-        
-        if (!query && !hasFilters) {
-            throw new HttpException(
-                'Query parameter "q" or at least one filter (category, postType, price, location, etc.) is required.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
-        
         try {
             const extraParams = {
                 // Điều khiển phân trang & sort
