@@ -281,7 +281,8 @@ export class RetrieverAgent {
       const diversified = diversifiedResult.items;
 
       // Re-slice back into pages using original page size and prefetch count
-      const pageSize = Number(res.limit) || 12;
+      // Ưu tiên lấy từ params.limit, fallback res.limit, cuối cùng mới dùng default
+      const pageSize = Number(params.limit) || Number(res.limit) || 12;
       const prefetchCount = Array.isArray(res.prefetch)
         ? res.prefetch.length
         : 0;

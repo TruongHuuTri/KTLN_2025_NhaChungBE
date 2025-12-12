@@ -2,7 +2,7 @@
 
 ## 🚀 Tóm Tắt
 
-**2 API chính:**
+**2 API chính:** BE 3001
 
 ### 1. Search API: `GET /api/search`
 
@@ -10,7 +10,7 @@
 
 1. **Có query**: `GET /api/search?q=phòng trọ gò vấp 3tr&userId=123`
 2. **Không query + có userId**: `GET /api/search?userId=123` → Personalized feed
-3. **Không query + không userId**: `GET /api/search` → Freshness feed
+3. **Không query + không userId**: `GET /api/rooms` → Freshness feed
 
 ### 2. Click Event API: `POST /api/events/click`
 

@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import Redis from 'ioredis';
+import {
+  UserProfile,
+  UserProfileDocument,
+} from '../user-profiles/schemas/user-profile.schema';
 
 export type PersonalizationBoosts = {
   boostAmenities?: string[];
@@ -11,6 +17,7 @@ export type ProfileFallback = {
   minPrice?: number;
   maxPrice?: number;
   wardCodes?: string[];
+  roomType?: string[];
 };
 
 @Injectable()
@@ -18,7 +25,11 @@ export class PersonalizationAgent {
   private readonly logger = new Logger(PersonalizationAgent.name);
   private readonly redis: Redis;
 
-  constructor(private readonly cfg: ConfigService) {
+  constructor(
+    private readonly cfg: ConfigService,
+    @InjectModel(UserProfile.name)
+    private readonly userProfileModel: Model<UserProfileDocument>,
+  ) {
     const url = this.cfg.get<string>('REDIS_URL');
     if (url) {
       this.redis = new Redis(url, {
@@ -104,26 +115,74 @@ export class PersonalizationAgent {
     try {
       const key = `user:profile:pref:${userId}`;
       const data = await this.redis.hgetall(key);
-      if (!data || Object.keys(data).length === 0) return undefined;
+      const hasData = data && Object.keys(data).length > 0;
 
-      const category = data.category || undefined;
+      const category = hasData ? data.category || undefined : undefined;
       const minPrice =
-        data.minPrice != null && data.minPrice !== ''
+        hasData && data.minPrice != null && data.minPrice !== ''
           ? Number(data.minPrice)
           : undefined;
       const maxPrice =
-        data.maxPrice != null && data.maxPrice !== ''
+        hasData && data.maxPrice != null && data.maxPrice !== ''
           ? Number(data.maxPrice)
           : undefined;
       const wardCodes =
-        data.wardCodes && data.wardCodes.length > 0
+        hasData && data.wardCodes && data.wardCodes.length > 0
           ? data.wardCodes.split(',').map((s) => s.trim()).filter(Boolean)
           : undefined;
 
-      return { category, minPrice, maxPrice, wardCodes };
+      let roomType: string[] | undefined;
+      let derivedCategory = category;
+
+      if (!derivedCategory) {
+        const profile = await this.userProfileModel
+          .findOne({ userId })
+          .lean()
+          .exec();
+        if (profile?.roomType && Array.isArray(profile.roomType)) {
+          roomType = profile.roomType;
+          const mapped = this.mapRoomTypeToCategory(profile.roomType);
+          if (mapped) derivedCategory = mapped;
+        }
+      }
+
+      if (!hasData && !roomType && !derivedCategory) return undefined;
+
+      return {
+        category: derivedCategory,
+        minPrice,
+        maxPrice,
+        wardCodes,
+        roomType,
+      };
     } catch (e: any) {
       this.logger.warn(`getProfileFallback failed: ${e?.message || e}`);
       return undefined;
     }
+  }
+
+  private mapRoomTypeToCategory(types: string[]): string | undefined {
+    const normalized = (types || []).map((t) => t.trim().toLowerCase());
+    const has = (...keywords: string[]) =>
+      normalized.some((t) => keywords.some((k) => t.includes(k)));
+
+    if (has('phòng trọ', 'phong tro')) return 'phong-tro';
+    if (
+      has(
+        'chung cư',
+        'chung cu',
+        'căn hộ',
+        'can ho',
+        'căn hộ dv',
+        'can ho dv',
+        'dv',
+        'officetel',
+        'studio',
+      )
+    ) {
+      return 'chung-cu';
+    }
+    if (has('nhà nguyên căn', 'nha nguyen can')) return 'nha-nguyen-can';
+    return undefined;
   }
 }

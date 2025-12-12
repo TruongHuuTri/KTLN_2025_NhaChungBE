@@ -63,6 +63,43 @@ export class NlpSearchService {
         out.wardCodes = detected.wardCodes;
       }
     }
+    // Nếu có POI keywords nhưng chưa có ward codes, thử detect district từ POI name
+    // Ví dụ: "Đại học Công nghiệp" → Gò Vấp
+    if (
+      !out.wardCodes?.length &&
+      out.poiKeywords &&
+      out.poiKeywords.length > 0
+    ) {
+      const poiText = out.poiKeywords.join(' ').toLowerCase();
+      // Hardcode mapping cho các POI phổ biến (để demo chắc chắn)
+      const poiToDistrict: Record<string, string> = {
+        'đại học công nghiệp': 'gò vấp',
+        'dai hoc cong nghiep': 'gò vấp',
+        'đại học công nghiệp tp hcm': 'gò vấp',
+        iuh: 'gò vấp',
+      };
+      for (const [poiKey, districtName] of Object.entries(poiToDistrict)) {
+        if (poiText.includes(poiKey)) {
+          const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
+          if (codes && codes.length) {
+            out.district = districtName;
+            out.wardCodes = codes;
+            this.logger.debug(
+              `Detected district "${districtName}" from POI: ${poiText}`,
+            );
+            break;
+          }
+        }
+      }
+      // Fallback: detect từ POI text nếu không có hardcode
+      if (!out.wardCodes?.length) {
+        const detected = this.geo.detectDistrictFromText(poiText);
+        if (detected) {
+          out.district = out.district || detected.alias;
+          out.wardCodes = detected.wardCodes;
+        }
+      }
+    }
     if (!out.wardCodes?.length && out.ward) {
       const resolved = this.geo.resolveWardByName(out.ward);
       if (resolved) {
@@ -199,7 +236,7 @@ export class NlpSearchService {
         (merged as any)[key] = value;
       }
     });
-    
+
     // Fallback category cuối cùng nếu vẫn chưa có (tránh mất category sau khi merge)
     if (!merged.category && rawQuery) {
       const t = rawQuery.toLowerCase();
@@ -208,6 +245,23 @@ export class NlpSearchService {
         merged.category = 'chung-cu';
       else if (/nhà\s*nguyên\s*căn|nguyen\s*can|nha\s*nguyen\s*can/.test(t))
         merged.category = 'nha-nguyen-can';
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.debug('[NlpSearchService] Merged params preview', {
+        q: merged.q,
+        ward_code: merged.ward_code,
+        district: merged.district,
+        category: merged.category,
+        postType: merged.postType,
+        amenities: merged.amenities,
+        minBedrooms: merged.minBedrooms,
+        maxBedrooms: merged.maxBedrooms,
+        minBathrooms: merged.minBathrooms,
+        maxBathrooms: merged.maxBathrooms,
+        minPrice: merged.minPrice,
+        maxPrice: merged.maxPrice,
+      });
     }
 
     // Personalization boosts (soft signals)
@@ -226,7 +280,7 @@ export class NlpSearchService {
     } catch (e: any) {
       this.logger.warn(`Personalization boosts ignored: ${e?.message || e}`);
     }
-    
+
     const t0 = Date.now();
     const result = await this.retriever.retrieve(merged);
     this.logger.log(
@@ -283,40 +337,42 @@ export class NlpSearchService {
     // Returning user: Personalized feed
     if (userId) {
       try {
-        const history = await this.personalization.getSearchHistory(userId);
+        const [history, profilePref] = await Promise.all([
+          this.personalization.getSearchHistory(userId),
+          this.personalization.getProfileFallback(userId),
+        ]);
+
+        let implicitParams: SearchPostsParams | undefined;
         if (history && history.length > 0) {
-          // Parse history để extract ward/district, price, category
-          const implicitParams = await this.buildImplicitParamsFromHistory(
+          implicitParams = await this.buildImplicitParamsFromHistory(
             history,
             userId,
           );
-          return this.retriever.retrieve({
-            ...implicitParams,
-            userId,
-            page,
-            limit,
-            lat,
-            lon,
-            category: category || implicitParams.category,
-            postType: postType || implicitParams.postType,
-            sort: 'relevance',
-          });
         }
-        // Fallback: nếu chưa có history, thử dùng profile preference (category/price/wardCodes)
-        const profilePref = await this.personalization.getProfileFallback(userId);
-        if (profilePref) {
-          return this.retriever.retrieve({
+
+        // Merge history + profile (profile ưu tiên ward/category/postType nếu có),
+        // history bổ sung price/ward nếu profile thiếu. Tránh ưu tiên "ở ghép" cứng.
+        if (implicitParams || profilePref) {
+          const merged: SearchPostsParams = {
             userId,
             page,
             limit,
             lat,
             lon,
-            category: category || profilePref.category,
-            minPrice: profilePref.minPrice,
-            maxPrice: profilePref.maxPrice,
-            ward_code: profilePref.wardCodes,
             sort: 'relevance',
-          });
+            // Ward: ưu tiên profile, nếu chưa có thì lấy từ history
+            ward_code:
+              profilePref?.wardCodes || (implicitParams as any)?.ward_code,
+            // Category: ưu tiên profile
+            category:
+              category || profilePref?.category || implicitParams?.category,
+            // Post type: ưu tiên request hoặc history; profile chưa cung cấp postType nên bỏ để tránh null sai type
+            postType: postType || implicitParams?.postType,
+            // Price: dùng history (median) nếu có, fallback profile
+            minPrice: implicitParams?.minPrice ?? profilePref?.minPrice,
+            maxPrice: implicitParams?.maxPrice ?? profilePref?.maxPrice,
+          };
+          return this.retriever.retrieve(merged);
         }
       } catch (e: any) {
         this.logger.warn(
@@ -369,7 +425,7 @@ export class NlpSearchService {
         if (parsed.ward_code) {
           if (Array.isArray(parsed.ward_code)) {
             parsed.ward_code.forEach((w) => wards.add(w));
-      } else {
+          } else {
             wards.add(parsed.ward_code);
           }
         }
@@ -380,7 +436,7 @@ export class NlpSearchService {
           );
           if (districtWards && districtWards.length > 0) {
             districtWards.forEach((w) => wards.add(w));
-    }
+          }
         }
         if (parsed.district) districts.add(parsed.district);
       }
@@ -421,7 +477,7 @@ export class NlpSearchService {
           this.geo.expandDistrictAliasesToWardCodes(district);
         if (districtWards) {
           districtWards.forEach((w) => allWards.add(w));
-    }
+        }
       }
       if (allWards.size > 0) {
         params.ward_code = Array.from(allWards);

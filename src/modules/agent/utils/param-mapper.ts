@@ -104,6 +104,30 @@ export function mapParsedToParams(parsed: ParsedNlpQuery): SearchPostsParams {
     if (maxPrice != null) p.maxPrice = maxPrice;
   }
 
+  // Fallback bedrooms/bathrooms nếu parser chưa gán nhưng text có số
+  if (p.minBedrooms == null && p.maxBedrooms == null) {
+    const text = (parsed.q || parsed.raw || '').toLowerCase();
+    const mBed = text.match(/(\d+)\s*phòng\s*ngủ/);
+    if (mBed) {
+      const n = Number(mBed[1]);
+      if (Number.isFinite(n) && n > 0 && n <= 20) {
+        p.minBedrooms = n;
+        p.maxBedrooms = n;
+      }
+    }
+  }
+  if (p.minBathrooms == null && p.maxBathrooms == null) {
+    const text = (parsed.q || parsed.raw || '').toLowerCase();
+    const mBath = text.match(/(\d+)\s*phòng\s*tắm/);
+    if (mBath) {
+      const n = Number(mBath[1]);
+      if (Number.isFinite(n) && n > 0 && n <= 20) {
+        p.minBathrooms = n;
+        p.maxBathrooms = n;
+      }
+    }
+  }
+
   if (parsed.minCreatedAt) p.minCreatedAt = parsed.minCreatedAt;
   if (parsed.priceComparison) p.priceComparison = parsed.priceComparison;
   if (parsed.excludeAmenities?.length)

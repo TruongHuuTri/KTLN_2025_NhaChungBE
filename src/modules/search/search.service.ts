@@ -111,7 +111,7 @@ export class SearchService {
   private buildResponseItem(h: any) {
     const source = h._source || {};
     const highlight = h.highlight || {};
-    
+
     const cleanHighlight: Record<string, string[]> = {};
     const allowedKeys = ['title', 'description', 'address', 'buildingName'];
     Object.keys(highlight).forEach((key) => {
@@ -170,7 +170,12 @@ export class SearchService {
 
   async searchPosts(p: SearchPostsParams) {
     const page = Math.max(1, Number(p.page) || 1);
-    const pageSize = Math.min(50, Math.max(1, Number(p.limit) || 12));
+    // Nếu không có limit hoặc limit = 0, trả về tất cả (tối đa 200 để tránh performance issue)
+    const requestedLimit = Number(p.limit);
+    const pageSize =
+      requestedLimit === 0 || !requestedLimit
+        ? 200
+        : Math.min(200, Math.max(1, requestedLimit));
     let debugHybrid = false;
     const phaseAttempts: {
       phase: string;
@@ -184,7 +189,11 @@ export class SearchService {
     const prefetch = Math.max(0, Math.min(3, Number(rawPrefetch) || 0));
     const from = (page - 1) * pageSize;
     const minResults = p.minResults ?? Math.ceil(pageSize * 1.5); // giảm relax threshold để bớt nới lỏng
-    const size = Math.min(50, pageSize * (1 + prefetch));
+    // Nếu không có limit, lấy tất cả (tối đa 200)
+    const size =
+      requestedLimit === 0 || !requestedLimit
+        ? 200
+        : Math.min(200, pageSize * (1 + prefetch));
 
     const derivePriceTarget = () => {
       // Nếu đã có min/max thì dùng chúng
@@ -236,6 +245,7 @@ export class SearchService {
       return value || null;
     };
     // Helper: build các đoạn text-boost cho tiện ích (không cần field amenities)
+    // Ưu tiên check thẳng vào description với boost cao
     const buildAmenityTextShould = (amenityKeys: string[] = []) =>
       amenityKeys
         .map((amenityKey) => {
@@ -243,20 +253,35 @@ export class SearchService {
           if (keywords.length === 0) return null;
           return {
             bool: {
-              should: keywords.map((keyword) => ({
-                multi_match: {
-                  query: keyword,
-                  type: 'best_fields',
-                  fields: [
-                    'title.raw^5',
-                    'roomDescription.raw^4',
-                    'title.ng^3',
-                    'roomDescription.fold^2',
-                    'postDescription.fold^2',
-                  ],
-                  fuzziness: 'AUTO',
+              should: keywords.flatMap((keyword) => [
+                // Match phrase trong description (chính xác hơn)
+                {
+                  match_phrase: {
+                    roomDescription: { query: keyword, boost: 6.0 },
+                  },
                 },
-              })),
+                {
+                  match_phrase: {
+                    postDescription: { query: keyword, boost: 5.0 },
+                  },
+                },
+                // Multi-match cho các field khác
+                {
+                  multi_match: {
+                    query: keyword,
+                    type: 'best_fields',
+                    fields: [
+                      'roomDescription.raw^5',
+                      'postDescription.raw^4',
+                      'title.raw^3',
+                      'roomDescription.fold^3',
+                      'postDescription.fold^2',
+                      'title.ng^2',
+                    ],
+                    fuzziness: 'AUTO',
+                  },
+                },
+              ]),
               minimum_should_match: 1,
             },
           };
@@ -327,54 +352,67 @@ export class SearchService {
     // Giữ mềm: không ép must cho ở ghép/cho thuê, chỉ dùng boost/phạt bên function_score
 
     if (p.q && p.q.trim()) {
-        must.push({
-                multi_match: {
-                  query: p.q,
-                  type: 'most_fields',
-                  fields: [
-                    'address.full.raw^6',
-                    'address.full.fold^5',
+      must.push({
+        multi_match: {
+          query: p.q,
+          type: 'most_fields',
+          fields: [
+            'address.full.raw^6',
+            'address.full.fold^5',
             'buildingName.raw^5',
             'buildingName.fold^4',
-                    'title.raw^3',
-                    'title.fold^2.5',
-                    'title.ng^2',
-            'roomDescription.raw^2',
-            'roomDescription.fold^1.5',
-            'postDescription.fold^1',
-                  ],
-                  fuzziness: 'AUTO',
-                  operator: 'or',
-          },
-        });
-      }
-      
-    // Boost POI keywords trong title/description
+            'title.raw^3',
+            'title.fold^2.5',
+            'title.ng^2',
+            'roomDescription.raw^3',
+            'roomDescription.fold^2.5',
+            'postDescription.raw^2',
+            'postDescription.fold^1.5',
+          ],
+          fuzziness: 'AUTO',
+          operator: 'or',
+        },
+      });
+    }
+
+    // Boost POI keywords trong title/description (boost cao cho demo thuyết trình)
     if (p.poiKeywords && p.poiKeywords.length > 0) {
       const poiQueries = p.poiKeywords.map((poiName) => ({
         multi_match: {
           query: poiName,
           type: 'best_fields',
           fields: [
-            'title.raw^6',
-            'roomDescription.raw^5',
-            'title.ng^4',
-            'roomDescription.fold^3',
-            'address.full.raw^2',
+            'title.raw^8',
+            'roomDescription.raw^7',
+            'postDescription.raw^6',
+            'title.ng^5',
+            'roomDescription.fold^4',
+            'postDescription.fold^3',
+            'address.full.raw^3',
           ],
           fuzziness: 'AUTO',
-          },
+        },
       }));
       must.push({
-        bool: { should: poiQueries, minimum_should_match: 1, boost: 3.0 },
+        bool: { should: poiQueries, minimum_should_match: 1, boost: 4.5 },
       });
     }
 
-    // Boost amenities trong text (nếu có yêu cầu)
-    const amenityQueries = buildAmenityTextShould(p.amenities || []);
+    // Boost amenities trong text (ưu tiên cao cho demo thuyết trình)
+    if ((!p.amenities || p.amenities.length === 0) && p.q) {
+      p.amenities = this.amenities.extractAmenities(p.q);
+    }
+    const amenityList = p.amenities || [];
+    const amenityQueries = buildAmenityTextShould(amenityList);
     if (amenityQueries.length > 0) {
+      // Boost mạnh hơn để các bài khớp nhiều tiện ích lên trên
+      const amenityBoost = 3 + 0.7 * Math.max(0, amenityList.length - 1);
       must.push({
-        bool: { should: amenityQueries, minimum_should_match: 1, boost: 1.5 },
+        bool: {
+          should: amenityQueries,
+          minimum_should_match: 1,
+          boost: amenityBoost,
+        },
       });
     }
 
@@ -382,9 +420,9 @@ export class SearchService {
     const boostAmenityQueries = buildAmenityTextShould(p.boostAmenities || []);
     if (boostAmenityQueries.length > 0) {
       must.push({
-          bool: {
+        bool: {
           should: boostAmenityQueries,
-            minimum_should_match: 1,
+          minimum_should_match: 1,
           boost: 1.2,
         },
       });
@@ -500,8 +538,8 @@ export class SearchService {
           },
         });
       }
-      
-      // Filter buildingName: 
+
+      // Filter buildingName:
       // - Nếu buildingName xuất hiện trong query text → chỉ dùng text search (multi_match)
       // - Nếu buildingName được truyền riêng (không có trong query) → dùng exact filter
       if (p.buildingName && p.buildingName.trim()) {
@@ -529,7 +567,7 @@ export class SearchService {
           filter.push({ range: { price: priceFilter } });
         }
       }
-      
+
       // Thời gian đăng (từ NLP parsing)
       if (p.minCreatedAt) {
         filter.push({ range: { createdAt: { gte: p.minCreatedAt } } });
@@ -544,23 +582,23 @@ export class SearchService {
             coords: { lat: p.lat, lon: p.lon },
           },
         });
-    }
+      }
 
       // Exclude districts
-    if (p.excludeDistricts && p.excludeDistricts.length > 0) {
-      const excludeDistrictCodes: string[] = [];
-      for (const districtName of p.excludeDistricts) {
-        const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
-        if (codes) excludeDistrictCodes.push(...codes);
-      }
-      if (excludeDistrictCodes.length > 0) {
+      if (p.excludeDistricts && p.excludeDistricts.length > 0) {
+        const excludeDistrictCodes: string[] = [];
+        for (const districtName of p.excludeDistricts) {
+          const codes = this.geo.expandDistrictAliasesToWardCodes(districtName);
+          if (codes) excludeDistrictCodes.push(...codes);
+        }
+        if (excludeDistrictCodes.length > 0) {
           filter.push({
             bool: {
               must_not: { terms: { 'address.wardCode': excludeDistrictCodes } },
             },
           });
+        }
       }
-    }
 
       // Roommate gender filter
       if (
@@ -568,9 +606,9 @@ export class SearchService {
         p.gender &&
         p.gender !== 'any'
       ) {
-      filter.push({ term: { gender: p.gender } });
-    }
-    
+        filter.push({ term: { gender: p.gender } });
+      }
+
       return filter;
     };
 
@@ -709,7 +747,7 @@ export class SearchService {
       );
       if (nearbyOnlyWardCodes.length > 0 && p.category) {
         const weight = p.category === 'chung-cu' ? 40 : 20;
-      functions.push({
+        functions.push({
           filter: {
             bool: {
               must: [
@@ -719,12 +757,12 @@ export class SearchService {
             },
           },
           weight,
-    });
+        });
       }
 
       // Tier 4: District-level soft boost nếu không có ward_code (dựa trên district alias)
       if (expandedWardCodes.length > 0) {
-      functions.push({
+        functions.push({
           filter: { terms: { 'address.wardCode': expandedWardCodes } },
           weight: 20,
         });
@@ -794,14 +832,14 @@ export class SearchService {
           filter: roommateBoostFilter,
           weight: 0.05,
         });
-    }
-    
+      }
+
       // Roommate boosting by searcher gender
       if (
         p.roommate &&
         (p.searcherGender === 'male' || p.searcherGender === 'female')
       ) {
-      functions.push({
+        functions.push({
           filter: {
             bool: {
               must: [
@@ -810,18 +848,18 @@ export class SearchService {
               ],
             },
           },
-        weight: 2.0,
-      });
-      functions.push({
+          weight: 2.0,
+        });
+        functions.push({
           filter: {
             bool: {
               must: [roommateBoostFilter],
               must_not: [{ term: { gender: p.searcherGender } }],
             },
           },
-        weight: 0.6,
-      });
-    }
+          weight: 0.6,
+        });
+      }
 
       // Các boost cũ: geo-distance và độ mới
       if (p.lat != null && p.lon != null) {
@@ -869,8 +907,8 @@ export class SearchService {
             },
           },
         ];
-          }
-      
+      }
+
       const body: any = {
         track_total_hits: true,
         from,
@@ -1010,7 +1048,7 @@ export class SearchService {
           terms: { 'address.wardCode': expandedWardCodes },
         });
       }
-      
+
       // Nới price range nếu có price filter ban đầu và không phải là price comparison mode
       if ((p.minPrice != null || p.maxPrice != null) && !p.priceComparison) {
         const priceRange: any = {};
@@ -1024,7 +1062,7 @@ export class SearchService {
           minimalFilters.push({ range: { price: priceRange } });
         }
       }
-      
+
       // Giữ geo filter nếu có (quan trọng cho UX)
       if (p.lat != null && p.lon != null && p.distance) {
         minimalFilters.push({
@@ -1097,7 +1135,7 @@ export class SearchService {
       resp = phaseResult.resp;
       totalHits = phaseResult.hits;
     }
-    
+
     // --- 5. Xử lý và trả về kết quả ---
     const allWindowItems = (resp.hits?.hits || []).map((h: any) =>
       this.buildResponseItem(h),
