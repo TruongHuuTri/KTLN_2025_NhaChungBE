@@ -11,6 +11,7 @@ export class EmbeddingService {
   private readonly genAI: GoogleGenerativeAI;
   private readonly redis: Redis;
   private cachedModelName: string | null = null;
+  private readonly queryTtlSec: number;
 
   constructor(private readonly cfg: ConfigService) {
     const apiKey = this.cfg.get<string>('GEMINI_API_KEY');
@@ -18,6 +19,10 @@ export class EmbeddingService {
       throw new Error('GEMINI_API_KEY is required for EmbeddingService');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
+
+    // TTL config (default 3600s)
+    this.queryTtlSec =
+      Number(this.cfg.get<number>('EMB_QUERY_TTL_SEC')) || 3600;
 
     const redisUrl = this.cfg.get<string>('REDIS_URL');
     if (redisUrl) {
@@ -65,10 +70,16 @@ export class EmbeddingService {
     throw new Error('No working Gemini embedding model available');
   }
 
-  private withTimeout<T>(promiseFactory: () => Promise<T>, ms: number, context: string): Promise<T> {
+  private withTimeout<T>(
+    promiseFactory: () => Promise<T>,
+    ms: number,
+    context: string,
+  ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
-        this.logger.warn(`EmbeddingService timeout (${ms}ms) in context: ${context}`);
+        this.logger.warn(
+          `EmbeddingService timeout (${ms}ms) in context: ${context}`,
+        );
         reject(new Error(`EmbeddingService timeout in ${context}`));
       }, ms);
 
@@ -93,8 +104,7 @@ export class EmbeddingService {
     const cleaned = this.normalizeText(text);
     if (!cleaned) return [];
 
-    const cacheKey =
-      type === 'query' ? `emb:query:v1:${cleaned}` : undefined;
+    const cacheKey = type === 'query' ? `emb:query:v1:${cleaned}` : undefined;
 
     if (cacheKey) {
       try {
@@ -119,7 +129,11 @@ export class EmbeddingService {
 
     if (cacheKey) {
       try {
-        await this.redis.setex(cacheKey, 3600, JSON.stringify(vector));
+        await this.redis.setex(
+          cacheKey,
+          this.queryTtlSec,
+          JSON.stringify(vector),
+        );
       } catch {
         // ignore cache errors
       }
@@ -128,5 +142,3 @@ export class EmbeddingService {
     return vector;
   }
 }
-
-

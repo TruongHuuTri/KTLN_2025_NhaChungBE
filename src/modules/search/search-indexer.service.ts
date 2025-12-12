@@ -131,16 +131,29 @@ export class SearchIndexerService {
       }
     }
 
-    const normalizeType = (t: any): 'rent' | 'roommate' => {
+    const normalizeType = (t: any): 'cho-thue' | 'tim-o-ghep' => {
       const v = String(t ?? '').toLowerCase().trim();
-      if (v === 'roommate' || v === 'o-ghep' || v === 'oghep' || v === 'og' || v === 'share' || v === 'share_room') {
-        return 'roommate';
+      if (
+        v === 'roommate' ||
+        v === 'tim-o-ghep' ||
+        v === 'o-ghep' ||
+        v === 'oghep' ||
+        v === 'og' ||
+        v === 'share' ||
+        v === 'share_room'
+      ) {
+        return 'tim-o-ghep';
       }
-      // default to rent
-      if (v === 'rent' || v === 'cho-thue' || v === 'chothue' || v === 'rent_post') {
-        return 'rent';
+      // default to cho-thue
+      if (
+        v === 'rent' ||
+        v === 'cho-thue' ||
+        v === 'chothue' ||
+        v === 'rent_post'
+      ) {
+        return 'cho-thue';
       }
-      return 'rent';
+      return 'cho-thue';
     };
 
     // Build full address: ưu tiên room, fallback post.roomInfo
@@ -190,6 +203,8 @@ export class SearchIndexerService {
       createdAt: post?.createdAt ?? new Date(),
       isActive: post?.isActive !== false,
       roomId: post?.roomId ?? null,
+      postType: normalizeType(post?.postType ?? post?.type), // đồng bộ với type
+      roommate: normalizeType(post?.postType ?? post?.type) === 'tim-o-ghep',
     };
 
     // Enrich codes: ưu tiên room, fallback post.roomInfo, cuối cùng resolve từ ward name
@@ -204,6 +219,11 @@ export class SearchIndexerService {
           doc.address.provinceCode = r.provinceCode;
           doc.address.wardCode = r.wardCode;
         }
+      }
+      // Nếu có wardCode mà chưa có district name, tra theo mapping legacy
+      if (!doc.address.district && doc.address.wardCode) {
+        const districtName = this.geo.getDistrictNameByWardCode(doc.address.wardCode);
+        if (districtName) doc.address.district = districtName;
       }
     } catch {}
 

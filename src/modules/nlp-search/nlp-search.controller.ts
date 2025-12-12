@@ -24,12 +24,19 @@ export class NlpSearchController {
      * 
      * GET /search?q=...
      * - Nếu có q: dùng NLP + BM25 + (tự động Hybrid Vector).
-     * - Nếu không có q nhưng có filters: dùng BM25 + filters (từ chips FE gửi).
+     * - Nếu không có q nhưng có userId: Zero-query feed (personalized).
+     * - Nếu không có q và không có userId: Zero-query feed (new user - freshness).
      * - Nếu không có cả q và filters: trả lỗi.
      */
     @Get()
     async nlpSearch(@Query() q: any) {
         const query = q.q?.trim() || '';
+        const userId = this.parseNumber(q.userId);
+        
+        // Zero-query feed: không có query text
+        if (!query) {
+            return this.zeroQueryFeed(q, userId);
+        }
         
         try {
             const extraParams = {
@@ -44,7 +51,7 @@ export class NlpSearchController {
                 minResults: this.parseNumber(q.minResults),
 
                 // Personalization (nếu FE gửi kèm userId)
-                userId: this.parseNumber(q.userId),
+                userId,
 
                 // Cho phép override một số filter nếu FE gửi trực tiếp (ưu tiên cao hơn NLP)
                 minPrice: this.parseNumber(q.minPrice),
@@ -54,8 +61,8 @@ export class NlpSearchController {
                 lat: this.parseNumber(q.lat),
                 lon: this.parseNumber(q.lon),
                 distance: q.distance,
-                category: q.category,
-                postType: q.postType,
+                category: q.category?.trim() || undefined,
+                postType: q.postType?.trim() || undefined,
                 province_code: q.province_code,
                 district: q.district,
                 ward: q.ward,
@@ -98,6 +105,100 @@ export class NlpSearchController {
             };
         } catch (error: any) {
             this.logger.error('Top-level search error:', error);
+            throw new HttpException(
+                error.message || 'An internal server error occurred.',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    /**
+     * Endpoint recommend: gợi ý dựa trên lịch sử search của user
+     * GET /search/recommend?userId=123&limit=12
+     */
+    @Get('recommend')
+    async recommend(@Query() q: any) {
+        const userId = this.parseNumber(q.userId);
+        if (!userId) {
+            throw new HttpException(
+                'userId is required',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        try {
+            // Lấy lịch sử search (10 query gần nhất)
+            const history = await this.nlpSearchService.getSearchHistory(userId);
+            if (!history || history.length === 0) {
+                return {
+                    statusCode: HttpStatus.OK,
+                    message: 'No search history found.',
+                    data: { total: 0, items: [] },
+                };
+            }
+
+            // Dùng query gần nhất để recommend
+            const latestQuery = history[0];
+            const limit = this.parseNumber(q.limit) || 12;
+            const page = this.parseNumber(q.page) || 1;
+
+            const results = await this.nlpSearchService.searchWithParams(
+                latestQuery,
+                {
+                    userId,
+                    page,
+                    limit,
+                    sort: 'relevance',
+                },
+            );
+
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'Recommendations based on search history.',
+                data: {
+                    ...results,
+                    basedOnQuery: latestQuery,
+                    historyCount: history.length,
+                },
+            };
+        } catch (error: any) {
+            this.logger.error('Recommend error:', error);
+            throw new HttpException(
+                error.message || 'An internal server error occurred.',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    /**
+     * Zero-query feed: Feed khi chưa nhập từ khóa
+     * - Returning user (có userId + history): Personalized feed với boost từ history
+     * - New user (không userId hoặc không có history): Freshness feed
+     */
+    private async zeroQueryFeed(q: any, userId?: number) {
+        const limit = this.parseNumber(q.limit) || 20;
+        const page = this.parseNumber(q.page) || 1;
+        const lat = this.parseNumber(q.lat);
+        const lon = this.parseNumber(q.lon);
+
+        try {
+            const results = await this.nlpSearchService.getZeroQueryFeed({
+                userId,
+                page,
+                limit,
+                lat,
+                lon,
+                category: q.category,
+                postType: q.postType,
+            });
+
+            return {
+                statusCode: HttpStatus.OK,
+                message: userId ? 'Personalized feed' : 'Fresh feed',
+                data: results,
+            };
+        } catch (error: any) {
+            this.logger.error('Zero-query feed error:', error);
             throw new HttpException(
                 error.message || 'An internal server error occurred.',
                 HttpStatus.INTERNAL_SERVER_ERROR,

@@ -58,6 +58,7 @@ export interface ParsedNlpQuery {
   furniture?: string; // 'full', 'basic', 'none'
   legalStatus?: string; // 'co-so-hong', 'cho-so'
   propertyType?: string;
+  buildingName?: string;
   // --- END: Các trường mới ---
 }
 

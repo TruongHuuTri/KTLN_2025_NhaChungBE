@@ -24,6 +24,7 @@ import { OTPService } from './shared/services/otp.service';
 import { SearchModule } from './modules/search/search.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RoommatePreferencesModule } from './modules/roommate-preferences/roommate-preferences.module';
+import { SignalsModule } from './modules/signals/signals.module';
 @Module({
 
   imports: [
@@ -59,6 +60,7 @@ import { RoommatePreferencesModule } from './modules/roommate-preferences/roomma
     SearchModule,
     ChatModule,
     RoommatePreferencesModule,
+    SignalsModule,
   ],
   controllers: [AppController],
   providers: [AppService, EmailService, OTPService],
