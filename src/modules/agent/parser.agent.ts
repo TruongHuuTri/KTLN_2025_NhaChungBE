@@ -440,9 +440,33 @@ export class ParserAgent {
         const km = Number(parsed.radiusKm);
         if (!Number.isNaN(km) && km > 0) out.distance = `${km}km`;
       }
+
+      // Log kết quả AI parse để debug
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.debug(
+          `[AI Parse] Query: "${q}" → Result: ${JSON.stringify(out, null, 2)}`,
+        );
+      }
+
       return out;
-    } catch (e) {
-      this.logger.warn('ParserAgent AI parse failed, fallback heuristic');
+    } catch (e: any) {
+      // AI parse thất bại (timeout, API error, invalid JSON) → fallback về heuristic
+      // Đây là cơ chế bình thường, không phải lỗi nghiêm trọng
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.warn(
+          `[AI Parse] Query: "${q}" → Failed: ${e?.message || e}, fallback heuristic`,
+        );
+      } else {
+        // Production: chỉ log khi có lỗi thực sự (không phải timeout)
+        if (
+          !e?.message?.includes('timeout') &&
+          !e?.message?.includes('Timeout')
+        ) {
+          this.logger.warn(
+            `[AI Parse] Query: "${q}" → Failed: ${e?.message || e}, fallback heuristic`,
+          );
+        }
+      }
       return null;
     }
   }
@@ -463,10 +487,39 @@ export class ParserAgent {
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
         ]);
       }
-      const out = ai || this.heuristicParse(rawQuery);
-      this.logger.debug(
-        `ParserAgent.parse ${ai ? 'ai' : 'heuristic'} in ${Date.now() - t0}ms (skipAi=${skipAi})`,
-      );
+      const heuristic = this.heuristicParse(rawQuery);
+      const out = ai || heuristic;
+
+      // Log chi tiết kết quả parse
+      if (process.env.NODE_ENV === 'development') {
+        const method = ai ? 'AI' : 'heuristic';
+        const took = Date.now() - t0;
+        this.logger.debug(
+          `[ParserAgent] Query: "${rawQuery}" → Method: ${method}, Took: ${took}ms, SkipAI: ${skipAi}`,
+        );
+        this.logger.debug(
+          `[ParserAgent] Result: ${JSON.stringify(out, null, 2)}`,
+        );
+        if (ai && heuristic) {
+          // So sánh AI vs heuristic nếu cả hai đều có
+          const diff: any = {};
+          Object.keys(ai).forEach((key) => {
+            if (JSON.stringify(ai[key]) !== JSON.stringify(heuristic[key])) {
+              diff[key] = { ai: ai[key], heuristic: heuristic[key] };
+            }
+          });
+          if (Object.keys(diff).length > 0) {
+            this.logger.debug(
+              `[ParserAgent] AI vs Heuristic differences: ${JSON.stringify(diff, null, 2)}`,
+            );
+          }
+        }
+      } else {
+        this.logger.debug(
+          `ParserAgent.parse ${ai ? 'ai' : 'heuristic'} in ${Date.now() - t0}ms (skipAi=${skipAi})`,
+        );
+      }
+
       return out;
     } catch (e: any) {
       this.logger.warn(`ParserAgent.parse error: ${e?.message || e}`);

@@ -188,6 +188,23 @@ export class SearchService {
     const rawPrefetch = p.prefetch ?? 3;
     const prefetch = Math.max(0, Math.min(3, Number(rawPrefetch) || 0));
     const from = (page - 1) * pageSize;
+    // Với zero-query feed (không có query text), luôn chạy đến phase cuối để đảm bảo tính nhất quán
+    // Phân biệt giữa filter từ user request (explicit) và filter từ personalization (implicit)
+    const isZeroQueryFeed = !p.q || !p.q.trim();
+    // Chỉ coi là có filter đặc biệt nếu là filter từ user request (không phải từ personalization)
+    // Với zero-query feed, các filter từ personalization (ward_code, category, price) chỉ dùng để boost, không filter cứng
+    const hasExplicitFilters = !!(
+      p.category ||
+      p.postType ||
+      p.minPrice ||
+      p.maxPrice ||
+      p.ward_code ||
+      p.district ||
+      p.lat ||
+      p.lon
+    );
+    // Với zero-query feed, luôn chạy phase 5 với filter tối thiểu để đảm bảo tính nhất quán
+    // Bất kể có personalized filters hay không
     const minResults = p.minResults ?? Math.ceil(pageSize * 1.5); // giảm relax threshold để bớt nới lỏng
     // Nếu không có limit, lấy tất cả (tối đa 200)
     const size =
@@ -244,8 +261,8 @@ export class SearchService {
       }
       return value || null;
     };
-    // Helper: build các đoạn text-boost cho tiện ích (không cần field amenities)
-    // Ưu tiên check thẳng vào description với boost cao
+    // Helper: build các đoạn boost cho tiện ích
+    // Ưu tiên: field amenities (exact match) > text match trong description
     const buildAmenityTextShould = (amenityKeys: string[] = []) =>
       amenityKeys
         .map((amenityKey) => {
@@ -253,35 +270,44 @@ export class SearchService {
           if (keywords.length === 0) return null;
           return {
             bool: {
-              should: keywords.flatMap((keyword) => [
-                // Match phrase trong description (chính xác hơn)
+              should: [
+                // Ưu tiên cao nhất: exact match trong field amenities (nếu có)
                 {
-                  match_phrase: {
-                    roomDescription: { query: keyword, boost: 6.0 },
+                  term: {
+                    amenities: { value: amenityKey, boost: 8.0 },
                   },
                 },
-                {
-                  match_phrase: {
-                    postDescription: { query: keyword, boost: 5.0 },
+                // Text match trong description (boost thấp hơn)
+                ...keywords.flatMap((keyword) => [
+                  // Match phrase trong description (chính xác hơn)
+                  {
+                    match_phrase: {
+                      roomDescription: { query: keyword, boost: 10.0 },
+                    },
                   },
-                },
-                // Multi-match cho các field khác
-                {
-                  multi_match: {
-                    query: keyword,
-                    type: 'best_fields',
-                    fields: [
-                      'roomDescription.raw^5',
-                      'postDescription.raw^4',
-                      'title.raw^3',
-                      'roomDescription.fold^3',
-                      'postDescription.fold^2',
-                      'title.ng^2',
-                    ],
-                    fuzziness: 'AUTO',
+                  {
+                    match_phrase: {
+                      postDescription: { query: keyword, boost: 5.0 },
+                    },
                   },
-                },
-              ]),
+                  // Multi-match cho các field khác
+                  {
+                    multi_match: {
+                      query: keyword,
+                      type: 'best_fields',
+                      fields: [
+                        'roomDescription.raw^5',
+                        'postDescription.raw^4',
+                        'title.raw^3',
+                        'roomDescription.fold^3',
+                        'postDescription.fold^2',
+                        'title.ng^2',
+                      ],
+                      fuzziness: 'AUTO',
+                    },
+                  },
+                ]),
+              ],
               minimum_should_match: 1,
             },
           };
@@ -399,14 +425,25 @@ export class SearchService {
     }
 
     // Boost amenities trong text (ưu tiên cao cho demo thuyết trình)
-    if ((!p.amenities || p.amenities.length === 0) && p.q) {
-      p.amenities = this.amenities.extractAmenities(p.q);
+    const extractedAmenities = p.q ? this.amenities.extractAmenities(p.q) : [];
+    if (
+      (!p.amenities || p.amenities.length === 0) &&
+      extractedAmenities.length > 0
+    ) {
+      p.amenities = extractedAmenities;
     }
     const amenityList = p.amenities || [];
     const amenityQueries = buildAmenityTextShould(amenityList);
     if (amenityQueries.length > 0) {
-      // Boost mạnh hơn để các bài khớp nhiều tiện ích lên trên
-      const amenityBoost = 3 + 0.7 * Math.max(0, amenityList.length - 1);
+      // Boost mạnh hơn cho amenities được extract từ query (user đã nói rõ)
+      // Nếu amenity được extract từ query → boost cao hơn (5.0)
+      // Nếu amenity được truyền trực tiếp → boost vừa (3.0)
+      const isExtractedFromQuery =
+        extractedAmenities.length > 0 &&
+        amenityList.some((a) => extractedAmenities.includes(a));
+      const baseBoost = isExtractedFromQuery ? 5.0 : 3.0;
+      const amenityBoost =
+        baseBoost + 0.7 * Math.max(0, amenityList.length - 1);
       must.push({
         bool: {
           should: amenityQueries,
@@ -1092,36 +1129,64 @@ export class SearchService {
     }
 
     // Phase 5 (Broad): vẫn giữ ward/district để đảm bảo đúng địa lý; chỉ nới giá/geo nhẹ nếu cần thêm kết quả
-    if (totalHits < pageSize && !p.strict) {
+    // Với zero-query feed, luôn chạy phase này với filter tối thiểu để đảm bảo tính nhất quán
+    // Bất kể có personalized filters hay không (personalized filters chỉ dùng để boost, không filter cứng)
+    const shouldRunBroadPhase = isZeroQueryFeed
+      ? true
+      : totalHits < pageSize && !p.strict;
+    if (shouldRunBroadPhase) {
       const broadFilters: any[] = [
         { term: { status: 'active' } },
         { term: { isActive: true } },
       ];
-      if (exactWardCodes.length > 0) {
-        broadFilters.push({ terms: { 'address.wardCode': exactWardCodes } });
-      } else if (expandedWardCodes.length > 0) {
-        broadFilters.push({ terms: { 'address.wardCode': expandedWardCodes } });
-      }
-      if (p.province_code) {
-        broadFilters.push({
-          term: { 'address.provinceCode': p.province_code },
-        });
-      }
-      if (p.lat != null && p.lon != null && p.distance) {
-        broadFilters.push({
-          geo_distance: {
-            distance: p.distance,
-            coords: { lat: p.lat, lon: p.lon },
-          },
-        });
-      }
-      if ((p.minPrice != null || p.maxPrice != null) && !p.priceComparison) {
-        const priceRange: any = {};
-        if (p.minPrice != null)
-          priceRange.gte = Math.max(0, Math.floor(p.minPrice * 0.75));
-        if (p.maxPrice != null) priceRange.lte = Math.floor(p.maxPrice * 1.25);
-        if (Object.keys(priceRange).length > 0) {
-          broadFilters.push({ range: { price: priceRange } });
+
+      // Với zero-query feed, luôn dùng filter tối thiểu để đảm bảo tính nhất quán
+      // Personalized filters (ward_code, category, price từ history) chỉ dùng để boost, không filter cứng
+      // Chỉ filter postType nếu có (quan trọng cho tính nhất quán)
+      if (isZeroQueryFeed) {
+        // Chỉ thêm filter postType nếu có
+        if (effectivePostType) {
+          broadFilters.push({
+            bool: {
+              should: [
+                { term: { type: effectivePostType } },
+                { term: { postType: effectivePostType } },
+              ],
+              minimum_should_match: 1,
+            },
+          });
+        }
+      } else {
+        // Với query có filter, thêm tất cả filter tương ứng
+        if (exactWardCodes.length > 0) {
+          broadFilters.push({ terms: { 'address.wardCode': exactWardCodes } });
+        } else if (expandedWardCodes.length > 0) {
+          broadFilters.push({
+            terms: { 'address.wardCode': expandedWardCodes },
+          });
+        }
+        if (p.province_code) {
+          broadFilters.push({
+            term: { 'address.provinceCode': p.province_code },
+          });
+        }
+        if (p.lat != null && p.lon != null && p.distance) {
+          broadFilters.push({
+            geo_distance: {
+              distance: p.distance,
+              coords: { lat: p.lat, lon: p.lon },
+            },
+          });
+        }
+        if ((p.minPrice != null || p.maxPrice != null) && !p.priceComparison) {
+          const priceRange: any = {};
+          if (p.minPrice != null)
+            priceRange.gte = Math.max(0, Math.floor(p.minPrice * 0.75));
+          if (p.maxPrice != null)
+            priceRange.lte = Math.floor(p.maxPrice * 1.25);
+          if (Object.keys(priceRange).length > 0) {
+            broadFilters.push({ range: { price: priceRange } });
+          }
         }
       }
       // Phase 5: Không filter cứng category (soft ranking qua boost)
@@ -1136,7 +1201,88 @@ export class SearchService {
       totalHits = phaseResult.hits;
     }
 
-    // --- 5. Xử lý và trả về kết quả ---
+    // --- 5. Lấy tổng số thực tế với filter tối thiểu để đảm bảo tính nhất quán ---
+    // Tránh vấn đề total khác nhau giữa các lần gọi do logic phase
+    let actualTotal = totalHits;
+    try {
+      // Chạy query count riêng với filter tối thiểu (chỉ status và isActive)
+      // để lấy tổng số thực tế, không phụ thuộc vào phase nào đã chạy
+      const minimalCountFilter: any[] = [
+        { term: { status: 'active' } },
+        { term: { isActive: true } },
+      ];
+
+      // Với zero-query feed, luôn dùng filter tối thiểu để đảm bảo tính nhất quán
+      // Personalized filters (ward_code, category, price từ history) chỉ dùng để boost, không filter cứng
+      // Chỉ filter postType nếu có (quan trọng cho tính nhất quán)
+      if (isZeroQueryFeed) {
+        // Chỉ thêm filter postType nếu có
+        if (effectivePostType) {
+          minimalCountFilter.push({
+            bool: {
+              should: [
+                { term: { type: effectivePostType } },
+                { term: { postType: effectivePostType } },
+              ],
+              minimum_should_match: 1,
+            },
+          });
+        }
+      } else {
+        // Với query có filter, thêm tất cả filter tương ứng
+        // Thêm filter postType nếu có (quan trọng cho tính nhất quán)
+        if (effectivePostType) {
+          minimalCountFilter.push({
+            bool: {
+              should: [
+                { term: { type: effectivePostType } },
+                { term: { postType: effectivePostType } },
+              ],
+              minimum_should_match: 1,
+            },
+          });
+        }
+
+        // Thêm filter ward/district nếu có (để đảm bảo đúng scope)
+        if (exactWardCodes.length > 0) {
+          minimalCountFilter.push({
+            terms: { 'address.wardCode': exactWardCodes },
+          });
+        } else if (expandedWardCodes.length > 0) {
+          minimalCountFilter.push({
+            terms: { 'address.wardCode': expandedWardCodes },
+          });
+        }
+      }
+
+      const countBody: any = {
+        track_total_hits: true,
+        size: 0, // Chỉ cần count, không cần hits
+        query: {
+          bool: {
+            must: must.length ? must : [{ match_all: {} }],
+            filter: minimalCountFilter,
+          },
+        },
+      };
+
+      const countResp = await this.es.search({
+        index: this.index,
+        body: countBody,
+      } as any);
+      actualTotal = this.extractTotalHits(countResp);
+    } catch (e: any) {
+      // Nếu lỗi, fallback về totalHits từ phase cuối cùng
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[SearchService] Failed to get actual total, using phase total:',
+          e?.message || e,
+        );
+      }
+    }
+
+    // --- 6. Xử lý và trả về kết quả ---
     const allWindowItems = (resp.hits?.hits || []).map((h: any) =>
       this.buildResponseItem(h),
     );
@@ -1153,7 +1299,7 @@ export class SearchService {
     return {
       page,
       limit: pageSize,
-      total: totalHits,
+      total: actualTotal,
       items,
       prefetch: prefetchSlices,
       // Expose _score trong dev mode để debug ranking (có thể bật/tắt bằng env var)
