@@ -1457,6 +1457,12 @@ export class ContractsService {
           .lean()
           .exec();
 
+        // Kiểm tra xem phòng có thể thuê lại không
+        // Điều kiện: phòng có status là 'available' và có bài đăng active
+        const roomStatus = room?.status || 'unknown';
+        const hasActivePost = !!activePost?.postId;
+        const canRentAgain = roomStatus === 'available' && hasActivePost && room?.isActive !== false;
+
         return {
           contractId: item.contractId,
           roomId: item.roomId,
@@ -1467,6 +1473,8 @@ export class ContractsService {
             ? `${building.address?.street || ''}, ${building.address?.wardName || ''}, ${building.address?.provinceName || ''}`.trim()
             : 'N/A',
           activePostId: activePost?.postId || null, // FE dùng để link đến bài đăng
+          roomStatus: roomStatus, // Trạng thái phòng: 'available', 'occupied', 'unknown'
+          canRentAgain: canRentAgain, // Có thể thuê lại không: true nếu phòng available và có post active
           contractStatus: item.contractStatus,
           startDate: item.startDate,
           endDate: item.endDate,
@@ -1518,6 +1526,23 @@ export class ContractsService {
     const building = await this.buildingModel.findOne({ buildingId: historyItem.buildingId }).lean().exec();
     const landlord = await this.userModel.findOne({ userId: historyItem.landlordId }).lean().exec();
 
+    // Tìm bài đăng active hiện tại của phòng (để FE có thể link)
+    const activePost = await this.postModel
+      .findOne({
+        roomId: historyItem.roomId,
+        status: 'active'
+      })
+      .sort({ createdAt: -1 })
+      .select('postId')
+      .lean()
+      .exec();
+
+    // Kiểm tra xem phòng có thể thuê lại không
+    // Điều kiện: phòng có status là 'available' và có bài đăng active
+    const roomStatus = room?.status || 'unknown';
+    const hasActivePost = !!activePost?.postId;
+    const canRentAgain = roomStatus === 'available' && hasActivePost && room?.isActive !== false;
+
     // Get invoices for this contract
     const invoices = await this.invoiceModel
       .find({ contractId })
@@ -1538,12 +1563,20 @@ export class ContractsService {
       roomId: historyItem.roomId,
       roomNumber: room?.roomNumber || 'N/A',
       buildingName: building?.name || 'N/A',
+      address: building 
+        ? `${building.address?.street || ''}, ${building.address?.wardName || ''}, ${building.address?.provinceName || ''}`.trim()
+        : 'N/A',
+      activePostId: activePost?.postId || null, // FE dùng để link đến bài đăng
+      roomStatus: roomStatus, // Trạng thái phòng: 'available', 'occupied', 'unknown'
+      canRentAgain: canRentAgain, // Có thể thuê lại không: true nếu phòng available và có post active
       contractStatus: historyItem.contractStatus,
       startDate: historyItem.startDate,
       endDate: historyItem.endDate,
       actualEndDate: historyItem.actualEndDate,
       monthlyRent: historyItem.monthlyRent,
       deposit: historyItem.deposit,
+      area: room?.area || 0,
+      images: room?.images || [],
       landlordInfo: landlord ? {
         landlordId: landlord.userId,
         name: landlord.name,
