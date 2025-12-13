@@ -6,31 +6,12 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Cấu hình SMTP rõ ràng để hoạt động tốt trên Render và các môi trường production
-    // Loại bỏ dấu cách trong App Password (Gmail App Password thường có dấu cách)
-    const appPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, '') || '';
-    
     this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true cho port 465, false cho port 587
+      service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER,
-        pass: appPassword,
+        pass: process.env.GMAIL_APP_PASSWORD,
       },
-      tls: {
-        // Reject các certificate không hợp lệ để đảm bảo bảo mật
-        rejectUnauthorized: true,
-        // Sử dụng TLS 1.2+ (mặc định, không cần chỉ định ciphers)
-      },
-      // Thêm timeout để tránh treo
-      connectionTimeout: 10000, // 10 giây
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      // Retry logic
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 3,
     });
   }
 
@@ -38,12 +19,6 @@ export class EmailService {
    * Gửi OTP email
    */
   async sendOTPEmail(email: string, otp: string, userName: string): Promise<void> {
-    // Kiểm tra biến môi trường
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      console.error('❌ GMAIL_USER hoặc GMAIL_APP_PASSWORD chưa được cấu hình');
-      throw new Error('Cấu hình email chưa đầy đủ');
-    }
-
     const mailOptions = {
       from: `${process.env.FROM_NAME || 'Nhà Chung'} <${process.env.FROM_EMAIL || process.env.GMAIL_USER}>`,
       to: email,
@@ -52,18 +27,10 @@ export class EmailService {
     };
 
     try {
-      console.log(`📧 Đang gửi OTP email đến: ${email}`);
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Email đã được gửi thành công: ${info.messageId}`);
-    } catch (error: any) {
-      console.error('❌ Error sending OTP email:', error);
-      console.error('Error details:', {
-        code: error?.code,
-        command: error?.command,
-        response: error?.response,
-        responseCode: error?.responseCode,
-      });
-      throw new Error(`Không thể gửi email OTP: ${error?.message || 'Unknown error'}`);
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Error sending OTP email:', error);
+      throw new Error('Không thể gửi email OTP');
     }
   }
 
@@ -425,21 +392,10 @@ export class EmailService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 Đang kiểm tra kết nối email...');
-      console.log('GMAIL_USER:', process.env.GMAIL_USER ? '✅ Đã cấu hình' : '❌ Chưa cấu hình');
-      console.log('GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? '✅ Đã cấu hình' : '❌ Chưa cấu hình');
-      
-      const result = await this.transporter.verify();
-      console.log('✅ Email service connection successful:', result);
+      await this.transporter.verify();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Email service connection failed:', error);
-      console.error('Error details:', {
-        code: error?.code,
-        command: error?.command,
-        response: error?.response,
-        responseCode: error?.responseCode,
-      });
       return false;
     }
   }
