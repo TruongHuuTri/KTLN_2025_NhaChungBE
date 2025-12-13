@@ -170,12 +170,13 @@ export class SearchService {
 
   async searchPosts(p: SearchPostsParams) {
     const page = Math.max(1, Number(p.page) || 1);
-    // Nếu không có limit hoặc limit = 0, trả về tất cả (tối đa 200 để tránh performance issue)
+    // Nếu không có limit hoặc limit = 0, trả về tất cả (tối đa 5000 để tránh performance issue)
+    // Tăng limit để trả về nhiều kết quả hơn cho user lựa chọn
     const requestedLimit = Number(p.limit);
     const pageSize =
       requestedLimit === 0 || !requestedLimit
-        ? 200
-        : Math.min(200, Math.max(1, requestedLimit));
+        ? 5000
+        : Math.min(5000, Math.max(1, requestedLimit));
     let debugHybrid = false;
     const phaseAttempts: {
       phase: string;
@@ -206,11 +207,14 @@ export class SearchService {
     // Với zero-query feed, luôn chạy phase 5 với filter tối thiểu để đảm bảo tính nhất quán
     // Bất kể có personalized filters hay không
     const minResults = p.minResults ?? Math.ceil(pageSize * 1.5); // giảm relax threshold để bớt nới lỏng
-    // Nếu không có limit, lấy tất cả (tối đa 200)
+    // Tính size cho ES query: lấy đủ để cover pageSize + prefetch
+    // Khi không có limit, lấy tối đa 5000 để trả về nhiều kết quả (vẫn giới hạn để tránh performance issue)
+    // Khi có limit, lấy đủ pageSize + prefetch
+    // Ví dụ: không có limit → size=5000; pageSize=1000, prefetch=3 → size=4000
     const size =
       requestedLimit === 0 || !requestedLimit
-        ? 200
-        : Math.min(200, pageSize * (1 + prefetch));
+        ? 5000
+        : Math.min(5000, Math.max(pageSize, pageSize * (1 + prefetch)));
 
     const derivePriceTarget = () => {
       // Nếu đã có min/max thì dùng chúng
@@ -545,8 +549,12 @@ export class SearchService {
         filter.push({ terms: { 'address.wardCode': expandedWardCodes } });
       }
 
-      // Search mềm: KHÔNG filter cứng category, chỉ boost qua function_score
-      // Category sẽ được boost trong buildFunctions (weight cao cho category yêu cầu, thấp cho category khác)
+      // Filter cứng category khi có category rõ ràng và ở strict mode (Phase 1, 2)
+      // Đảm bảo kết quả đúng loại hình user yêu cầu
+      if (isStrict && p.category) {
+        filter.push({ term: { category: p.category } });
+      }
+      // Với non-strict mode (Phase 4, 5): chỉ boost category qua function_score, không filter cứng
 
       // Filters cho các trường mới
       if (p.minBedrooms != null || p.maxBedrooms != null) {
@@ -797,11 +805,19 @@ export class SearchService {
         });
       }
 
-      // Tier 4: District-level soft boost nếu không có ward_code (dựa trên district alias)
-      if (expandedWardCodes.length > 0) {
+      // Tier 4: District-level boost - tăng mạnh để ưu tiên đúng quận user yêu cầu
+      // Nếu có exact ward codes, boost mạnh hơn; nếu chỉ có expanded (district), boost vừa phải
+      if (exactWardCodes.length > 0) {
+        // Exact ward codes: boost rất mạnh để đảm bảo đúng phường lên top
+        functions.push({
+          filter: { terms: { 'address.wardCode': exactWardCodes } },
+          weight: 60,
+        });
+      } else if (expandedWardCodes.length > 0) {
+        // Expanded ward codes (district): boost mạnh để đảm bảo đúng quận lên top
         functions.push({
           filter: { terms: { 'address.wardCode': expandedWardCodes } },
-          weight: 20,
+          weight: 50,
         });
       }
 
@@ -1071,16 +1087,18 @@ export class SearchService {
 
     // Phase 3: Bỏ qua bước "category-soft" để giữ filter category (đảm bảo đúng loại hình)
 
-    // Phase 4 (Relax 3): Bỏ bớt constraint, nhưng vẫn giữ ward/district nếu có; chỉ nới giá/geo
+    // Phase 4 (Relax 3): Giữ location và category filter cứng, chỉ nới lỏng price
+    // Đảm bảo kết quả đúng quận và đúng loại hình user yêu cầu
     if (totalHits < minResults && !p.strict) {
       const minimalFilters: any[] = [
         { term: { status: 'active' } },
         { term: { isActive: true } },
       ];
-      // Giữ ward/district nếu đã có
+      // Giữ ward/district filter cứng - KHÔNG nới lỏng location khi có district rõ ràng
       if (exactWardCodes.length > 0) {
         minimalFilters.push({ terms: { 'address.wardCode': exactWardCodes } });
       } else if (expandedWardCodes.length > 0) {
+        // Giữ district filter cứng - đảm bảo chỉ trả về kết quả trong quận user yêu cầu
         minimalFilters.push({
           terms: { 'address.wardCode': expandedWardCodes },
         });
@@ -1114,8 +1132,11 @@ export class SearchService {
           term: { 'address.provinceCode': p.province_code },
         });
       }
-      // Phase 4: Bỏ filter cứng category để có thêm kết quả (soft ranking)
-      // Category sẽ được boost qua function_score (weight cao cho category yêu cầu, thấp cho category khác)
+      // Phase 4: Giữ filter cứng category nếu có (đảm bảo đúng loại hình user yêu cầu)
+      // Chỉ nới lỏng location và price, không nới lỏng category
+      if (p.category) {
+        minimalFilters.push({ term: { category: p.category } });
+      }
       applyRoommateFilters(minimalFilters);
       currentFilters = minimalFilters;
       // Giữ functions để vẫn có ranking
@@ -1157,10 +1178,12 @@ export class SearchService {
           });
         }
       } else {
-        // Với query có filter, thêm tất cả filter tương ứng
+        // Với query có filter (có district/category rõ ràng), giữ location filter cứng
+        // KHÔNG nới lỏng location - đảm bảo kết quả đúng quận user yêu cầu
         if (exactWardCodes.length > 0) {
           broadFilters.push({ terms: { 'address.wardCode': exactWardCodes } });
         } else if (expandedWardCodes.length > 0) {
+          // Giữ district filter cứng - không nới lỏng location khi có district rõ ràng
           broadFilters.push({
             terms: { 'address.wardCode': expandedWardCodes },
           });
@@ -1188,8 +1211,14 @@ export class SearchService {
             broadFilters.push({ range: { price: priceRange } });
           }
         }
+        // Phase 5: Giữ filter cứng category nếu có (đảm bảo đúng loại hình user yêu cầu)
+        // Chỉ nới lỏng location và price, không nới lỏng category
+        if (p.category) {
+          broadFilters.push({ term: { category: p.category } });
+        }
       }
-      // Phase 5: Không filter cứng category (soft ranking qua boost)
+      // Phase 5: Với zero-query feed, không filter category (personalization chỉ boost)
+      // Với query có category, giữ filter cứng category
       applyRoommateFilters(broadFilters);
       currentFilters = broadFilters;
       phaseResult = await executeSearch(
@@ -1286,19 +1315,33 @@ export class SearchService {
     const allWindowItems = (resp.hits?.hits || []).map((h: any) =>
       this.buildResponseItem(h),
     );
-    const items = allWindowItems.slice(0, pageSize);
+
+    // Trả về tất cả kết quả có thể - không limit khi có ít dữ liệu hoặc khi không có limit request
+    // Ví dụ: có 29 bài → trả về hết 29 bài; có 500 bài → trả về hết 500 bài (nếu không có limit)
+    const shouldReturnAll =
+      requestedLimit === 0 ||
+      !requestedLimit ||
+      actualTotal <= pageSize ||
+      allWindowItems.length <= pageSize;
+    const items = shouldReturnAll
+      ? allWindowItems
+      : allWindowItems.slice(0, pageSize);
+
     const prefetchSlices: any[] = [];
-    for (let i = 1; i <= prefetch; i++) {
-      const start = i * pageSize;
-      const end = start + pageSize;
-      const sliceItems = allWindowItems.slice(start, end);
-      if (sliceItems.length === 0) break;
-      prefetchSlices.push({ page: page + i, items: sliceItems });
+    // Chỉ tạo prefetch nếu còn dữ liệu và không phải trả về hết
+    if (!shouldReturnAll) {
+      for (let i = 1; i <= prefetch; i++) {
+        const start = i * pageSize;
+        const end = start + pageSize;
+        const sliceItems = allWindowItems.slice(start, end);
+        if (sliceItems.length === 0) break;
+        prefetchSlices.push({ page: page + i, items: sliceItems });
+      }
     }
 
     return {
       page,
-      limit: pageSize,
+      limit: shouldReturnAll ? actualTotal : pageSize, // Trả về limit thực tế nếu trả về hết
       total: actualTotal,
       items,
       prefetch: prefetchSlices,
