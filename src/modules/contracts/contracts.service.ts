@@ -6,6 +6,7 @@ import { RentalRequest, RentalRequestDocument } from './schemas/rental-request.s
 import { Invoice, InvoiceDocument } from './schemas/invoice.schema';
 import { ContractUpdate, ContractUpdateDocument } from './schemas/contract-update.schema';
 import { RentalHistory, RentalHistoryDocument } from './schemas/rental-history.schema';
+import { TerminationRequest, TerminationRequestDocument } from './schemas/termination-request.schema';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateRentalRequestDto } from './dto/create-rental-request.dto';
 import { TerminateContractDto } from './dto/terminate-contract.dto';
@@ -28,6 +29,7 @@ export class ContractsService {
     @InjectModel(Invoice.name) private invoiceModel: Model<InvoiceDocument>,
     @InjectModel(ContractUpdate.name) private contractUpdateModel: Model<ContractUpdateDocument>,
     @InjectModel(RentalHistory.name) private rentalHistoryModel: Model<RentalHistoryDocument>,
+    @InjectModel(TerminationRequest.name) private terminationRequestModel: Model<TerminationRequestDocument>,
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Room.name) private roomModel: Model<RoomDocument>,
@@ -48,6 +50,89 @@ export class ContractsService {
 
   async getContractsByLandlord(landlordId: number): Promise<RentalContract[]> {
     return this.contractModel.find({ landlordId }).sort({ createdAt: -1 }).exec();
+  }
+
+  /**
+   * Lấy chi tiết hợp đồng cho landlord (kèm thông tin phòng và tenant)
+   */
+  /**
+   * Lấy chi tiết hợp đồng cho landlord (giống getEnrichedContractData của tenant)
+   * Bao gồm room, building, tenant details với verification, và tổng số tháng
+   */
+  async getLandlordContract(
+    landlordId: number,
+    contractId: number
+  ): Promise<any> {
+    const contract = await this.contractModel.findOne({ contractId, landlordId }).exec();
+    if (!contract) {
+      throw new NotFoundException('Contract not found or not owned by landlord');
+    }
+
+    // Lấy thông tin phòng
+    const room = await this.roomModel.findOne({ roomId: contract.roomId }).lean().exec();
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // Lấy thông tin building
+    const building = room.buildingId 
+      ? await this.buildingModel.findOne({ buildingId: room.buildingId }).lean().exec() 
+      : null;
+
+    // Lấy thông tin chi tiết của từng tenant (bao gồm verification)
+    const tenantDetails = await Promise.all(
+      (contract.tenants || []).map(async (tenant: any) => {
+        const user = await this.userModel.findOne({ userId: tenant.tenantId }).lean().exec();
+        const verification = user?.verificationId 
+          ? await this.verificationModel.findOne({ verificationId: user.verificationId }).lean().exec()
+          : null;
+
+        return {
+          tenantId: tenant.tenantId,
+          fullName: user?.name || 'N/A',
+          phone: user?.phone || 'N/A',
+          email: user?.email || 'N/A',
+          cccd: verification?.idNumber || 'N/A',
+          moveInDate: tenant.moveInDate,
+          status: tenant.status,
+        };
+      })
+    );
+
+    // Tính tổng số tháng
+    const startDate = new Date(contract.startDate);
+    const endDate = new Date(contract.endDate);
+    const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+    // Convert contract to plain object if it's a Mongoose document
+    const contractObj = contract && typeof contract === 'object' && 'toObject' in contract 
+      ? (contract as any).toObject() 
+      : contract;
+
+    return {
+      ...contractObj,
+      room: {
+        roomId: room.roomId,
+        roomNumber: room.roomNumber,
+        area: room.area,
+        category: room.category,
+        chungCuInfo: room.chungCuInfo,
+        nhaNguyenCanInfo: room.nhaNguyenCanInfo,
+        floor: (room as any).floor,
+        furniture: room.furniture,
+        utilities: room.utilities,
+        images: room.images,
+        status: room.status,
+        building: building ? {
+          buildingId: building.buildingId,
+          name: building.name,
+          buildingType: building.buildingType,
+          address: building.address,
+        } : null,
+      },
+      tenantDetails,
+      totalMonths: monthsDiff,
+    };
   }
 
   async getContractById(contractId: number): Promise<RentalContract> {
@@ -1316,15 +1401,36 @@ export class ContractsService {
     };
   }
 
-  // Rental History Management
+  // Termination Request Management
+  
   /**
-   * Terminate contract - Hủy hợp đồng
+   * Helper: Lấy ID tiếp theo cho termination request
    */
-  async terminateContract(
+  private async getNextTerminationRequestId(): Promise<number> {
+    const lastRequest = await this.terminationRequestModel
+      .findOne()
+      .sort({ requestId: -1 })
+      .exec();
+    return lastRequest ? lastRequest.requestId + 1 : 1;
+  }
+
+  /**
+   * Request termination - Người thuê yêu cầu huỷ hợp đồng (cần chủ duyệt)
+   */
+  async requestTermination(
     contractId: number,
     userId: number,
     terminateData: TerminateContractDto
-  ): Promise<{ contract: RentalContract; affectedPostsCount: number }> {
+  ): Promise<{
+    request: TerminationRequest;
+    warning?: {
+      isEarlyTermination: boolean;
+      willLoseDeposit: boolean;
+      depositAmount: number;
+      daysBeforeEnd: number;
+      message: string;
+    };
+  }> {
     // 1. Kiểm tra quyền và trạng thái
     const contract = await this.contractModel.findOne({ contractId }).exec();
     if (!contract) {
@@ -1334,48 +1440,185 @@ export class ContractsService {
     // Check if user is a tenant in this contract
     const isTenant = contract.tenants.some(tenant => Number(tenant.tenantId) === Number(userId));
     if (!isTenant) {
-      throw new BadRequestException('Bạn không có quyền hủy hợp đồng này');
+      throw new BadRequestException('Bạn không có quyền yêu cầu huỷ hợp đồng này');
     }
 
     // Check if contract is active
     if (contract.status !== 'active') {
-      throw new BadRequestException('Contract đã hết hạn hoặc đã bị hủy trước đó');
+      throw new BadRequestException('Hợp đồng đã hết hạn hoặc đã bị huỷ trước đó');
     }
 
-    // 2. Update contract
-    const terminationDate = terminateData.terminationDate 
+    // Check if already has pending termination request
+    const existingRequest = await this.terminationRequestModel.findOne({
+      contractId,
+      status: 'pending'
+    }).exec();
+    if (existingRequest) {
+      throw new BadRequestException('Đã có yêu cầu huỷ hợp đồng đang chờ duyệt');
+    }
+
+    // 2. Tính toán thời gian và cảnh báo tiền cọc
+    const requestedTerminationDate = terminateData.terminationDate 
       ? new Date(terminateData.terminationDate) 
       : new Date();
+    
+    const contractEndDate = new Date(contract.endDate);
+    const now = new Date();
+    
+    // Tính số ngày còn lại trước khi hết hạn
+    const daysBeforeEnd = Math.ceil((contractEndDate.getTime() - requestedTerminationDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Huỷ trước hạn nếu ngày kết thúc yêu cầu < ngày kết thúc hợp đồng
+    const isEarlyTermination = requestedTerminationDate < contractEndDate;
+    
+    // Mất cọc nếu huỷ trước hạn (có thể tuỳ chỉnh logic này)
+    const willLoseDeposit = isEarlyTermination;
+    const depositAmount = contract.deposit || 0;
+
+    // 3. Tạo yêu cầu huỷ
+    const requestId = await this.getNextTerminationRequestId();
+    const terminationRequest = new this.terminationRequestModel({
+      requestId,
+      contractId,
+      tenantId: userId,
+      landlordId: contract.landlordId,
+      reason: terminateData.reason,
+      requestedTerminationDate,
+      status: 'pending',
+      isEarlyTermination,
+      willLoseDeposit,
+      depositAmount,
+      daysBeforeEnd: Math.max(0, daysBeforeEnd),
+    });
+    await terminationRequest.save();
+
+    // 4. Tạo response với cảnh báo nếu huỷ trước hạn
+    const response: any = {
+      request: terminationRequest,
+    };
+
+    if (isEarlyTermination) {
+      response.warning = {
+        isEarlyTermination: true,
+        willLoseDeposit: true,
+        depositAmount,
+        daysBeforeEnd: Math.max(0, daysBeforeEnd),
+        message: `Bạn đang yêu cầu huỷ hợp đồng trước thời hạn ${Math.max(0, daysBeforeEnd)} ngày. Nếu chủ nhà chấp nhận, bạn sẽ KHÔNG được hoàn lại tiền cọc ${depositAmount.toLocaleString('vi-VN')}đ.`
+      };
+    }
+
+    return response;
+  }
+
+  /**
+   * Get termination requests for tenant - Lấy danh sách yêu cầu huỷ của người thuê
+   */
+  async getMyTerminationRequests(userId: number): Promise<TerminationRequest[]> {
+    return this.terminationRequestModel
+      .find({ tenantId: userId })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+  }
+
+  /**
+   * Get termination requests for landlord - Lấy danh sách yêu cầu huỷ cho chủ duyệt
+   */
+  async getLandlordTerminationRequests(landlordId: number): Promise<any[]> {
+    const requests = await this.terminationRequestModel
+      .find({ landlordId })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    // Populate với thông tin contract và tenant
+    return Promise.all(requests.map(async (req: any) => {
+      const contract = await this.contractModel.findOne({ contractId: req.contractId }).lean().exec();
+      const tenant = await this.userModel.findOne({ userId: req.tenantId }).lean().exec();
+      const room = contract ? await this.roomModel.findOne({ roomId: contract.roomId }).lean().exec() : null;
+
+      return {
+        ...req,
+        contract: contract ? {
+          contractId: contract.contractId,
+          startDate: contract.startDate,
+          endDate: contract.endDate,
+          monthlyRent: contract.monthlyRent,
+          deposit: contract.deposit,
+        } : null,
+        tenant: tenant ? {
+          tenantId: tenant.userId,
+          name: tenant.name,
+          phone: tenant.phone,
+          email: tenant.email,
+        } : null,
+        room: room ? {
+          roomId: room.roomId,
+          roomNumber: room.roomNumber,
+        } : null,
+      };
+    }));
+  }
+
+  /**
+   * Approve termination request - Chủ duyệt yêu cầu huỷ
+   */
+  async approveTerminationRequest(
+    requestId: number,
+    landlordId: number,
+    response?: string
+  ): Promise<{ request: TerminationRequest; contract: RentalContract; affectedPostsCount: number }> {
+    // 1. Tìm yêu cầu và kiểm tra quyền
+    const request = await this.terminationRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu huỷ');
+    }
+
+    if (Number(request.landlordId) !== Number(landlordId)) {
+      throw new BadRequestException('Bạn không có quyền duyệt yêu cầu này');
+    }
+
+    if (request.status !== 'pending') {
+      throw new BadRequestException('Yêu cầu đã được xử lý trước đó');
+    }
+
+    // 2. Cập nhật yêu cầu
+    request.status = 'approved';
+    request.landlordResponse = response;
+    request.respondedAt = new Date();
+    await request.save();
+
+    // 3. Thực hiện huỷ hợp đồng
+    const contract = await this.contractModel.findOne({ contractId: request.contractId }).exec();
+    if (!contract) {
+      throw new NotFoundException('Không tìm thấy hợp đồng');
+    }
 
     contract.status = 'terminated';
     contract.terminatedAt = new Date();
-    contract.terminationReason = terminateData.reason || undefined;
-    contract.actualEndDate = terminationDate;
+    contract.terminationReason = request.reason || undefined;
+    contract.actualEndDate = request.requestedTerminationDate;
     contract.updatedAt = new Date();
     await contract.save();
 
-    // 3. Update room - giảm occupancy và remove tenant
-    const room = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
-    if (room) {
-      // Remove all tenants from this contract from the room
-      const tenantIds = contract.tenants.map(t => t.tenantId);
-      await this.roomModel.findOneAndUpdate(
-        { roomId: contract.roomId },
-        {
-          $pull: { currentTenants: { userId: { $in: tenantIds } } },
-          $set: { updatedAt: new Date() }
-        }
-      ).exec();
-
-      // Update room status if no more tenants
-      const updatedRoom = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
-      if (updatedRoom && (!updatedRoom.currentTenants || updatedRoom.currentTenants.length === 0)) {
-        updatedRoom.status = 'available';
-        await updatedRoom.save();
+    // 4. Update room - remove tenants
+    const tenantIds = contract.tenants.map(t => t.tenantId);
+    await this.roomModel.findOneAndUpdate(
+      { roomId: contract.roomId },
+      {
+        $pull: { currentTenants: { userId: { $in: tenantIds } } },
+        $set: { updatedAt: new Date() }
       }
+    ).exec();
+
+    // Update room status if no more tenants
+    const updatedRoom = await this.roomModel.findOne({ roomId: contract.roomId }).exec();
+    if (updatedRoom && (!updatedRoom.currentTenants || updatedRoom.currentTenants.length === 0)) {
+      updatedRoom.status = 'available';
+      await updatedRoom.save();
     }
 
-    // 4. Tìm và active lại TẤT CẢ bài đăng liên quan
+    // 5. Active lại bài đăng
     const updateResult = await this.postModel.updateMany(
       {
         roomId: contract.roomId,
@@ -1391,13 +1634,69 @@ export class ContractsService {
 
     const affectedPostsCount = updateResult.modifiedCount || 0;
 
-    // 5. Tạo rental history
-    await this.createRentalHistoryFromContract(contract, userId);
+    // 6. Tạo rental history
+    await this.createRentalHistoryFromContract(contract, request.tenantId);
 
-    return { 
-      contract, 
-      affectedPostsCount 
+    return {
+      request,
+      contract,
+      affectedPostsCount
     };
+  }
+
+  /**
+   * Reject termination request - Chủ từ chối yêu cầu huỷ
+   */
+  async rejectTerminationRequest(
+    requestId: number,
+    landlordId: number,
+    response?: string
+  ): Promise<TerminationRequest> {
+    const request = await this.terminationRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu huỷ');
+    }
+
+    if (Number(request.landlordId) !== Number(landlordId)) {
+      throw new BadRequestException('Bạn không có quyền từ chối yêu cầu này');
+    }
+
+    if (request.status !== 'pending') {
+      throw new BadRequestException('Yêu cầu đã được xử lý trước đó');
+    }
+
+    request.status = 'rejected';
+    request.landlordResponse = response;
+    request.respondedAt = new Date();
+    await request.save();
+
+    return request;
+  }
+
+  /**
+   * Cancel termination request - Người thuê huỷ yêu cầu (trước khi chủ duyệt)
+   */
+  async cancelTerminationRequest(
+    requestId: number,
+    userId: number
+  ): Promise<TerminationRequest> {
+    const request = await this.terminationRequestModel.findOne({ requestId }).exec();
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu huỷ');
+    }
+
+    if (Number(request.tenantId) !== Number(userId)) {
+      throw new BadRequestException('Bạn không có quyền huỷ yêu cầu này');
+    }
+
+    if (request.status !== 'pending') {
+      throw new BadRequestException('Không thể huỷ yêu cầu đã được xử lý');
+    }
+
+    // Xoá yêu cầu
+    await this.terminationRequestModel.deleteOne({ requestId }).exec();
+
+    return request;
   }
 
   /**
@@ -1489,6 +1788,110 @@ export class ContractsService {
             phone: landlord.phone,
             email: landlord.email
           } : null,
+          terminationReason: item.terminationReason,
+          terminatedAt: item.terminatedAt,
+          totalMonthsRented: item.totalMonthsRented,
+          totalAmountPaid: item.totalAmountPaid
+        };
+      })
+    );
+
+    return {
+      history: populatedHistory,
+      pagination: {
+        total,
+        page: parseInt(page.toString()),
+        limit: parseInt(limit.toString()),
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
+   * Landlord: Get history of rented rooms (past contracts) with tenant info
+   */
+  async getLandlordRentalHistory(
+    landlordId: number,
+    query: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      sortBy?: string;
+      sortOrder?: string;
+    }
+  ): Promise<any> {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      sortBy = 'actualEndDate',
+      sortOrder = 'desc'
+    } = query;
+
+    const filter: any = { landlordId };
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      filter.contractStatus = { $in: statuses };
+    }
+
+    const history = await this.rentalHistoryModel
+      .find(filter)
+      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean()
+      .exec();
+
+    const total = await this.rentalHistoryModel.countDocuments(filter).exec();
+
+    const populatedHistory = await Promise.all(
+      history.map(async (item: any) => {
+        const room = await this.roomModel.findOne({ roomId: item.roomId }).lean().exec();
+        const building = await this.buildingModel.findOne({ buildingId: item.buildingId }).lean().exec();
+        const tenant = await this.userModel.findOne({ userId: item.userId }).lean().exec();
+
+        const activePost = await this.postModel
+          .findOne({
+            roomId: item.roomId,
+            status: 'active'
+          })
+          .sort({ createdAt: -1 })
+          .select('postId')
+          .lean()
+          .exec();
+
+        const roomStatus = room?.status || 'unknown';
+        const hasActivePost = !!activePost?.postId;
+        const canRentAgain = roomStatus === 'available' && hasActivePost && room?.isActive !== false;
+
+        return {
+          contractId: item.contractId,
+          roomId: item.roomId,
+          roomNumber: room?.roomNumber || 'N/A',
+          buildingName: building?.name || 'N/A',
+          buildingId: item.buildingId,
+          address: building
+            ? `${building.address?.street || ''}, ${building.address?.wardName || ''}, ${building.address?.provinceName || ''}`.trim()
+            : 'N/A',
+          activePostId: activePost?.postId || null,
+          roomStatus,
+          canRentAgain,
+          contractStatus: item.contractStatus,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          actualEndDate: item.actualEndDate,
+          monthlyRent: item.monthlyRent,
+          deposit: item.deposit,
+          area: room?.area || 0,
+          images: room?.images || [],
+          tenantInfo: tenant
+            ? {
+                tenantId: tenant.userId,
+                name: tenant.name,
+                phone: tenant.phone,
+                email: tenant.email
+              }
+            : null,
           terminationReason: item.terminationReason,
           terminatedAt: item.terminatedAt,
           totalMonthsRented: item.totalMonthsRented,

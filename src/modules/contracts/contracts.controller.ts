@@ -39,8 +39,39 @@ export class LandlordContractsController {
   }
 
   @Get('contracts/:id')
-  async getContractById(@Param('id') contractId: number) {
-    return this.contractsService.getContractById(contractId);
+  async getContractById(@Request() req, @Param('id') contractId: number) {
+    const landlordId = req.user.userId;
+    return this.contractsService.getLandlordContract(landlordId, contractId);
+  }
+
+  @Get('contracts/:id/download-pdf')
+  async downloadContractPDF(@Request() req, @Param('id') contractIdParam: string, @Res() res: Response) {
+    try {
+      const landlordId = req.user.userId;
+      const contractId = Number(contractIdParam);
+      
+      // Lấy thông tin hợp đồng đầy đủ (kiểm tra quyền sở hữu)
+      const enrichedContract = await this.contractsService.getLandlordContract(landlordId, contractId);
+      
+      // Tạo PDF
+      const { filePath, fileName } = await this.pdfService.generateContractPDF(enrichedContract);
+      
+      // Trả về file PDF
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.sendFile(filePath);
+      
+      // Xóa file tạm sau 5 giây
+      setTimeout(() => {
+        this.pdfService.deletePDF(filePath);
+      }, 5000);
+      
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Không thể tạo file PDF: ' + error.message
+      });
+    }
   }
 
   @Put('contracts/:id')
@@ -137,6 +168,28 @@ export class LandlordContractsController {
     return this.contractsService.getLandlordDashboardSummary(landlordId, from, to);
   }
 
+  /**
+   * Lịch sử phòng đã cho thuê (chủ trọ)
+   */
+  @Get('rental-history')
+  async getLandlordRentalHistory(
+    @Request() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string
+  ) {
+    const landlordId = req.user.userId;
+    return this.contractsService.getLandlordRentalHistory(landlordId, {
+      page: page ? parseInt(page) : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      status,
+      sortBy,
+      sortOrder
+    });
+  }
+
 
   // Room Sharing Requests
   @Get('room-sharing-requests')
@@ -155,6 +208,79 @@ export class LandlordContractsController {
   async rejectRoomSharingRequest(@Request() req, @Param('id') requestId: number) {
     const landlordId = req.user.userId;
     return this.contractsService.rejectRoomSharingByLandlord(requestId, landlordId);
+  }
+
+  // Termination Requests - Yêu cầu huỷ hợp đồng từ người thuê
+  
+  /**
+   * Lấy danh sách yêu cầu huỷ hợp đồng cho chủ duyệt
+   */
+  @Get('termination-requests')
+  async getTerminationRequests(@Request() req) {
+    const landlordId = req.user.userId;
+    return this.contractsService.getLandlordTerminationRequests(landlordId);
+  }
+
+  /**
+   * Duyệt yêu cầu huỷ hợp đồng
+   */
+  @Put('termination-requests/:id/approve')
+  async approveTerminationRequest(
+    @Request() req, 
+    @Param('id') requestId: string,
+    @Body() body: { response?: string }
+  ) {
+    const landlordId = req.user.userId;
+    const result = await this.contractsService.approveTerminationRequest(
+      Number(requestId), 
+      landlordId, 
+      body.response
+    );
+    
+    return {
+      message: 'Đã duyệt yêu cầu huỷ hợp đồng',
+      request: {
+        requestId: result.request.requestId,
+        status: result.request.status,
+        respondedAt: result.request.respondedAt,
+      },
+      contract: {
+        contractId: result.contract.contractId,
+        status: result.contract.status,
+        terminatedAt: result.contract.terminatedAt,
+      },
+      affectedPosts: {
+        count: result.affectedPostsCount,
+        message: `Đã active lại ${result.affectedPostsCount} bài đăng`
+      }
+    };
+  }
+
+  /**
+   * Từ chối yêu cầu huỷ hợp đồng
+   */
+  @Put('termination-requests/:id/reject')
+  async rejectTerminationRequest(
+    @Request() req, 
+    @Param('id') requestId: string,
+    @Body() body: { response?: string }
+  ) {
+    const landlordId = req.user.userId;
+    const result = await this.contractsService.rejectTerminationRequest(
+      Number(requestId), 
+      landlordId, 
+      body.response
+    );
+    
+    return {
+      message: 'Đã từ chối yêu cầu huỷ hợp đồng',
+      request: {
+        requestId: result.requestId,
+        status: result.status,
+        landlordResponse: result.landlordResponse,
+        respondedAt: result.respondedAt,
+      }
+    };
   }
 
   // Test endpoint để tạo hóa đơn phí duy trì cho tất cả landlords
@@ -291,34 +417,65 @@ export class UserContractsController {
     return this.contractsService.rejectRoomSharingByUser(requestId, userId);
   }
 
-  // Rental History APIs
-  @Put('me/contracts/:contractId/terminate')
-  async terminateContract(
+  // Termination Request APIs
+  
+  /**
+   * Yêu cầu huỷ hợp đồng (cần chủ duyệt)
+   * Nếu huỷ trước thời hạn, sẽ trả về cảnh báo mất tiền cọc
+   */
+  @Put('me/contracts/:contractId/request-termination')
+  async requestTermination(
     @Request() req, 
     @Param('contractId') contractId: string,
     @Body() terminateData: TerminateContractDto
   ) {
     const userId = req.user.userId;
-    const result = await this.contractsService.terminateContract(
+    const result = await this.contractsService.requestTermination(
       Number(contractId), 
       userId, 
       terminateData
     );
     
     return {
-      message: 'Hợp đồng đã được hủy thành công',
-      contract: {
-        contractId: result.contract.contractId,
-        status: result.contract.status,
-        terminatedAt: result.contract.terminatedAt,
-        terminationReason: result.contract.terminationReason
+      message: 'Yêu cầu huỷ hợp đồng đã được gửi, đang chờ chủ nhà duyệt',
+      request: {
+        requestId: result.request.requestId,
+        contractId: result.request.contractId,
+        status: result.request.status,
+        requestedTerminationDate: result.request.requestedTerminationDate,
+        isEarlyTermination: result.request.isEarlyTermination,
+        willLoseDeposit: result.request.willLoseDeposit,
+        depositAmount: result.request.depositAmount,
       },
-      affectedPosts: {
-        count: result.affectedPostsCount,
-        message: `Đã active lại ${result.affectedPostsCount} bài đăng`
-      }
+      warning: result.warning || null
     };
   }
+
+  /**
+   * Lấy danh sách yêu cầu huỷ của người thuê
+   */
+  @Get('me/termination-requests')
+  async getMyTerminationRequests(@Request() req) {
+    const userId = req.user.userId;
+    return this.contractsService.getMyTerminationRequests(userId);
+  }
+
+  /**
+   * Huỷ yêu cầu huỷ hợp đồng (trước khi chủ duyệt)
+   */
+  @Delete('me/termination-requests/:requestId')
+  async cancelTerminationRequest(
+    @Request() req,
+    @Param('requestId') requestId: string
+  ) {
+    const userId = req.user.userId;
+    await this.contractsService.cancelTerminationRequest(Number(requestId), userId);
+    return {
+      message: 'Đã huỷ yêu cầu huỷ hợp đồng'
+    };
+  }
+
+  // Rental History APIs
 
   @Get('me/rental-history')
   async getRentalHistory(

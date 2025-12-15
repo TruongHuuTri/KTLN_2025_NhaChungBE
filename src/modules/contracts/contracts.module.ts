@@ -9,6 +9,7 @@ import { RentalRequest, RentalRequestSchema } from './schemas/rental-request.sch
 import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
 import { ContractUpdate, ContractUpdateSchema } from './schemas/contract-update.schema';
 import { RentalHistory, RentalHistorySchema } from './schemas/rental-history.schema';
+import { TerminationRequest, TerminationRequestSchema } from './schemas/termination-request.schema';
 import { Post, PostSchema } from '../posts/schemas/post.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Room, RoomSchema } from '../rooms/schemas/room.schema';
@@ -28,6 +29,7 @@ import { Verification, VerificationSchema } from '../verifications/schemas/verif
       { name: Invoice.name, schema: InvoiceSchema },
       { name: ContractUpdate.name, schema: ContractUpdateSchema },
       { name: RentalHistory.name, schema: RentalHistorySchema },
+      { name: TerminationRequest.name, schema: TerminationRequestSchema },
       { name: Post.name, schema: PostSchema },
       { name: User.name, schema: UserSchema },
       { name: Room.name, schema: RoomSchema },
