@@ -281,25 +281,42 @@ export class RetrieverAgent {
       const diversified = diversifiedResult.items;
 
       // Re-slice back into pages using original page size and prefetch count
-      // Ưu tiên lấy từ params.limit, fallback res.limit, cuối cùng mới dùng default
-      const pageSize = Number(params.limit) || Number(res.limit) || 12;
+      // Nếu không có limit (limit = 0 hoặc undefined), trả về tất cả items
+      const requestedLimit =
+        params.limit !== undefined ? Number(params.limit) : undefined;
+      const hasLimit = requestedLimit !== undefined && requestedLimit !== 0;
+      const pageSize = hasLimit
+        ? requestedLimit!
+        : res.limit !== undefined
+          ? Number(res.limit)
+          : diversified.length;
+
+      // Nếu không có limit, trả về tất cả items, không slice
+      const shouldReturnAll =
+        !hasLimit && (requestedLimit === 0 || requestedLimit === undefined);
       const prefetchCount = Array.isArray(res.prefetch)
         ? res.prefetch.length
         : 0;
 
-      const firstPage = diversified.slice(0, pageSize);
+      const firstPage = shouldReturnAll
+        ? diversified
+        : diversified.slice(0, pageSize);
       const newPrefetch: any[] = [];
-      for (let i = 0; i < prefetchCount; i++) {
-        const start = (i + 1) * pageSize;
-        const end = start + pageSize;
-        const slice = diversified.slice(start, end);
-        if (slice.length === 0) break;
-        newPrefetch.push({ page: (res.page || 1) + (i + 1), items: slice });
+      // Chỉ tạo prefetch nếu có limit và còn dữ liệu
+      if (!shouldReturnAll) {
+        for (let i = 0; i < prefetchCount; i++) {
+          const start = (i + 1) * pageSize;
+          const end = start + pageSize;
+          const slice = diversified.slice(start, end);
+          if (slice.length === 0) break;
+          newPrefetch.push({ page: (res.page || 1) + (i + 1), items: slice });
+        }
       }
 
       const out = {
         ...res,
         items: firstPage,
+        limit: shouldReturnAll ? firstPage.length : pageSize, // Trả về limit thực tế
         prefetch: newPrefetch,
         ...(process.env.NODE_ENV === 'development' && {
           _debug: {
